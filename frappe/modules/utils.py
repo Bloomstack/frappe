@@ -57,9 +57,9 @@ def export_customizations(module, doctype, sync_on_migrate=0, with_permissions=0
 		custom['custom_perms'] = frappe.get_all('Custom DocPerm',
 			fields='*', filters={'parent': doctype})
 
-	# also update the custom fields and property setters for all child tables
-	for d in frappe.get_meta(doctype).get_table_fields():
-		export_customizations(module, d.options, sync_on_migrate, with_permissions)
+	# add custom fields and property setters for all child tables
+	# for d in frappe.get_meta(doctype).get_table_fields():
+	# 	add(d.options)
 
 	if custom["custom_fields"] or custom["property_setters"] or custom["custom_perms"]:
 		folder_path = os.path.join(get_module_path(module), 'custom')
