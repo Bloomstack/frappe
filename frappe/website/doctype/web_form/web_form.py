@@ -144,7 +144,7 @@ def get_context(context):
 						self.build_as_list(context)
 				else:
 					if frappe.session.user != 'Guest' and not frappe.form_dict.name:
-						frappe.form_dict.name = frappe.db.get_value(self.doc_type, {"owner": frappe.session.user}, "name")
+						frappe.form_dict.name = frappe.db.get_value(self.doc_type, {"email": frappe.session.user}, "name")
 
 					if not frappe.form_dict.name:
 						# only a single doc allowed and no existing doc, hence new
