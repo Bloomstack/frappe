@@ -235,4 +235,5 @@ def serve(port=8000, profile=False, site=None, sites_path='.'):
 		use_reloader=not in_test_env,
 		use_debugger=not in_test_env,
 		use_evalex=not in_test_env,
+		reloader_type='stat',
 		threaded=True)
