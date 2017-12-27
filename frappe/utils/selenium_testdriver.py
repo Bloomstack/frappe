@@ -34,7 +34,7 @@ class TestDriver(object):
 		capabilities['loggingPrefs'] = {'browser':'ALL'}
 
 		chrome_options.add_argument('--no-sandbox')
-		chrome_options.add_argument('--start-maximized')
+		chrome_options.add_argument('--headless')
 		self.driver = webdriver.Chrome(chrome_options=chrome_options,
 			desired_capabilities=capabilities, port=9515)
 
