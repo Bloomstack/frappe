@@ -357,6 +357,8 @@ def get_extension(filename, extn, content):
 	return extn
 
 def get_local_image(file_url):
+	if os.environ.get('CI'):
+		return
 	file_path = frappe.get_site_path("public", file_url.lstrip("/"))
 
 	try:
