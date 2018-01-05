@@ -109,6 +109,22 @@ frappe.ui.form.Grid = Class.extend({
 			});
 
 			frappe.run_serially(tasks);
+
+			// Hack to delete table rows while making production order in sales order
+			var dialog_title = cur_dialog.$wrapper.find(".modal-title").text();
+
+			if (dialog_title == "Select Items to Manufacture") {
+				cur_dialog.$wrapper.find(".grid-body .grid-row:has(input:checked)").remove();
+
+				var rows = cur_dialog.$wrapper.find(".grid-body .grid-row");
+
+				for(var i = 0; i < $(rows).find(".row-index.sortable-handle.col.col-xs-1").find("span").length; i++) {
+					$(rows).find(".row-index.sortable-handle.col.col-xs-1").find("span")[i].textContent = i+1;
+				}
+
+				cur_dialog.$wrapper.find(".grid-body button.grid-remove-rows").toggleClass("hide");
+			}
+
 		});
 	},
 	select_row: function(name) {
