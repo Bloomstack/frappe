@@ -1,19 +1,28 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-from __future__ import unicode_literals, print_function
-import frappe, re
-import requests, requests.exceptions
-from frappe.utils import strip_html
-from frappe.website.website_generator import WebsiteGenerator
-from frappe.website.router import resolve_route
-from frappe.website.doctype.website_slideshow.website_slideshow import get_slideshow
-from frappe.website.utils import find_first_image, get_comment_list, extract_title
-from frappe.utils.jinja import render_template
+from __future__ import print_function, unicode_literals
+
+import re
+
+import requests
+import requests.exceptions
 from jinja2.exceptions import TemplateSyntaxError
+
+import frappe
 from frappe import _
+from frappe.utils import get_datetime, now, strip_html
+from frappe.utils.jinja import render_template
+from frappe.website.doctype.website_slideshow.website_slideshow import get_slideshow
+from frappe.website.router import resolve_route
+from frappe.website.utils import extract_title, find_first_image, get_comment_list
+from frappe.website.website_generator import WebsiteGenerator
+
 
 class WebPage(WebsiteGenerator):
+	def validate(self):
+		self.check_publication_dates()
+
 	def get_feed(self):
 		return self.title
 
@@ -120,6 +129,34 @@ class WebPage(WebsiteGenerator):
 		image = find_first_image(context.main_section or "")
 		if image:
 			context.metatags["image"] = image
+
+	def check_publication_dates(self):
+		if self.valid_upto and self.valid_upto < self.valid_from:
+			frappe.throw(_("End Date cannot be before Start Date!"))
+
+		if now() < self.valid_upto:
+			if not self.published:
+				self.valid_upto = now()
+		else:
+			if self.published and self.valid_upto is not None:
+				self.valid_upto = None
+
+
+def check_publish_status():
+	web_pages = frappe.get_all("Web Page", fields=["name", "published", "valid_from", "valid_upto"])
+	now_date = get_datetime(now())
+
+	for page in web_pages:
+		start_date = page.valid_from or get_datetime("01-01-2000")
+		end_date = page.valid_upto or get_datetime("01-01-2100")
+
+		if page.published:
+			if not (start_date < now_date < end_date):
+				frappe.db.set_value("Web Page", page.name, "published", 0)
+		else:
+			if start_date < now_date < end_date:
+				frappe.db.set_value("Web Page", page.name, "published", 1)
+
 
 def check_broken_links():
 	cnt = 0
