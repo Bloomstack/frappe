@@ -149,7 +149,14 @@ class WebPage(WebsiteGenerator):
 
 
 def check_publish_status():
-	web_pages = frappe.get_all("Web Page", fields=["name", "published", "start_date", "end_date"])
+	web_pages = frappe.db.sql("""
+								SELECT
+									name, published, start_date, end_date
+								FROM
+									`tabWeb Page`
+								WHERE
+									(start_date OR end_date) IS NOT NULL
+							""", as_dict=True)
 	now_date = get_datetime(now())
 
 	for page in web_pages:
@@ -160,7 +167,7 @@ def check_publish_status():
 			if not (start_date < now_date < end_date):
 				frappe.db.set_value("Web Page", page.name, "published", 0)
 		else:
-			if start_date < now_date < end_date:
+			if (start_date < now_date < end_date):
 				frappe.db.set_value("Web Page", page.name, "published", 1)
 
 
