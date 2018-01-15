@@ -131,24 +131,30 @@ class WebPage(WebsiteGenerator):
 			context.metatags["image"] = image
 
 	def check_publication_dates(self):
-		if self.valid_upto and self.valid_upto < self.valid_from:
+		if self.end_date and get_datetime(self.end_date) < get_datetime(self.start_date):
 			frappe.throw(_("End Date cannot be before Start Date!"))
 
-		if now() < self.valid_upto:
+		if now() < self.end_date:
+			# If current date is before end date,
+			# and web page is manually unpublished,
+			# set end date to current date.
 			if not self.published:
-				self.valid_upto = now()
+				self.end_date = get_datetime(now())
 		else:
-			if self.published and self.valid_upto is not None:
-				self.valid_upto = None
+			# If current date is after end date,
+			# and web page is manually published,
+			# flush out the end date.
+			if self.published and self.end_date is not None:
+				self.end_date = None
 
 
 def check_publish_status():
-	web_pages = frappe.get_all("Web Page", fields=["name", "published", "valid_from", "valid_upto"])
+	web_pages = frappe.get_all("Web Page", fields=["name", "published", "start_date", "end_date"])
 	now_date = get_datetime(now())
 
 	for page in web_pages:
-		start_date = page.valid_from or get_datetime("01-01-2000")
-		end_date = page.valid_upto or get_datetime("01-01-2100")
+		start_date = page.start_date or get_datetime("01-01-2000")
+		end_date = page.end_date or get_datetime("01-01-2100")
 
 		if page.published:
 			if not (start_date < now_date < end_date):
