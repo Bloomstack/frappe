@@ -220,19 +220,14 @@ frappe.search.AwesomeBar = Class.extend({
 		});
 	},
 
-	make_search_in_current: function(txt) {
+	make_search_in_current: function (txt) {
 		var route = frappe.get_route();
-		if(route[0]==="List" && txt.indexOf(" in") === -1) {
-			// search in title field
-			var meta = frappe.get_meta(frappe.container.page.list_view.doctype);
-			var search_field = meta.title_field || "name";
-			var options = {};
-			options[search_field] = ["like", "%" + txt + "%"];
+		if (route[0] === "List" && txt.indexOf(" in") === -1) {
 			this.options.push({
 				label: __('Find {0} in {1}', [txt.bold(), __(route[1]).bold()]),
 				value: __('Find {0} in {1}', [txt, __(route[1])]),
-				route_options: options,
-				onclick: function() {
+				route_options: {"name": ["like", "%" + txt + "%"]},
+				onclick: function () {
 					cur_list.refresh();
 				},
 				index: 90,
