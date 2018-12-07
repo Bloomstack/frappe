@@ -1,5 +1,6 @@
 {
  "allow_copy": 0, 
+ "allow_events_in_timeline": 0, 
  "allow_guest_to_view": 1, 
  "allow_import": 1, 
  "allow_rename": 0, 
@@ -13,6 +14,7 @@
  "fields": [
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -44,6 +46,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -76,6 +79,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -107,6 +111,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -137,6 +142,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -169,6 +175,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -201,6 +208,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -231,6 +239,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -262,6 +271,41 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
+   "allow_on_submit": 0, 
+   "bold": 0, 
+   "collapsible": 0, 
+   "columns": 0, 
+   "description": "References", 
+   "fieldname": "references", 
+   "fieldtype": "Table", 
+   "hidden": 0, 
+   "ignore_user_permissions": 0, 
+   "ignore_xss_filter": 0, 
+   "in_filter": 0, 
+   "in_global_search": 0, 
+   "in_list_view": 0, 
+   "in_standard_filter": 0, 
+   "label": "References", 
+   "length": 0, 
+   "no_copy": 0, 
+   "options": "Help Article Reference", 
+   "permlevel": 0, 
+   "precision": "", 
+   "print_hide": 0, 
+   "print_hide_if_no_value": 0, 
+   "read_only": 0, 
+   "remember_last_selected_value": 0, 
+   "report_hide": 0, 
+   "reqd": 0, 
+   "search_index": 0, 
+   "set_only_once": 0, 
+   "translatable": 0, 
+   "unique": 0
+  }, 
+  {
+   "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -293,6 +337,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -324,6 +369,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
+   "allow_in_quick_entry": 0, 
    "allow_on_submit": 0, 
    "bold": 0, 
    "collapsible": 0, 
@@ -368,7 +414,7 @@
  "issingle": 0, 
  "istable": 0, 
  "max_attachments": 0, 
- "modified": "2018-05-18 17:49:52.912440", 
+ "modified": "2018-12-07 05:17:05.783696", 
  "modified_by": "Administrator", 
  "module": "Website", 
  "name": "Help Article", 
@@ -441,5 +487,6 @@
  "sort_order": "DESC", 
  "title_field": "title", 
  "track_changes": 1, 
- "track_seen": 0
+ "track_seen": 0, 
+ "track_views": 0
 }
