@@ -6,8 +6,6 @@ import os
 import unittest
 
 import frappe
-from frappe.utils import cint
-from frappe.utils.testutils import add_custom_field, clear_custom_fields
 
 
 class TestDocument(unittest.TestCase):
@@ -221,20 +219,3 @@ class TestDocument(unittest.TestCase):
 		after_update = frappe.db.get_value(doctype, name, 'idx')
 
 		self.assertEqual(before_update + new_count, after_update)
-
-	def test_default_of_dependent_field(self):
-		add_custom_field('ToDo', 'parent_field', 'Data')
-
-		add_custom_field('ToDo', 'dependent_field', 'Data',
-			default='Some Data', depends_on='parent_field')
-
-		add_custom_field('ToDo', 'independent_field', 'Data',
-			default='Some Data')
-
-
-		doc = frappe.new_doc('ToDo')
-
-		self.assertFalse(doc.get('dependent_field'))
-		self.assertEqual(doc.get('independent_field'), 'Some Data')
-
-		clear_custom_fields('ToDo')
