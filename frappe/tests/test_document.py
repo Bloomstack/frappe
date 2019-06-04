@@ -2,9 +2,13 @@
 # MIT License. See license.txt
 from __future__ import unicode_literals
 
-import frappe, unittest, os
+import os
+import unittest
+
+import frappe
 from frappe.utils import cint
-from frappe.model.naming import revert_series_if_last, make_autoname, parse_naming_series
+from frappe.utils.testutils import add_custom_field, clear_custom_fields
+
 
 class TestDocument(unittest.TestCase):
 	def test_get_return_empty_list_for_table_field_if_none(self):
@@ -218,20 +222,19 @@ class TestDocument(unittest.TestCase):
 
 		self.assertEqual(before_update + new_count, after_update)
 
-	def test_naming_series(self):
-		data = ["TEST-", "TEST/17-18/.test_data./.####", "TEST.YYYY.MM.####"]
+	def test_default_of_dependent_field(self):
+		add_custom_field('ToDo', 'parent_field', 'Data')
 
-		for series in data:
-			name = make_autoname(series)
-			prefix = series
+		add_custom_field('ToDo', 'dependent_field', 'Data',
+			default='Some Data', depends_on='parent_field')
 
-			if ".#" in series:
-				prefix = series.rsplit('.',1)[0]
+		add_custom_field('ToDo', 'independent_field', 'Data',
+			default='Some Data')
 
-			prefix = parse_naming_series(prefix)
-			old_current = frappe.db.get_value('Series', prefix, "current", order_by="name")
 
-			revert_series_if_last(series, name)
-			new_current = cint(frappe.db.get_value('Series', prefix, "current", order_by="name"))
+		doc = frappe.new_doc('ToDo')
 
-			self.assertEqual(cint(old_current) - 1, new_current)
+		self.assertFalse(doc.get('dependent_field'))
+		self.assertEqual(doc.get('independent_field'), 'Some Data')
+
+		clear_custom_fields('ToDo')
