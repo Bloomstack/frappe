@@ -121,11 +121,6 @@ frappe.msgprint = function(msg, title) {
 			}
 		});
 
-		// setup and bind an action to the primary button
-		if (data.primary_action) {
-			msg_dialog.set_primary_action(__(data.primary_action.label || "Done"), data.primary_action.action);
-		}
-
 		msg_dialog.msg_area = $('<div class="msgprint">')
 			.appendTo(msg_dialog.body);
 
@@ -150,6 +145,8 @@ frappe.msgprint = function(msg, title) {
 	}
 
 	if (data.primary_action) {
+		// setup and bind an action to the primary button
+		msg_dialog.set_primary_action(__(data.primary_action.label || "Done"), data.primary_action.action);
 		msg_dialog.get_primary_btn().show();
 	} else {
 		msg_dialog.get_primary_btn().hide();
