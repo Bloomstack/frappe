@@ -115,18 +115,14 @@ frappe.request.call = function(opts) {
 				frappe.app.handle_session_expired();
 			} else if (xhr.responseJSON && xhr.responseJSON._error_message) {
 				let request_access;
-				let error_message = strip_html(xhr.responseJSON._error_message);
-
-				if (error_message.startsWith("Insufficient Permission")) {
-					if (opts.args.doctype == "DocType") {
-						request_access = {
-							label: "Request Access",
-							action: () => {
-								frappe.new_doc("Permission Request", {
-									user: frappe.session.user,
-									doc_type: opts.args.name
-								});
-							}
+				if (opts.args.doctype == "DocType") {
+					request_access = {
+						label: "Request Access",
+						action: () => {
+							frappe.new_doc("Permission Request", {
+								user: frappe.session.user,
+								doc_type: opts.args.name
+							});
 						}
 					}
 				}
