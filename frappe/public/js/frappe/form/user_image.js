@@ -60,15 +60,24 @@ frappe.ui.form.setup_user_image_event = function(frm) {
 	if(frm.meta.image_field) {
 		frappe.ui.form.on(frm.doctype, frm.meta.image_field, function(frm) {
 			frappe.ui.form.set_user_image(frm);
+			console.log("image name",  frm.doc[image_field])
 		});
+
 	}
+
 
 	// bind click on image_wrapper
 	frm.sidebar.image_wrapper.on('click', function() {
 		var field = frm.get_field(frm.meta.image_field);
+		var image_field = frm.meta.image_field;
+		console.log("image name1",  frm.doc[image_field])
 		if(!field.$input) {
 			field.make_input();
 		}
+		frm.attachments.remove_attachment_by_filename( frm.doc[image_field], function() {
+			frm.doc.docstatus == 1 ? frm.save('Update') : frm.save();
+		});
 		field.$input.trigger('click');
 	});
 }
+

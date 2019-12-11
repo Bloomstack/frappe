@@ -93,6 +93,7 @@ frappe.ui.form.Sidebar = Class.extend({
 	},
 	make_attachments: function() {
 		var me = this;
+		console.log("make attachment", me)
 		this.frm.attachments = new frappe.ui.form.Attachments({
 			parent: me.sidebar.find(".form-attachments"),
 			frm: me.frm
