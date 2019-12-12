@@ -29,7 +29,7 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 		var me = this;
 		if(this.frm) {
 			console.log("value", me.value);
-			me.frm.attachments.remove_attachment_by_filename(me.value, function() {
+			me.frm.attachments.remove_attachment_by_filename(me.value || me.frm.doc[me.frm.meta.image_field], function() {
 				me.parse_validate_and_set_in_model(null);
 				me.refresh();
 				me.frm.doc.docstatus == 1 ? me.frm.save('Update') : me.frm.save();
