@@ -28,11 +28,12 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 	clear_attachment: function() {
 		var me = this;
 		if(this.frm) {
-			me.frm.attachments.remove_attachment_by_filename(me.value || me.frm.doc[me.frm.meta.image_field], function() {
-				me.parse_validate_and_set_in_model(null);
-				me.refresh();
-				me.frm.doc.docstatus == 1 ? me.frm.save('Update') : me.frm.save();
-			});
+			const image_field =  me.frm.doc[me.frm.meta.image_field];
+			if(!image_field){
+				me.remove_attachments(me.value)
+			} else {
+				me.remove_attachments(image_field)
+			}
 		} else {
 			this.dataurl = null;
 			this.fileobj = null;
@@ -40,6 +41,16 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 			this.refresh();
 		}
 	},
+
+	remove_attachments: function (file_path) {
+		var me = this;
+		me.frm.attachments.remove_attachment_by_filename(file_path, function() {
+			me.parse_validate_and_set_in_model(null);
+			me.refresh();
+			me.frm.doc.docstatus == 1 ? me.frm.save('Update') : me.frm.save();
+		});
+	},
+
 	onclick: function() {
 		var me = this;
 		if(this.doc) {
