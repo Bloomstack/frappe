@@ -29,9 +29,11 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 		var me = this;
 		if(this.frm) {
 			// Check for image wrapper file path if not present gives attachment file url.
-			let file_path = me.frm.doc[me.frm.meta.image_field];
-			if(!file_path){
-				file_path = me.value;
+			let file_path;
+			if (this.frm.meta.image_field) {
+				file_path = this.frm.doc[this.frm.meta.image_field];
+			} else {
+				file_path = this.value;
 			}
 			me.frm.attachments.remove_attachment_by_filename(file_path, function() {
 				me.parse_validate_and_set_in_model(null);
