@@ -28,8 +28,8 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 	clear_attachment: function() {
 		var me = this;
 		if(this.frm) {
-			// Check for image wrapper file path if not present gives attachment file url.
 			let file_path;
+			// check if attached file is an image, otherwise default to current attached file
 			if (this.frm.meta.image_field) {
 				file_path = this.frm.doc[this.frm.meta.image_field];
 			} else {
