@@ -176,7 +176,6 @@ class User(Document):
 				and name in ({0}) limit 1""".format(', '.join(['%s'] * len(self.roles))),
 				[d.role for d in self.roles]))
 
-
 	def share_with_self(self):
 		if self.user_type=="System User":
 			frappe.share.add(self.doctype, self.name, self.name, write=1, share=1,
@@ -607,7 +606,7 @@ def has_email_account(email):
 
 @frappe.whitelist()
 def resend_welcome_email(email):
-	user_doc = frappe.get_doc("User",email)
+	user_doc = frappe.get_doc("User", email)
 	user_doc.send_welcome_mail_to_user()
 	
 @frappe.whitelist(allow_guest=False)
