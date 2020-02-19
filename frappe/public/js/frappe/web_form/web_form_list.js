@@ -145,6 +145,7 @@ export default class WebFormList {
 		let checkbox = document.createElement("input");
 		checkbox.type = "checkbox";
 		checkbox.id = "select-all";
+		checkbox.classList.add("regular-checkbox")
 		checkbox.onclick = event =>
 			this.toggle_select_all(event.target.checked);
 
@@ -287,6 +288,7 @@ frappe.ui.WebFormListRow = class WebFormListRow {
 
 		this.checkbox = document.createElement("input");
 		this.checkbox.type = "checkbox";
+		this.checkbox.classList.add('regular-checkbox');
 		this.checkbox.onclick = event => {
 			this.toggle_select(event.target.checked);
 			event.stopImmediatePropagation();
