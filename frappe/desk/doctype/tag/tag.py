@@ -41,6 +41,7 @@ def get_tagged_docs(doctype, tag):
 def get_tags(doctype, txt):
 	tag = frappe.get_list("Tag", filters=[["name", "like", "%{}%".format(txt)]])
 	tags = [t.name for t in tag]
+	print("Sorted Data",)
 
 	return sorted(filter(lambda t: t and txt.lower() in t.lower(), list(set(tags))))
 
