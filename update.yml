@@ -1,30 +1,10 @@
 - hosts: localhost
   tasks:
-    - name: Check and update staging sites
-      block:
-        - name: Check for maintenance mode
-          wait_for:
-            path: "{{ item }}"
-            search_regex: '"maintenance_mode": 0'
-            timeout: 600
-          with_items:
-            - /home/frappe/frappe-bench/sites/common_site_config.json
-            - /home/frappe/frappe-demo/sites/common_site_config.json
-        - name: Update Staging Sites
-          command: bench update --reset
-          args:
-            chdir: /home/frappe/frappe-bench
-    - name: Check and update demo sites
-      block:
-        - name: Check for maintenance mode
-          wait_for:
-            path: "{{ item }}"
-            search_regex: '"maintenance_mode": 0'
-            timeout: 600
-          with_items:
-            - /home/frappe/frappe-bench/sites/common_site_config.json
-            - /home/frappe/frappe-demo/sites/common_site_config.json
-        - name: Update Demo Sites
-          command: bench update --reset
-          args:
-            chdir: /home/frappe/frappe-demo
+    - name: Update Staging Sites
+      command: flock /tmp/bench.lock -c "bench update"
+      args:
+        chdir: /home/frappe/frappe-bench
+    - name: Update Demo Sites
+      command: flock /tmp/bench.lock -c "bench update"
+      args:
+        chdir: /home/frappe/frappe-demo
