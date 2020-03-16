@@ -20,6 +20,7 @@ export default class WebForm extends frappe.ui.FieldGroup {
 	make() {
 		super.make();
 		this.set_field_values();
+		this.toggle_form_edit();
 		if (this.introduction_text) this.set_form_description(this.introduction_text);
 		if (this.allow_print && !this.is_new) this.setup_print_button();
 		if (this.allow_delete && !this.is_new) this.setup_delete_button();
@@ -42,6 +43,12 @@ export default class WebForm extends frappe.ui.FieldGroup {
 	set_field_values() {
 		if (this.doc.name) this.set_values(this.doc);
 		else return;
+	}
+
+	toggle_form_edit() {
+		if (!this.is_new && this.allow_edit === 0) {
+			this.fields.map(field => this.set_df_property(field.fieldname, "read_only", 1));
+		}
 	}
 
 	set_default_values() {
@@ -86,7 +93,11 @@ export default class WebForm extends frappe.ui.FieldGroup {
 	}
 
 	setup_delete_button() {
-		this.add_button_to_header("Delete", "danger", () => this.delete());
+		this.add_button_to_header(
+			'<i class="fa fa-trash" aria-hidden="true"></i>',
+			"light",
+			() => this.delete()
+		);
 	}
 
 	setup_print_button() {
@@ -151,10 +162,10 @@ export default class WebForm extends frappe.ui.FieldGroup {
 	}
 
 	print() {
-		window.location.href = `/printview?
+		window.open(`/printview?
 			doctype=${this.doc_type}
 			&name=${this.doc.name}
-			&format=${this.print_format || "Standard"}`;
+			&format=${this.print_format || "Standard"}`, '_blank');
 	}
 
 	cancel() {

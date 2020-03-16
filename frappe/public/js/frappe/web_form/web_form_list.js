@@ -85,6 +85,10 @@ export default class WebFormList {
 	}
 
 	fetch_data() {
+		if (frappe.system_user === "yes") {
+			this.filters.raised_by = frappe.session.user;
+		}
+
 		return frappe.call({
 			method: "frappe.www.list.get_list_data",
 			args: {
@@ -201,7 +205,7 @@ export default class WebFormList {
 			() => (window.location.href = window.location.pathname + "?new=1")
 		);
 
-		if (this.rows.length <= this.page_length) {
+		if (this.rows.length >= this.page_length) {
 			addButton(footer, "more", "secondary", false, "More", () =>  this.more());
 		}
 
