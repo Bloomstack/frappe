@@ -9,7 +9,9 @@ frappe.ui.SortSelector = Class.extend({
 	//		doctype: (optional)
 	init: function(opts) {
 		$.extend(this, opts);
+		this.sort_order2 = "ASC";
 		this.labels = {};
+		this.sort_by2
 		this.make();
 	},
 	make: function() {
@@ -19,13 +21,12 @@ frappe.ui.SortSelector = Class.extend({
 		this.bind_events();
 	},
 	bind_events: function() {
-		var me = this;
+			var me = this;
 
 		// order
 		this.wrapper.find('.btn-order').on('click', function() {
 			var btn = $(this);
 			var order = $(this).attr('data-value')==='desc' ? 'asc' : 'desc';
-
 			btn.attr('data-value', order);
 			me.sort_order = order;
 			btn.find('.octicon')
@@ -34,6 +35,20 @@ frappe.ui.SortSelector = Class.extend({
 			(me.onchange || me.change)(me.sort_by, me.sort_order);
 		});
 
+
+		this.wrapper.find('.btn-order2').on('click', function(callback) { 
+			var btn = $(this);
+			
+			var order = $(this).attr('data-value2')==='desc' ? 'asc' : 'desc';
+			btn.attr('data-value2', order);
+			me.sort_order2 = order;
+			btn.find('.octicon')
+			.removeClass('octicon-arrow-' + (order==='asc' ? 'down' : 'up'))
+			.addClass('octicon-arrow-' + (order==='desc' ? 'down' : 'up'));
+			(me.onchange || me.change)(me.sort_by2, callback.target.dataset.value2)	
+		});
+
+	
 		// select field
 		this.wrapper.find('.dropdown a.option').on('click', function() {
 			me.sort_by = $(this).attr('data-value');
@@ -41,29 +56,40 @@ frappe.ui.SortSelector = Class.extend({
 			(me.onchange || me.change)(me.sort_by, me.sort_order);
 		});
 
+		this.wrapper.find('.dropdown2 a.option').on('click', function(callback) {
+			me.sort_by2 = $(this).attr('data-value2');
+			me.wrapper.find('.dropdown2 .dropdown-text').html($(this).html()).context = callback.target.dataset.value2;
+			(me.onchange || me.change)(callback.target.dataset.value2, me.sort_order)
+		});
+		
+		
 	},
 	prepare_args: function() {
 		var me = this;
 		if(!this.args) {
 			this.args = {};
 		}
-
 		// args as string
 		if(this.args && typeof this.args === 'string') {
 			var order_by = this.args;
+			
 			this.args = {}
-
 			if (order_by.includes('`.`')) {
 				// scrub table name (separated by dot), like `tabTime Log`.`modified` desc`
 				order_by = order_by.split('.')[1];
 			}
 
 			var parts = order_by.split(' ');
+			console.log({parts});
+			
 			if (parts.length === 2) {
-				var fieldname = strip(parts[0], '`');
-
+				var fieldname = strip(parts[0], '`'); 
+				console.log({fieldname});
+				
 				this.args.sort_by = fieldname;
+				this.args.sort_by2 = fieldname;
 				this.args.sort_order = parts[1];
+				this.args.sort_order2 = parts[1]
 			}
 		}
 
@@ -85,28 +111,44 @@ frappe.ui.SortSelector = Class.extend({
 				return true;
 			});
 		}
-
+		if(this.args.sort_by && !this.args.sort_by_label2) {
+			this.args.options.every(function(o) {
+				if(o.fieldname===me.args.sort_by2) {
+					me.args.sort_by_label2= o.label;
+					
+					return false;
+				}
+				return true;
+			});
+		}
 	},
 	setup_from_doctype: function() {
 		var me = this;
 		var meta = frappe.get_meta(this.doctype);
 		if (!meta) return;
 
-		var { meta_sort_field, meta_sort_order } = this.get_meta_sort_field();
+		var { meta_sort_field,meta_sort_field2, meta_sort_order } = this.get_meta_sort_field();
 
 		if(!this.args.sort_by) {
 			if(meta_sort_field) {
-				this.args.sort_by = meta_sort_field;
+				this.args.sort_by= meta_sort_field;
+				 this.args.sort_by2 = meta_sort_field2;
 				this.args.sort_order = meta_sort_order;
 			} else {
 				// default
 				this.args.sort_by = 'modified';
 				this.args.sort_order = 'desc';
 			}
+
 		}
+
 
 		if(!this.args.sort_by_label) {
 			this.args.sort_by_label = this.get_label(this.args.sort_by);
+		}
+
+		if(!this.args.sort_by_label2) {
+			this.args.sort_by_label2 = this.get_label(this.args.sort_by);
 		}
 
 		if(!this.args.options) {
@@ -120,6 +162,7 @@ frappe.ui.SortSelector = Class.extend({
 				_options.push({'fieldname': meta.title_field});
 			}
 
+			
 			// bold or mandatory
 			meta.fields.forEach(function(df) {
 				if(df.mandatory || df.bold) {
@@ -127,9 +170,9 @@ frappe.ui.SortSelector = Class.extend({
 				}
 			});
 
+			
 			// meta sort field
 			if(meta_sort_field) _options.push({ 'fieldname': meta_sort_field });
-
 			// more default options
 			_options.push(
 				{'fieldname': 'name'},
@@ -152,22 +195,28 @@ frappe.ui.SortSelector = Class.extend({
 
 		// set default
 		this.sort_by = this.args.sort_by;
+		this.sort_by2=this.args.sort_by;
 		this.sort_order = this.args.sort_order;
+		this.sort_order2=this.args.sort_order;
+
 	},
 	get_meta_sort_field: function() {
 		var meta = frappe.get_meta(this.doctype);
-
+		
 		if (!meta) {
 			return {
 				meta_sort_field: null,
+				// meta_sort_field2: null,
 				meta_sort_order: null
 			}
 		}
 
 		if(meta.sort_field && meta.sort_field.includes(',')) {
 			var parts = meta.sort_field.split(',')[0].split(' ');
+			
 			return {
 				meta_sort_field: parts[0],
+				meta_sort_field2: parts[1],
 				meta_sort_order: parts[1]
 			}
 		} else {
@@ -186,7 +235,6 @@ frappe.ui.SortSelector = Class.extend({
 		}
 	},
 	get_sql_string: function() {
-		// build string like `tabTask`.`subject` desc
-		return '`tab' + this.doctype + '`.`' + this.sort_by + '` ' +  this.sort_order;
+		return ('`tab' + this.doctype + '`.`' + this.sort_by + '` ' +  this.sort_order) + (', `tab' + this.doctype + '`.`' + this.sort_by2 + '` ' +  this.sort_order2);
 	}
 })

@@ -1,9 +1,15 @@
 <div class="sort-selector">
-	<div class="dropdown">
+		<span class="dropdown">
 		<a class="text-muted dropdown-toggle small"
 			data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
 			<span class="dropdown-text">{{ __(sort_by_label) }}</span>
 		</a>
+		<button class="btn btn-default btn-xs btn-order"
+		data-value="{{ sort_order }}">
+			<span class="octicon text-muted
+				octicon-arrow-{{ sort_order==="desc" ? "down " : "up " }}">
+			</span>
+		</button>
 		<ul class="dropdown-menu">
 			{% for value in options %}
 			<li>
@@ -13,11 +19,26 @@
 			</li>
 			{% endfor %}
 		</ul>
-	</div>
-	<button class="btn btn-default btn-xs btn-order"
-		data-value="{{ sort_order }}">
-		<span class="octicon text-muted
-			octicon-arrow-{{ sort_order==="desc" ? "down " : "up " }}">
-		</span>
-	</button>
+	</span>
+		<span class="dropdown2">
+			<a class="text-muted dropdown-toggle small"
+				data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+				<span class="dropdown-text">{{ __(sort_by_label2) }}</span> 
+			</a>
+		<button class="btn btn-default btn-xs btn-order2"
+		data-value2="{{ sort_order }}">
+			<span class="octicon text-muted
+				octicon-arrow-{{ sort_order==="desc" ? "down " : "up " }}">
+			</span>
+		</button>
+		<ul class="dropdown-menu">
+			{% for value in options %}
+			<li>
+				<a class="option" data-value2="{{ value.fieldname }}">
+					{{ __(value.label) }}
+				</a>
+			</li>
+			{% endfor %}
+		</ul>
+	</span>
 </div>
