@@ -53,18 +53,6 @@ class TestEvent(unittest.TestCase):
 		self.assertFalse("_Test Event 3" in subjects)
 		self.assertFalse("_Test Event 2" in subjects)
 
-	def test_revert_logic(self):
-		ev = frappe.get_doc(self.test_records[0]).insert()
-		name = ev.name
-
-		frappe.delete_doc("Event", ev.name)
-
-		# insert again
-		ev = frappe.get_doc(self.test_records[0]).insert()
-
-		# the name should be same!
-		self.assertEqual(ev.name, name)
-
 	def test_assign(self):
 		from frappe.desk.form.assign_to import add
 
@@ -93,10 +81,10 @@ class TestEvent(unittest.TestCase):
 
 		self.assertEqual(set(json.loads(ev._assign)), set(["test@example.com", self.test_user]))
 
-		# close an assignment
+		# Remove an assignment
 		todo = frappe.get_doc("ToDo", {"reference_type": ev.doctype, "reference_name": ev.name,
 			"owner": self.test_user})
-		todo.status = "Closed"
+		todo.status = "Cancelled"
 		todo.save()
 
 		ev = frappe.get_doc("Event", ev.name)
@@ -112,7 +100,7 @@ class TestEvent(unittest.TestCase):
 			"starts_on": "2014-02-01",
 			"event_type": "Public",
 			"repeat_this_event": 1,
-			"repeat_on": "Every Year"
+			"repeat_on": "Yearly"
 		})
 		ev.insert()
 

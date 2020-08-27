@@ -8,7 +8,7 @@ import smtplib
 import email.utils
 import _socket, sys
 from frappe import _
-from frappe.utils import cint, parse_addr
+from frappe.utils import cint, cstr, parse_addr
 
 def send(email, append_to=None, retry=1):
 	"""Deprecated: Send the message or add it to Outbox Email"""
@@ -47,9 +47,9 @@ def get_outgoing_email_account(raise_exception_not_set=True, append_to=None, sen
 	if not getattr(frappe.local, "outgoing_email_account", None):
 		frappe.local.outgoing_email_account = {}
 
-	if not frappe.local.outgoing_email_account.get(append_to) \
-		or frappe.local.outgoing_email_account.get(sender_email_id) \
-		or frappe.local.outgoing_email_account.get("default"):
+	if not (frappe.local.outgoing_email_account.get(append_to)
+		or frappe.local.outgoing_email_account.get(sender_email_id)
+		or frappe.local.outgoing_email_account.get("default")):
 		email_account = None
 
 		if append_to:
@@ -82,7 +82,7 @@ def get_outgoing_email_account(raise_exception_not_set=True, append_to=None, sen
 			email_account = get_default_outgoing_email_account(raise_exception_not_set=raise_exception_not_set)
 
 		if not email_account and raise_exception_not_set and cint(frappe.db.get_single_value('System Settings', 'setup_complete')):
-			frappe.throw(_("Please setup default Email Account from Setup > Email > Email Account"),
+			frappe.throw(_("Please setup a default <a href=#List/Email%20Account/List>Email Account</a> for sending"),
 				frappe.OutgoingEmailError)
 
 		if email_account:
@@ -109,7 +109,8 @@ def get_default_outgoing_email_account(raise_exception_not_set=True):
 		 "mail_password": "Super.Secret.Password",
 		 "auto_email_id": "emails@example.com",
 		 "email_sender_name": "Example Notifications",
-		 "always_use_account_email_id_as_sender": 0
+		 "always_use_account_email_id_as_sender": 0,
+		 "always_use_account_name_as_sender_name": 0
 		}
 	'''
 	email_account = _get_email_account({"enable_outgoing": 1, "default_outgoing": 1})
@@ -128,7 +129,8 @@ def get_default_outgoing_email_account(raise_exception_not_set=True):
 			"login_id": frappe.conf.get("mail_login"),
 			"email_id": frappe.conf.get("auto_email_id") or frappe.conf.get("mail_login") or 'notifications@example.com',
 			"password": frappe.conf.get("mail_password"),
-			"always_use_account_email_id_as_sender": frappe.conf.get("always_use_account_email_id_as_sender", 0)
+			"always_use_account_email_id_as_sender": frappe.conf.get("always_use_account_email_id_as_sender", 0),
+			"always_use_account_name_as_sender_name": frappe.conf.get("always_use_account_name_as_sender_name", 0)
 		})
 		email_account.from_site_config = True
 		email_account.name = frappe.conf.get("email_sender_name") or "Frappe"
@@ -182,6 +184,7 @@ class SMTPServer:
 			self.use_tls = self.email_account.use_tls
 			self.sender = self.email_account.email_id
 			self.always_use_account_email_id_as_sender = cint(self.email_account.get("always_use_account_email_id_as_sender"))
+			self.always_use_account_name_as_sender_name = cint(self.email_account.get("always_use_account_name_as_sender_name"))
 
 	@property
 	def sess(self):
@@ -191,7 +194,7 @@ class SMTPServer:
 
 		# check if email server specified
 		if not getattr(self, 'server'):
-			err_msg = _('Email Account not setup. Please create a new Email Account from Setup > Email > Email Account')
+			err_msg = _("Email Account not setup for sending. Please create a new <a href=#List/Email%20Account/List>Email Account</a>.")
 			frappe.msgprint(err_msg)
 			raise frappe.OutgoingEmailError(err_msg)
 
@@ -199,7 +202,7 @@ class SMTPServer:
 			if self.use_tls and not self.port:
 				self.port = 587
 
-			self._sess = smtplib.SMTP((self.server or "").encode('utf-8'),
+			self._sess = smtplib.SMTP(cstr(self.server or ""),
 				cint(self.port) or None)
 
 			if not self._sess:

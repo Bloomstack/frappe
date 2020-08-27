@@ -7,6 +7,7 @@ from frappe import msgprint, _
 import json
 import csv
 import six
+import requests
 from six import StringIO, text_type, string_types
 from frappe.utils import encode, cstr, cint, flt, comma_or
 
@@ -15,8 +16,8 @@ def read_csv_content_from_uploaded_file(ignore_encoding=False):
 		with open(frappe.uploaded_file, "r") as upfile:
 			fcontent = upfile.read()
 	else:
-		from frappe.utils.file_manager import get_uploaded_content
-		fname, fcontent = get_uploaded_content()
+		_file = frappe.new_doc("File")
+		fcontent = _file.get_uploaded_content()
 	return read_csv_content(fcontent, ignore_encoding)
 
 def read_csv_content_from_attached_file(doc):
@@ -30,8 +31,8 @@ def read_csv_content_from_attached_file(doc):
 		raise Exception
 
 	try:
-		from frappe.utils.file_manager import get_file
-		fname, fcontent = get_file(fileid)
+		_file = frappe.get_doc("File", fileid)
+		fcontent = _file.get_content()
 		return read_csv_content(fcontent, frappe.form_dict.get('ignore_encoding_errors'))
 	except Exception:
 		frappe.throw(_("Unable to open attached file. Did you export it as CSV?"), title=_('Invalid CSV Format'))
@@ -100,6 +101,10 @@ def to_csv(data):
 
 	return writer.getvalue()
 
+def build_csv_response(data, filename):
+	frappe.response["result"] = cstr(to_csv(data))
+	frappe.response["doctype"] = filename
+	frappe.response["type"] = "csv"
 
 class UnicodeWriter:
 	def __init__(self, encoding="utf-8"):
@@ -168,3 +173,43 @@ def import_doc(d, doctype, overwrite, row_idx, submit=False, ignore_links=False)
 
 def getlink(doctype, name):
 	return '<a href="#Form/%(doctype)s/%(name)s">%(name)s</a>' % locals()
+
+def get_csv_content_from_google_sheets(url):
+	# https://docs.google.com/spreadsheets/d/{sheetid}}/edit#gid={gid}
+	validate_google_sheets_url(url)
+	# get gid, defaults to first sheet
+	if "gid=" in url:
+		gid = url.rsplit('gid=', 1)[1]
+	else:
+		gid = 0
+	# remove /edit path
+	url = url.rsplit('/edit', 1)[0]
+	# add /export path,
+	url = url + '/export?format=csv&gid={0}'.format(gid)
+
+	headers = {
+		'Accept': 'text/csv'
+	}
+	response = requests.get(url, headers=headers)
+
+	if response.ok:
+		# if it returns html, it couldn't find the CSV content
+		# because of invalid url or no access
+		if response.text.strip().endswith('</html>'):
+			frappe.throw(
+				_('Google Sheets URL is invalid or not publicly accessible.'),
+				title=_("Invalid URL")
+			)
+		return response.content
+	elif response.status_code == 400:
+		frappe.throw(_('Google Sheets URL must end with "gid={number}". Copy and paste the URL from the browser address bar and try again.'),
+			title=_("Incorrect URL"))
+	else:
+		response.raise_for_status()
+
+def validate_google_sheets_url(url):
+	if "docs.google.com/spreadsheets" not in url:
+		frappe.throw(
+			_('"{0}" is not a valid Google Sheets URL').format(url),
+			title=_("Invalid URL"),
+		)

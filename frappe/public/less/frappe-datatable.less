@@ -35,6 +35,8 @@
 
 .dt-scrollable {
 	max-height: calc(100vh - 250px);
+	min-height: 100px;
+	scrollbar-width: thin;
 }
 
 table td.dt-cell {
@@ -58,6 +60,10 @@ table td.dt-cell {
 	.dt-row[data-is-filter] {
 		display: flex !important;
 	}
+}
+
+.dt-row {
+	height: 35px;
 }
 
 .dt-row.dt-row-totalRow {

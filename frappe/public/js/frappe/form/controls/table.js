@@ -30,14 +30,14 @@ frappe.ui.form.ControlTable = frappe.ui.form.Control.extend({
 			var row_idx = locals[cur_doctype][cur_row_docname].idx;
 			var clipboardData, pastedData;
 			// Get pasted data via clipboard API
-			clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData;
+			clipboardData = e.clipboardData || window.clipboardData || e.originalEvent.clipboardData;
 			pastedData = clipboardData.getData('Text');
 			if (!pastedData) return;
 			var data = frappe.utils.csv_to_array(pastedData,'\t');
 			if (data.length === 1 & data[0].length === 1) return;
 			if (data.length > 100){
 				data = data.slice(0, 100);
-				frappe.msgprint('for performance, only the first 100 rows processed!');
+				frappe.msgprint(__('For performance, only the first 100 rows were processed.'));
 			}
 			var fieldnames = [];
 			var get_field = function(name_or_label){
@@ -87,7 +87,7 @@ frappe.ui.form.ControlTable = frappe.ui.form.Control.extend({
 			});
 			frappe.hide_progress();
 			return false; // Prevent the default handler from running.
-		})		
+		});
 	},
 	refresh_input: function() {
 		this.grid.refresh();
@@ -101,6 +101,9 @@ frappe.ui.form.ControlTable = frappe.ui.form.Control.extend({
 		//
 	},
 	validate: function() {
-		return true
+		return this.get_value();
+	},
+	check_all_rows() {
+		this.$wrapper.find('.grid-row-check')[0].click();
 	}
 });

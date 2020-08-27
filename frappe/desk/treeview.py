@@ -12,6 +12,8 @@ def get_all_nodes(doctype, parent, tree_method, **filters):
 	if 'cmd' in filters:
 		del filters['cmd']
 
+	filters.pop('data', None)
+
 	tree_method = frappe.get_attr(tree_method)
 
 	if not tree_method in frappe.whitelisted:
@@ -54,9 +56,6 @@ def get_children(doctype, parent='', **filters):
 def add_node():
 	args = make_tree_args(**frappe.form_dict)
 	doc = frappe.get_doc(args)
-
-	if args.doctype == "Sales Person":
-		doc.employee = frappe.form_dict.get('employee')
 
 	doc.save()
 

@@ -3,24 +3,26 @@
 
 from __future__ import unicode_literals
 import frappe
+import sys
 from six.moves import html_parser as HTMLParser
 import smtplib, quopri, json
-from frappe import msgprint, throw, _, safe_decode
+from frappe import msgprint, _, safe_decode, safe_encode
 from frappe.email.smtp import SMTPServer, get_outgoing_email_account
 from frappe.email.email_body import get_email, get_formatted_html, add_attachment
 from frappe.utils.verified_command import get_signed_params, verify_request
 from html2text import html2text
-from frappe.utils import get_url, nowdate, encode, now_datetime, add_days, split_emails, cstr, cint
-from frappe.utils.file_manager import get_file
+from frappe.utils import get_url, nowdate, now_datetime, add_days, split_emails, cstr, cint
 from rq.timeouts import JobTimeoutException
 from frappe.utils.scheduler import log
-from six import text_type, string_types
+from six import text_type, string_types, PY3
+from email.parser import Parser
+
 
 class EmailLimitCrossedError(frappe.ValidationError): pass
 
 def send(recipients=None, sender=None, subject=None, message=None, text_content=None, reference_doctype=None,
 		reference_name=None, unsubscribe_method=None, unsubscribe_params=None, unsubscribe_message=None,
-		attachments=None, reply_to=None, cc=[], bcc=[], message_id=None, in_reply_to=None, send_after=None,
+		attachments=None, reply_to=None, cc=None, bcc=None, message_id=None, in_reply_to=None, send_after=None,
 		expose_recipients=None, send_priority=1, communication=None, now=False, read_receipt=None,
 		queue_separately=False, is_notification=False, add_unsubscribe_link=1, inline_images=None,
 		header=None, print_letterhead=False):
@@ -54,6 +56,11 @@ def send(recipients=None, sender=None, subject=None, message=None, text_content=
 	if not recipients and not cc:
 		return
 
+	if not cc:
+		cc = []
+	if not bcc:
+		bcc = []
+
 	if isinstance(recipients, string_types):
 		recipients = split_emails(recipients)
 
@@ -70,27 +77,41 @@ def send(recipients=None, sender=None, subject=None, message=None, text_content=
 	if not sender or sender == "Administrator":
 		sender = email_account.default_sender
 
-	check_email_limit(recipients)
-
 	if not text_content:
 		try:
 			text_content = html2text(message)
 		except HTMLParser.HTMLParseError:
 			text_content = "See html attachment"
 
-	if reference_doctype and reference_name:
-		unsubscribed = [d.email for d in frappe.db.get_all("Email Unsubscribe", "email",
-			{"reference_doctype": reference_doctype, "reference_name": reference_name})]
+	recipients = list(set(recipients))
+	cc = list(set(cc))
 
-		unsubscribed += [d.email for d in frappe.db.get_all("Email Unsubscribe", "email",
-			{"global_unsubscribe": 1})]
-	else:
-		unsubscribed = []
+	all_ids = tuple(recipients + cc)
 
-	recipients = [r for r in list(set(recipients)) if r and r not in unsubscribed]
+	unsubscribed = frappe.db.sql_list('''
+		SELECT
+			distinct email
+		from
+			`tabEmail Unsubscribe`
+		where
+			email in %(all_ids)s
+			and (
+				(
+					reference_doctype = %(reference_doctype)s
+					and reference_name = %(reference_name)s
+				)
+				or global_unsubscribe = 1
+			)
+	''', {
+		'all_ids': all_ids,
+		'reference_doctype': reference_doctype,
+		'reference_name': reference_name,
+	})
+
+	recipients = [r for r in recipients if r and r not in unsubscribed]
 
 	if cc:
-		cc = [r for r in list(set(cc)) if r and r not in unsubscribed]
+		cc = [r for r in cc if r and r not in unsubscribed]
 
 	if not recipients and not cc:
 		# Recipients may have been unsubscribed, exit quietly
@@ -149,7 +170,7 @@ def add(recipients, sender, subject, **kwargs):
 			if not email_queue:
 				email_queue = get_email_queue([r], sender, subject, **kwargs)
 				if kwargs.get('now'):
-					email_queue(email_queue.name, now=True)
+					send_one(email_queue.name, now=True)
 			else:
 				duplicate = email_queue.get_duplicate([r])
 				duplicate.insert(ignore_permissions=True)
@@ -175,7 +196,8 @@ def get_email_queue(recipients, sender, subject, **kwargs):
 			if att.get('fid'):
 				_attachments.append(att)
 			elif att.get("print_format_attachment") == 1:
-				att['lang'] = frappe.local.lang
+				if not att.get('lang', None):
+					att['lang'] = frappe.local.lang
 				att['print_letterhead'] = kwargs.get('print_letterhead')
 				_attachments.append(att)
 		e.attachments = json.dumps(_attachments)
@@ -207,8 +229,9 @@ def get_email_queue(recipients, sender, subject, **kwargs):
 
 	except frappe.InvalidEmailAddressError:
 		# bad Email Address - don't add to queue
-		frappe.log_error('Invalid Email ID Sender: {0}, Recipients: {1}'.format(mail.sender,
-			', '.join(mail.recipients)), 'Email Not Sent')
+		import traceback
+		frappe.log_error('Invalid Email ID Sender: {0}, Recipients: {1}, \nTraceback: {2} '.format(mail.sender,
+			', '.join(mail.recipients), traceback.format_exc()), 'Email Not Sent')
 
 	recipients = list(set(recipients + kwargs.get('cc', []) + kwargs.get('bcc', [])))
 	e.set_recipients(recipients)
@@ -226,46 +249,15 @@ def get_email_queue(recipients, sender, subject, **kwargs):
 
 	return e
 
-def check_email_limit(recipients):
-	# if using settings from site_config.json, check email limit
-	# No limit for own email settings
-	smtp_server = SMTPServer()
-
-	if (smtp_server.email_account
-		and getattr(smtp_server.email_account, "from_site_config", False)
-		or frappe.flags.in_test):
-
-		monthly_email_limit = frappe.conf.get('limits', {}).get('emails')
-		daily_email_limit = cint(frappe.conf.get('limits', {}).get('daily_emails'))
-
-		if frappe.flags.in_test:
-			monthly_email_limit = 500
-			daily_email_limit = 50
-
-		if daily_email_limit:
-			# get count of sent mails in last 24 hours
-			today = get_emails_sent_today()
-			if (today + len(recipients)) > daily_email_limit:
-				throw(_("Cannot send this email. You have crossed the sending limit of {0} emails for this day.").format(daily_email_limit),
-					EmailLimitCrossedError)
-
-		if not monthly_email_limit:
-			return
-
-		# get count of mails sent this month
-		this_month = get_emails_sent_this_month()
-
-		if (this_month + len(recipients)) > monthly_email_limit:
-			throw(_("Cannot send this email. You have crossed the sending limit of {0} emails for this month.").format(monthly_email_limit),
-				EmailLimitCrossedError)
-
 def get_emails_sent_this_month():
-	return frappe.db.sql("""select count(name) from `tabEmail Queue` where
-		status='Sent' and MONTH(creation)=MONTH(CURDATE())""")[0][0]
+	return frappe.db.sql("""
+		SELECT COUNT(*) FROM `tabEmail Queue`
+		WHERE `status`='Sent' AND EXTRACT(YEAR_MONTH FROM `creation`) = EXTRACT(YEAR_MONTH FROM NOW())
+	""")[0][0]
 
 def get_emails_sent_today():
-	return frappe.db.sql("""select count(name) from `tabEmail Queue` where
-		status='Sent' and creation>DATE_SUB(NOW(), INTERVAL 24 HOUR)""")[0][0]
+	return frappe.db.sql("""SELECT COUNT(`name`) FROM `tabEmail Queue` WHERE
+		`status` in ('Sent', 'Not Sent', 'Sending') AND `creation` > (NOW() - INTERVAL '24' HOUR)""")[0][0]
 
 def get_unsubscribe_message(unsubscribe_message, expose_recipients):
 	if unsubscribe_message:
@@ -332,13 +324,12 @@ def unsubscribe(doctype, name, email):
 
 def return_unsubscribed_page(email, doctype, name):
 	frappe.respond_as_web_page(_("Unsubscribed"),
-		_("{0} has left the conversation in {1} {2}").format(email, _(doctype), name),
+		_("You have successfully unsubscribed"),
 		indicator_color='green')
 
 def flush(from_test=False):
 	"""flush email queue, every time: called from scheduler"""
 	# additional check
-	check_email_limit([])
 
 	auto_commit = not from_test
 	if frappe.are_emails_muted():
@@ -421,7 +412,7 @@ def send_one(email, smtpserver=None, auto_commit=True, now=False, from_test=Fals
 
 			message = prepare_message(email, recipient.recipient, recipients_list)
 			if not frappe.flags.in_test:
-				smtpserver.sess.sendmail(email.sender, recipient.recipient, encode(message))
+				smtpserver.sess.sendmail(email.sender, recipient.recipient, message)
 
 			recipient.status = "Sent"
 			frappe.db.sql("""update `tabEmail Queue Recipient` set status='Sent', modified=%s where name=%s""",
@@ -444,6 +435,7 @@ def send_one(email, smtpserver=None, auto_commit=True, now=False, from_test=Fals
 			smtplib.SMTPConnectError,
 			smtplib.SMTPHeloError,
 			smtplib.SMTPAuthenticationError,
+			smtplib.SMTPRecipientsRefused,
 			JobTimeoutException):
 
 		# bad connection/timeout, retry later
@@ -525,36 +517,41 @@ def prepare_message(email, recipient, recipients_list):
 
 	message = (message and message.encode('utf8')) or ''
 	message = safe_decode(message)
-	if not email.attachments:
-		return message
 
-	# On-demand attachments
-	from email.parser import Parser
+	if PY3:
+		from email.policy import SMTPUTF8
+		message = Parser(policy=SMTPUTF8).parsestr(message)
+	else:
+		message = Parser().parsestr(message)
 
-	msg_obj = Parser().parsestr(message)
-	attachments = json.loads(email.attachments)
+	if email.attachments:
+		# On-demand attachments
 
-	for attachment in attachments:
-		if attachment.get('fcontent'): continue
+		attachments = json.loads(email.attachments)
 
-		fid = attachment.get("fid")
-		if fid:
-			fname, fcontent = get_file(fid)
-			attachment.update({
-				'fname': fname,
-				'fcontent': fcontent,
-				'parent': msg_obj
-			})
-			attachment.pop("fid", None)
-			add_attachment(**attachment)
+		for attachment in attachments:
+			if attachment.get('fcontent'):
+				continue
 
-		elif attachment.get("print_format_attachment") == 1:
-			attachment.pop("print_format_attachment", None)
-			print_format_file = frappe.attach_print(**attachment)
-			print_format_file.update({"parent": msg_obj})
-			add_attachment(**print_format_file)
+			fid = attachment.get("fid")
+			if fid:
+				_file = frappe.get_doc("File", fid)
+				fcontent = _file.get_content()
+				attachment.update({
+					'fname': _file.file_name,
+					'fcontent': fcontent,
+					'parent': message
+				})
+				attachment.pop("fid", None)
+				add_attachment(**attachment)
 
-	return msg_obj.as_string()
+			elif attachment.get("print_format_attachment") == 1:
+				attachment.pop("print_format_attachment", None)
+				print_format_file = frappe.attach_print(**attachment)
+				print_format_file.update({"parent": message})
+				add_attachment(**print_format_file)
+
+	return safe_encode(message.as_string())
 
 def clear_outbox():
 	"""Remove low priority older than 31 days in Outbox and expire mails not sent for 7 days.
@@ -562,17 +559,21 @@ def clear_outbox():
 	Note: Used separate query to avoid deadlock
 	"""
 
-	email_queues = frappe.db.sql_list("""select name from `tabEmail Queue`
-		where priority=0 and datediff(now(), modified) > 31""")
+	email_queues = frappe.db.sql_list("""SELECT `name` FROM `tabEmail Queue`
+		WHERE `priority`=0 AND `modified` < (NOW() - INTERVAL '31' DAY)""")
 
 	if email_queues:
-		frappe.db.sql("""delete from `tabEmail Queue` where name in (%s)"""
-			% ','.join(['%s']*len(email_queues)), tuple(email_queues))
+		frappe.db.sql("""DELETE FROM `tabEmail Queue` WHERE `name` IN ({0})""".format(
+			','.join(['%s']*len(email_queues)
+		)), tuple(email_queues))
 
-		frappe.db.sql("""delete from `tabEmail Queue Recipient` where parent in (%s)"""
-			% ','.join(['%s']*len(email_queues)), tuple(email_queues))
+		frappe.db.sql("""DELETE FROM `tabEmail Queue Recipient` WHERE `parent` IN ({0})""".format(
+			','.join(['%s']*len(email_queues)
+		)), tuple(email_queues))
 
 	frappe.db.sql("""
-		update `tabEmail Queue`
-		set status='Expired'
-		where datediff(curdate(), modified) > 7 and status='Not Sent' and (send_after is null or send_after < %(now)s)""", { 'now': now_datetime() })
+		UPDATE `tabEmail Queue`
+		SET `status`='Expired'
+		WHERE `modified` < (NOW() - INTERVAL '7' DAY)
+		AND `status`='Not Sent'
+		AND (`send_after` IS NULL OR `send_after` < %(now)s)""", { 'now': now_datetime() })

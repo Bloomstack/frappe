@@ -8,10 +8,10 @@ import frappe
 import os, socket, time
 from frappe import _
 from six import string_types
+from uuid import uuid4
+import frappe.monitor
 
 # imports - third-party imports
-import pymysql
-from pymysql.constants import ER
 
 default_timeout = 300
 queue_timeout = {
@@ -38,9 +38,7 @@ def enqueue(method, queue='default', timeout=None, event=None,
 		:param kwargs: keyword arguments to be passed to the method
 	'''
 	# To handle older implementations
-	if 'async' in kwargs:
-		is_async = True
-		del kwargs['async']
+	is_async = kwargs.pop('async', is_async)
 
 	if now or frappe.flags.in_migrate:
 		return frappe.call(method, **kwargs)
@@ -75,7 +73,7 @@ def enqueue(method, queue='default', timeout=None, event=None,
 def enqueue_doc(doctype, name=None, method=None, queue='default', timeout=300,
 	now=False, **kwargs):
 	'''Enqueue a method to be run on a document'''
-	enqueue('frappe.utils.background_jobs.run_doc_method', doctype=doctype, name=name,
+	return enqueue('frappe.utils.background_jobs.run_doc_method', doctype=doctype, name=name,
 		doc_method=method, queue=queue, timeout=timeout, now=now, **kwargs)
 
 def run_doc_method(doctype, name, doc_method, **kwargs):
@@ -99,14 +97,16 @@ def execute_job(site, method, event, job_name, kwargs, user=None, is_async=True,
 	else:
 		method_name = cstr(method.__name__)
 
+	frappe.monitor.start("job", method_name, kwargs)
 	try:
 		method(**kwargs)
 
-	except (pymysql.InternalError, frappe.RetryBackgroundJobError) as e:
+	except (frappe.db.InternalError, frappe.RetryBackgroundJobError) as e:
 		frappe.db.rollback()
 
 		if (retry < 5 and
-			(isinstance(e, frappe.RetryBackgroundJobError) or e.args[0] in (ER.LOCK_DEADLOCK, ER.LOCK_WAIT_TIMEOUT))):
+			(isinstance(e, frappe.RetryBackgroundJobError) or
+				(frappe.db.is_deadlocked(e) or frappe.db.is_timedout(e)))):
 			# retry the job if
 			# 1213 = deadlock
 			# 1205 = lock wait timeout
@@ -130,6 +130,7 @@ def execute_job(site, method, event, job_name, kwargs, user=None, is_async=True,
 		frappe.db.commit()
 
 	finally:
+		frappe.monitor.stop()
 		if is_async:
 			frappe.destroy()
 
@@ -155,7 +156,8 @@ def get_worker_name(queue):
 
 	if queue:
 		# hostname.pid is the default worker name
-		name = '{hostname}.{pid}.{queue}'.format(
+		name = '{uuid}.{hostname}.{pid}.{queue}'.format(
+			uuid=uuid4().hex,
 			hostname=socket.gethostname(),
 			pid=os.getpid(),
 			queue=queue)

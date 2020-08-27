@@ -9,8 +9,9 @@ import frappe.permissions
 import re, csv, os
 from frappe.utils.csvutils import UnicodeWriter
 from frappe.utils import cstr, formatdate, format_datetime, parse_json, cint
-from frappe.core.doctype.data_import.importer import get_data_keys
+from frappe.core.doctype.data_import_legacy.importer import get_data_keys
 from six import string_types
+from frappe.core.doctype.access_log.access_log import make_access_log
 
 reflags = {
 	"I":re.I,
@@ -25,6 +26,10 @@ reflags = {
 @frappe.whitelist()
 def export_data(doctype=None, parent_doctype=None, all_doctypes=True, with_data=False,
 		select_columns=None, file_type='CSV', template=False, filters=None):
+	_doctype = doctype
+	if isinstance(_doctype, list):
+		_doctype = _doctype[0]
+	make_access_log(doctype=_doctype, file_type=file_type, columns=select_columns, filters=filters, method=parent_doctype)
 	exporter = DataExporter(doctype=doctype, parent_doctype=parent_doctype, all_doctypes=all_doctypes, with_data=with_data,
 		select_columns=select_columns, file_type=file_type, template=template, filters=filters)
 	exporter.build_response()
@@ -134,9 +139,10 @@ class DataExporter:
 
 		# build list of valid docfields
 		tablecolumns = []
-		for f in frappe.db.sql('desc `tab%s`' % dt):
-			field = meta.get_field(f[0])
-			if field and ((self.select_columns and f[0] in self.select_columns[dt]) or not self.select_columns):
+		table_name = 'tab' + dt
+		for f in frappe.db.get_table_columns_description(table_name):
+			field = meta.get_field(f.name)
+			if field and ((self.select_columns and f.name in self.select_columns[dt]) or not self.select_columns):
 				tablecolumns.append(field)
 
 		tablecolumns.sort(key = lambda a: int(a.idx))

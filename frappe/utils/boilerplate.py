@@ -151,6 +151,10 @@ app_license = "{app_license}"
 # web_include_css = "/assets/{app_name}/css/{app_name}.css"
 # web_include_js = "/assets/{app_name}/js/{app_name}.js"
 
+# include js, css files in header of web form
+# webform_include_js = {"doctype": "public/js/doctype.js"}
+# webform_include_css = {"doctype": "public/css/doctype.css"}
+
 # include js in page
 # page_js = {{"page" : "public/js/file.js"}}
 
@@ -242,12 +246,26 @@ app_license = "{app_license}"
 
 # before_tests = "{app_name}.install.before_tests"
 
-# Overriding Whitelisted Methods
+# Overriding Methods
 # ------------------------------
 #
 # override_whitelisted_methods = {{
 # 	"frappe.desk.doctype.event.event.get_events": "{app_name}.event.get_events"
 # }}
+#
+# each overriding function accepts a `data` argument;
+# generated from the base implementation of the doctype dashboard,
+# along with any modifications made in other Frappe apps
+# override_doctype_dashboards = {{
+# 	"Task": "{app_name}.task.get_dashboard_data"
+# }}
+
+
+
+# Exempt doctype for cancel
+# -----------------------
+#
+# auto_cancel_exempt_doctypes = ["Auto Repeat"]
 
 """
 
@@ -269,17 +287,12 @@ def get_data():
 
 setup_template = """# -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
-import re, ast
 
 with open('requirements.txt') as f:
 	install_requires = f.read().strip().split('\\n')
 
 # get version from __version__ variable in {app_name}/__init__.py
-_version_re = re.compile(r'__version__\s+=\s+(.*)')
-
-with open('{app_name}/__init__.py', 'rb') as f:
-	version = str(ast.literal_eval(_version_re.search(
-		f.read().decode('utf-8')).group(1)))
+from {app_name} import __version__ as version
 
 setup(
 	name='{app_name}',

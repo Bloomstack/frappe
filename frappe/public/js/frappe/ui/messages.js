@@ -53,6 +53,33 @@ frappe.confirm = function(message, ifyes, ifno) {
 	return d;
 }
 
+frappe.warn = function(title, message_html, proceed_action, primary_label) {
+	const d = new frappe.ui.Dialog({
+		title: title,
+		indicator: 'red',
+		fields: [
+			{
+				fieldtype: 'HTML',
+				fieldname: 'warning_message',
+				options: `<div class="frappe-warning-message">${message_html}</div>`
+			}
+		],
+		primary_action_label: primary_label,
+		primary_action: () => {
+			if (proceed_action) proceed_action();
+			d.hide();
+		},
+		secondary_action_label: __("Cancel"),
+	});
+
+	d.buttons.find('.btn-primary').removeClass('btn-primary').addClass('btn-danger');
+	const modal_footer = $(`<div class="modal-footer"></div>`).insertAfter($(d.modal_body));
+	modal_footer.html(d.buttons);
+
+	d.show();
+	return d;
+};
+
 frappe.prompt = function(fields, callback, title, primary_label) {
 	if (typeof fields === "string") {
 		fields = [{
@@ -79,8 +106,7 @@ frappe.prompt = function(fields, callback, title, primary_label) {
 	return d;
 }
 
-var msg_dialog=null;
-frappe.msgprint = function(msg, title) {
+frappe.msgprint = function(msg, title, is_minimizable) {
 	if(!msg) return;
 
 	if($.isPlainObject(msg)) {
@@ -110,29 +136,80 @@ frappe.msgprint = function(msg, title) {
 		return;
 	}
 
-	if(!msg_dialog) {
-		msg_dialog = new frappe.ui.Dialog({
+	if(!frappe.msg_dialog) {
+		frappe.msg_dialog = new frappe.ui.Dialog({
 			title: __("Message"),
 			onhide: function() {
-				if(msg_dialog.custom_onhide) {
-					msg_dialog.custom_onhide();
+				if(frappe.msg_dialog.custom_onhide) {
+					frappe.msg_dialog.custom_onhide();
 				}
-				msg_dialog.msg_area.empty();
-			}
+				frappe.msg_dialog.msg_area.empty();
+			},
+			minimizable: data.is_minimizable || is_minimizable
 		});
-		msg_dialog.msg_area = $('<div class="msgprint">')
-			.appendTo(msg_dialog.body);
 
-		msg_dialog.loading_indicator = $('<div class="loading-indicator text-center" \
-				style="margin: 15px;">\
-				<img src="/assets/frappe/images/ui/ajax-loader.gif"></div>')
-			.appendTo(msg_dialog.body);
+		// class "msgprint" is used in tests
+		frappe.msg_dialog.msg_area = $('<div class="msgprint">')
+			.appendTo(frappe.msg_dialog.body);
 
-		msg_dialog.clear = function() {
-			msg_dialog.msg_area.empty();
+		frappe.msg_dialog.clear = function() {
+			frappe.msg_dialog.msg_area.empty();
 		}
 
-		msg_dialog.indicator = msg_dialog.header.find('.indicator');
+		frappe.msg_dialog.indicator = frappe.msg_dialog.header.find('.indicator');
+	}
+
+	// setup and bind an action to the primary button
+	if (data.primary_action) {
+		if (data.primary_action.server_action && typeof data.primary_action.server_action === 'string') {
+			data.primary_action.action = () => {
+				frappe.call({
+					method: data.primary_action.server_action,
+					args: {
+						args: data.primary_action.args
+					},
+					freeze: true,
+					callback: (r) => {
+						frappe.run_serially([
+							() => {
+								if (data.primary_action.hide_on_success) {
+									frappe.hide_msgprint();
+								}
+							},
+							() => frappe.timeout(.1),
+							() => {
+								if (r && r.message) {
+									frappe.msgprint(r.message, title="Success");
+								}
+							}
+						]);
+					}
+				});
+			}
+		}
+
+		if (data.primary_action.client_action && typeof data.primary_action.client_action === 'string') {
+			let parts = data.primary_action.client_action.split('.');
+			let obj = window;
+			for (let part of parts) {
+				obj = obj[part];
+			}
+			data.primary_action.action = () => {
+				if (typeof obj === 'function') {
+					obj(data.primary_action.args);
+				}
+			}
+		}
+
+		frappe.msg_dialog.set_primary_action(
+			__(data.primary_action.label || "Done"),
+			data.primary_action.action
+		);
+	} else {
+		if (frappe.msg_dialog.has_primary_action) {
+			frappe.msg_dialog.get_primary_btn().addClass('hide');
+			frappe.msg_dialog.has_primary_action = false;
+		}
 	}
 
 	if(data.message==null) {
@@ -145,67 +222,83 @@ frappe.msgprint = function(msg, title) {
 
 	var msg_exists = false;
 	if(data.clear) {
-		msg_dialog.msg_area.empty();
+		frappe.msg_dialog.msg_area.empty();
 	} else {
-		msg_exists = msg_dialog.msg_area.html();
+		msg_exists = frappe.msg_dialog.msg_area.html();
 	}
 
 	if(data.title || !msg_exists) {
 		// set title only if it is explicitly given
 		// and no existing title exists
-		msg_dialog.set_title(data.title || __('Message'));
+		frappe.msg_dialog.set_title(data.title || __('Message'));
 	}
 
 	// show / hide indicator
 	if(data.indicator) {
-		msg_dialog.indicator.removeClass().addClass('indicator ' + data.indicator);
+		frappe.msg_dialog.indicator.removeClass().addClass('indicator ' + data.indicator);
 	} else {
-		msg_dialog.indicator.removeClass().addClass('hidden');
+		frappe.msg_dialog.indicator.removeClass().addClass('hidden');
 	}
 
+	// width
+	if (data.wide) {
+		// msgprint should be narrower than the usual dialog
+		if (frappe.msg_dialog.wrapper.classList.contains('msgprint-dialog')) {
+			frappe.msg_dialog.wrapper.classList.remove('msgprint-dialog');
+		}
+	} else {
+		// msgprint should be narrower than the usual dialog
+		frappe.msg_dialog.wrapper.classList.add('msgprint-dialog');
+	}
+
+	if (data.scroll) {
+		// limit modal height and allow scrolling instead
+		frappe.msg_dialog.body.classList.add('msgprint-scroll');
+	} else {
+		if (frappe.msg_dialog.body.classList.contains('msgprint-scroll')) {
+			frappe.msg_dialog.body.classList.remove('msgprint-scroll');
+		}
+	}
+
+
 	if(msg_exists) {
-		msg_dialog.msg_area.append("<hr>");
+		frappe.msg_dialog.msg_area.append("<hr>");
 	// append a <hr> if another msg already exists
 	}
 
-	msg_dialog.msg_area.append(data.message);
-	msg_dialog.loading_indicator.addClass("hide");
-
-	msg_dialog.show_loading = function() {
-		msg_dialog.loading_indicator.removeClass("hide");
-	}
+	frappe.msg_dialog.msg_area.append(data.message);
 
 	// make msgprint always appear on top
-	msg_dialog.$wrapper.css("z-index", 2000);
-	msg_dialog.show();
+	frappe.msg_dialog.$wrapper.css("z-index", 2000);
+	frappe.msg_dialog.show();
 
-	return msg_dialog;
+	return frappe.msg_dialog;
 }
 
 window.msgprint = frappe.msgprint;
 
 frappe.hide_msgprint = function(instant) {
 	// clear msgprint
-	if(msg_dialog && msg_dialog.msg_area) {
-		msg_dialog.msg_area.empty();
+	if(frappe.msg_dialog && frappe.msg_dialog.msg_area) {
+		frappe.msg_dialog.msg_area.empty();
 	}
-	if(msg_dialog && msg_dialog.$wrapper.is(":visible")) {
+	if(frappe.msg_dialog && frappe.msg_dialog.$wrapper.is(":visible")) {
 		if(instant) {
-			msg_dialog.$wrapper.removeClass("fade");
+			frappe.msg_dialog.$wrapper.removeClass("fade");
 		}
-		msg_dialog.hide();
+		frappe.msg_dialog.hide();
 		if(instant) {
-			msg_dialog.$wrapper.addClass("fade");
+			frappe.msg_dialog.$wrapper.addClass("fade");
 		}
 	}
 }
 
 // update html in existing msgprint
 frappe.update_msgprint = function(html) {
-	if(!msg_dialog || (msg_dialog && !msg_dialog.$wrapper.is(":visible"))) {
+	if(!frappe.msg_dialog || (frappe.msg_dialog && !frappe.msg_dialog.$wrapper.is(":visible"))) {
 		frappe.msgprint(html);
 	} else {
-		msg_dialog.msg_area.html(html);
+		frappe.msg_dialog.msg_area.html(html);
 	}
 }
 
@@ -283,16 +376,16 @@ frappe.show_alert = function(message, seconds=7, actions={}) {
 
 	const div = $(`
 		<div class="alert desk-alert">
-			<div class="alert-message"></div>
+			<div class="alert-message small"></div>
 			<div class="alert-body" style="display: none"></div>
 			<a class="close">&times;</a>
 		</div>`);
 
-	div.find('.alert-message').append(message.message);
-
 	if(message.indicator) {
-		div.find('.alert-message').addClass('indicator '+ message.indicator);
+		div.find('.alert-message').append(`<span class="indicator ${message.indicator}"></span>`);
 	}
+
+	div.find('.alert-message').append(message.message);
 
 	if (body_html) {
 		div.find('.alert-body').show().html(body_html);

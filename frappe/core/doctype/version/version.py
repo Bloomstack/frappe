@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import frappe, json
 
 from frappe.model.document import Document
-from frappe.model import no_value_fields
+from frappe.model import no_value_fields, table_fields
 
 class Version(Document):
 	def set_diff(self, old, new):
@@ -20,6 +20,17 @@ class Version(Document):
 			return True
 		else:
 			return False
+
+	def for_insert(self, doc):
+		updater_reference = doc.flags.updater_reference
+		data = {
+			'creation': doc.creation,
+			'updater_reference': updater_reference,
+			'created_by': doc.owner
+		}
+		self.ref_doctype = doc.doctype
+		self.docname = doc.name
+		self.data = frappe.as_json(data)
 
 	def get_data(self):
 		return json.loads(self.data)
@@ -40,14 +51,23 @@ def get_diff(old, new, for_child=False):
 			],
 
 		}'''
-	out = frappe._dict(changed = [], added = [], removed = [], row_changed = [])
+	if not new:
+		return None
+
+	# capture data import if set
+	data_import = new.flags.via_data_import
+	updater_reference = new.flags.updater_reference
+
+	out = frappe._dict(changed = [], added = [], removed = [],
+		row_changed = [], data_import=data_import, updater_reference=updater_reference)
+
 	for df in new.meta.fields:
-		if df.fieldtype in no_value_fields and df.fieldtype != 'Table':
+		if df.fieldtype in no_value_fields and df.fieldtype not in table_fields:
 			continue
 
 		old_value, new_value = old.get(df.fieldname), new.get(df.fieldname)
 
-		if df.fieldtype=='Table':
+		if df.fieldtype in table_fields:
 			# make maps
 			old_row_by_name, new_row_by_name = {}, {}
 			for d in old_value:

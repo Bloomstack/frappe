@@ -27,11 +27,6 @@ export default class GridRow {
 				}
 			});
 
-		// no checkboxes if too small
-		// if(this.is_too_small()) {
-		// 	this.row_check_html = '';
-		// }
-
 		if(this.grid.template && !this.grid.meta.editable_grid) {
 			this.render_template();
 		} else {
@@ -111,11 +106,41 @@ export default class GridRow {
 			}
 		}
 	}
-	insert(show, below) {
+	insert(show, below, duplicate) {
 		var idx = this.doc.idx;
+		var copy_doc = duplicate ? this.doc : null;
 		if(below) idx ++;
 		this.toggle_view(false);
-		this.grid.add_new_row(idx, null, show);
+		this.grid.add_new_row(idx, null, show, copy_doc);
+	}
+	move() {
+		// promopt the user where they want to move this row
+		var me = this;
+		frappe.prompt({
+			fieldname: 'move_to',
+			label: __('Move to Row Number'),
+			fieldtype: 'Int',
+			reqd: 1,
+			default: this.doc.idx,
+		}, function(values) {
+			if (me.doc._sortable === false) {
+				frappe.msgprint(__('Cannot move row'));
+				return;
+			}
+
+			// renumber and refresh
+			let data = me.grid.get_data();
+			data.move(me.doc.idx - 1, values.move_to - 1);
+
+			// renum idx
+			for(let i=0; i<data.length;i++) {
+				data[i].idx = i+1;
+			}
+
+			me.toggle_view(false);
+			me.grid.refresh();
+			$(me.frm.wrapper).trigger("grid-move-row", [me.frm, me]);
+		}, __('Move To'), 'Update');
 	}
 	refresh() {
 		if(this.frm && this.doc) {
@@ -167,7 +192,7 @@ export default class GridRow {
 			this.row_index = $(
 				`<div class="row-index sortable-handle col col-xs-1">
 					${this.row_check_html}
-				<span>${txt}</span></div>`)
+				<span class="hidden-xs">${txt}</span></div>`)
 				.appendTo(this.row)
 				.on('click', function(e) {
 					if(!$(e.target).hasClass('grid-row-check')) {
@@ -202,7 +227,7 @@ export default class GridRow {
 			if(!this.open_form_button) {
 				this.open_form_button = $('<a class="close btn-open-row">\
 					<span class="octicon octicon-triangle-down"></span></a>')
-					.appendTo($('<div class="col col-xs-1 sortable-handle"></div>').appendTo(this.row))
+					.appendTo($('<div class="col col-xs-1"></div>').appendTo(this.row))
 					.on('click', function() { me.toggle_view(); return false; });
 
 				if(this.is_too_small()) {
@@ -389,10 +414,10 @@ export default class GridRow {
 
 	set_arrow_keys(field) {
 		var me = this;
-		if(field.$input) {
+		if (field.$input) {
 			field.$input.on('keydown', function(e) {
-				var { TAB, UP_ARROW, DOWN_ARROW } = frappe.ui.keyCode;
-				if(!in_list([TAB, UP_ARROW, DOWN_ARROW], e.which)) {
+				var { TAB, UP: UP_ARROW, DOWN: DOWN_ARROW } = frappe.ui.keyCode;
+				if (!in_list([TAB, UP_ARROW, DOWN_ARROW], e.which)) {
 					return;
 				}
 
@@ -401,46 +426,54 @@ export default class GridRow {
 				var fieldtype = $(this).attr('data-fieldtype');
 
 				var move_up_down = function(base) {
-					if(in_list(['Text', 'Small Text'], fieldtype)) {
-						return;
+					if (in_list(['Text', 'Small Text', 'Code', 'Text Editor', 'HTML Editor'], fieldtype) && !e.altKey) {
+						return false;
+					}
+					if (field.autocomplete_open) {
+						return false;
 					}
 
 					base.toggle_editable_row();
-					setTimeout(function() {
-						var input = base.columns[fieldname].field.$input;
-						if(input) {
-							input.focus();
-						}
-					}, 400)
-
-				}
+					var input = base.columns[fieldname].field.$input;
+					if (input) {
+						input.focus();
+					}
+					return true;
+				};
 
 				// TAB
-				if(e.which==TAB && !e.shiftKey) {
-					// last column
-					if($(this).attr('data-last-input') ||
-						me.grid.wrapper.find('.grid-row :input:enabled:last').get(0)===this) {
-						setTimeout(function() {
-							if(me.doc.idx === values.length) {
-								// last row
+				if (e.which === TAB && !e.shiftKey) {
+					var last_column = me.wrapper.find(':input:enabled:last').get(0);
+					var is_last_column = $(this).attr('data-last-input') || last_column === this;
+
+					if (is_last_column) {
+						// last row
+						if (me.doc.idx === values.length) {
+							setTimeout(function () {
 								me.grid.add_new_row(null, null, true);
 								me.grid.grid_rows[me.grid.grid_rows.length - 1].toggle_editable_row();
 								me.grid.set_focus_on_row();
-							} else {
-								me.grid.grid_rows[me.doc.idx].toggle_editable_row();
-								me.grid.set_focus_on_row(me.doc.idx+1);
-							}
-						}, 500);
+							}, 100);
+						} else {
+							// last column before last row
+							me.grid.grid_rows[me.doc.idx].toggle_editable_row();
+							me.grid.set_focus_on_row(me.doc.idx);
+							return false;
+						}
 					}
-				} else if(e.which==UP_ARROW) {
-					if(me.doc.idx > 1) {
+				} else if (e.which === UP_ARROW) {
+					if (me.doc.idx > 1) {
 						var prev = me.grid.grid_rows[me.doc.idx-2];
-						move_up_down(prev);
+						if (move_up_down(prev)) {
+							return false;
+						}
 					}
-				} else if(e.which==DOWN_ARROW) {
-					if(me.doc.idx < values.length) {
+				} else if (e.which === DOWN_ARROW) {
+					if (me.doc.idx < values.length) {
 						var next = me.grid.grid_rows[me.doc.idx];
-						move_up_down(next);
+						if (move_up_down(next)) {
+							return false;
+						}
 					}
 				}
 
@@ -581,7 +614,7 @@ export default class GridRow {
 		}
 	}
 
-	get_visible_columns(blacklist) {
+	get_visible_columns(blacklist=[]) {
 		var me = this;
 		var visible_columns = $.map(this.docfields, function(df) {
 			var visible = !df.hidden && df.in_list_view && me.grid.frm.get_perm(df.permlevel, "read")

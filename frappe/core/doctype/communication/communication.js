@@ -18,6 +18,10 @@ frappe.ui.form.on("Communication", {
 		frm.convert_to_click && frm.set_convert_button();
 		frm.subject_field = "subject";
 
+		// content field contains weird table html that does not render well in Quill
+		// this field is not to be edited directly anyway, so setting it as read only
+		frm.set_df_property('content', 'read_only', 1);
+
 		if(frm.doc.reference_doctype && frm.doc.reference_name) {
 			frm.add_custom_button(__(frm.doc.reference_name), function() {
 				frappe.set_route("Form", frm.doc.reference_doctype, frm.doc.reference_name);
@@ -29,13 +33,6 @@ frappe.ui.form.on("Communication", {
 			} else {
 				frm.email_field = "recipients";
 			}
-		}
-
-		if(frm.doc.communication_type == "Feedback") {
-			frm.add_custom_button(__("Resend"), function() {
-				var feedback = new frappe.utils.Feedback();
-				feedback.resend_feedback_request(frm.doc);
-			});
 		}
 
 		if(frm.doc.status==="Open") {
@@ -54,7 +51,7 @@ frappe.ui.form.on("Communication", {
 			frm.trigger('show_relink_dialog');
 		});
 
-		if(frm.doc.communication_type=="Communication" 
+		if(frm.doc.communication_type=="Communication"
 			&& frm.doc.communication_medium == "Email"
 			&& frm.doc.sent_or_received == "Received") {
 
@@ -90,7 +87,7 @@ frappe.ui.form.on("Communication", {
 			}
 		}
 
-		if(frm.doc.communication_type=="Communication" 
+		if(frm.doc.communication_type=="Communication"
 			&& frm.doc.communication_medium == "Phone"
 			&& frm.doc.sent_or_received == "Received"){
 
@@ -176,7 +173,7 @@ frappe.ui.form.on("Communication", {
 	reply_all: function(frm) {
 		var args = frm.events.get_mail_args(frm)
 		$.extend(args, {
-			subject: __("Re: {0}", [frm.doc.subject]),
+			subject: __("Res: {0}", [frm.doc.subject]),
 			recipients: frm.doc.sender,
 			cc: frm.doc.cc
 		})
@@ -185,7 +182,7 @@ frappe.ui.form.on("Communication", {
 
 	forward_mail: function(frm) {
 		var args = frm.events.get_mail_args(frm)
-		$.extend(args, {		
+		$.extend(args, {
 			forward: true,
 			subject: __("Fw: {0}", [frm.doc.subject]),
 		})

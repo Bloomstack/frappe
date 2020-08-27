@@ -3,7 +3,6 @@
 
 from __future__ import unicode_literals, print_function
 
-no_sitemap = 1
 no_cache = 1
 base_template_path = "templates/www/desk.html"
 
@@ -42,8 +41,6 @@ def get_context(context):
 		"sounds": hooks["sounds"],
 		"boot": boot if context.get("for_mobile") else boot_json,
 		"csrf_token": csrf_token,
-		"background_image": (boot.status != 'failed' and
-			(boot.user.background_image or boot.default_background_image) or None),
 		"google_analytics_id": frappe.conf.get("google_analytics_id"),
 		"mixpanel_id": frappe.conf.get("mixpanel_id")
 	})
@@ -85,4 +82,9 @@ def get_desk_assets(build_version):
 	}
 
 def get_build_version():
-	return str(os.path.getmtime(os.path.join(frappe.local.sites_path, '.build')))
+	try:
+		return str(os.path.getmtime(os.path.join(frappe.local.sites_path, '.build')))
+	except OSError:
+		# .build can sometimes not exist
+		# this is not a major problem so send fallback
+		return frappe.utils.random_string(8)

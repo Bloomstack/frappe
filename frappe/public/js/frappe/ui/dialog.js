@@ -1,3 +1,4 @@
+
 import './field_group';
 import '../dom';
 
@@ -41,6 +42,8 @@ frappe.ui.Dialog = class Dialog extends frappe.ui.FieldGroup {
 		this.body = this.$body.get(0);
 		this.$message = $('<div class="hide modal-message"></div>').appendTo(this.modal_body);
 		this.header = this.$wrapper.find(".modal-header");
+		this.buttons = this.header.find('.buttons');
+		this.set_indicator();
 
 		// make fields (if any)
 		super.make();
@@ -58,6 +61,11 @@ frappe.ui.Dialog = class Dialog extends frappe.ui.FieldGroup {
 
 		if (this.secondary_action_label || (this.action.secondary && this.action.secondary.label)) {
 			this.get_close_btn().html(this.secondary_action_label || this.action.secondary.label);
+		}
+
+		if (this.minimizable) {
+			this.header.find('.modal-title').click(() => this.toggle_minimize());
+			this.get_minimize_btn().removeClass('hide').on('click', () => this.toggle_minimize());
 		}
 
 		var me = this;
@@ -84,11 +92,11 @@ frappe.ui.Dialog = class Dialog extends frappe.ui.FieldGroup {
 				frappe.ui.open_dialogs.push(me);
 				me.focus_on_first_input();
 				me.on_page_show && me.on_page_show();
+				$(document).trigger('frappe.ui.Dialog:shown');
 			})
 			.on('scroll', function() {
 				var $input = $('input:focus');
-				if($input.length && ['Date', 'Datetime',
-					'Time'].includes($input.attr('data-fieldtype'))) {
+				if($input.length && ['Date', 'Datetime', 'Time'].includes($input.attr('data-fieldtype'))) {
 					$input.blur();
 				}
 			});
@@ -97,6 +105,10 @@ frappe.ui.Dialog = class Dialog extends frappe.ui.FieldGroup {
 
 	get_primary_btn() {
 		return this.$wrapper.find(".modal-header .btn-primary");
+	}
+
+	get_minimize_btn() {
+		return this.$wrapper.find(".modal-header .btn-modal-minimize");
 	}
 
 	set_message(text) {
@@ -108,6 +120,11 @@ frappe.ui.Dialog = class Dialog extends frappe.ui.FieldGroup {
 	clear_message() {
 		this.$message.addClass('hide');
 		this.$body.removeClass('hide');
+	}
+
+	clear() {
+		super.clear();
+		this.clear_message();
 	}
 
 	set_primary_action(label, click) {
@@ -143,6 +160,11 @@ frappe.ui.Dialog = class Dialog extends frappe.ui.FieldGroup {
 	set_title(t) {
 		this.$wrapper.find(".modal-title").html(t);
 	}
+	set_indicator() {
+		if (this.indicator) {
+			this.header.find('.indicator').removeClass().addClass('indicator ' + this.indicator);
+		}
+	}
 	show() {
 		// show it
 		if ( this.animate ) {
@@ -151,6 +173,10 @@ frappe.ui.Dialog = class Dialog extends frappe.ui.FieldGroup {
 			this.$wrapper.removeClass('fade');
 		}
 		this.$wrapper.modal("show");
+
+		// clear any message
+		this.clear_message();
+
 		this.primary_action_fulfilled = false;
 		this.is_visible = true;
 		return this;
@@ -168,6 +194,12 @@ frappe.ui.Dialog = class Dialog extends frappe.ui.FieldGroup {
 	cancel() {
 		this.get_close_btn().trigger("click");
 	}
+	toggle_minimize() {
+		let modal = this.$wrapper.closest('.modal').toggleClass('modal-minimize');
+		modal.attr('tabindex') ? modal.removeAttr('tabindex') : modal.attr('tabindex', -1);
+		this.get_minimize_btn().find('i').toggleClass('octicon-chevron-down').toggleClass('octicon-chevron-up');
+		this.is_minimized = !this.is_minimized;
+		this.on_minimize_toggle && this.on_minimize_toggle(this.is_minimized);
+		this.header.find('.modal-title').toggleClass('cursor-pointer');
+	}
 };
-
-

@@ -13,35 +13,34 @@ $.extend(frappe, {
 		lang: 'en'
 	},
 	_assets_loaded: [],
-	require: function(url, callback) {
-
-		let async = false;
-		if (callback) {
-			async = true;
+	require: async function(links, callback) {
+		if (typeof (links) === 'string') {
+			links = [links];
 		}
-
-		if(frappe._assets_loaded.indexOf(url)!==-1) {
-			callback && callback();
-			return;
+		for (let link of links) {
+			await this.add_asset_to_head(link);
 		}
-
-		return $.ajax({
-			url: url,
-			async: async,
-			dataType: "text",
-			success: function(data) {
-				var el;
-				if(url.split(".").splice(-1) == "js") {
-					el = document.createElement('script');
-				} else {
-					el = document.createElement('style');
-				}
-				el.appendChild(document.createTextNode(data));
-				document.getElementsByTagName('head')[0].appendChild(el);
-				frappe._assets_loaded.push(url);
-
-				callback && callback();
+		callback && callback();
+	},
+	add_asset_to_head(link) {
+		return new Promise(resolve => {
+			if (frappe._assets_loaded.includes(link)) return resolve();
+			let el;
+			if(link.split('.').pop() === 'js') {
+				el = document.createElement('script');
+				el.type = 'text/javascript';
+				el.src = link;
+			} else {
+				el = document.createElement('link');
+				el.type = 'text/css';
+				el.rel = 'stylesheet';
+				el.href = link;
 			}
+			document.getElementsByTagName('head')[0].appendChild(el);
+			el.onload = () => {
+				frappe._assets_loaded.push(link);
+				resolve();
+			};
 		});
 	},
 	hide_message: function() {
@@ -133,12 +132,12 @@ $.extend(frappe, {
 
 		if (data._server_messages) {
 			var server_messages = JSON.parse(data._server_messages || '[]');
-			server_messages = $.map(server_messages, function(v) {
+			server_messages.map((msg) => {
 				// temp fix for messages sent as dict
 				try {
-					return JSON.parse(v).message;
+					return JSON.parse(msg);
 				} catch (e) {
-					return v;
+					return msg;
 				}
 			}).join('<br>');
 
@@ -329,6 +328,45 @@ $.extend(frappe, {
 	},
 	add_switch_to_desk: function() {
 		$('.switch-to-desk').removeClass('hidden');
+	},
+	setup_lazy_images: function() {
+		// Use IntersectionObserver to only load images that are visible in the viewport
+		// Fallback for browsers that don't support it
+		// To use this feature, instead of adding an img tag, add
+		// <div class="website-image-lazy" data-class="img-class" data-src="image.jpg" data-alt="image"></div>
+
+		function replace_with_image(target) {
+			const $target = $(target);
+			const attrs = $target.data();
+			const data_string = Object.keys(attrs)
+				.map(key => `${key}="${attrs[key]}"`)
+				.join(' ');
+			$target.replaceWith(`<img ${data_string}>`);
+		}
+
+		if (!window.IntersectionObserver) {
+			$('.website-image-lazy').each((_, el) => {
+				replace_with_image(el);
+			});
+			return;
+		}
+
+		const io = new IntersectionObserver(
+			entries => {
+				entries.forEach(e => {
+					if (e.intersectionRatio > 0) {
+						io.unobserve(e.target);
+						replace_with_image(e.target);
+					}
+				});
+			}, {
+				threshold: [0, 0.2, 0.4, 0.6],
+			});
+
+		$('.website-image-lazy').each((_, el) => {
+			// Start observing an element
+			io.observe(el);
+		});
 	}
 });
 
@@ -337,7 +375,7 @@ $.extend(frappe, {
 
 window.valid_email = function(id) {
 	// eslint-disable-next-line
-	return (id.toLowerCase().search("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")==-1) ? 0 : 1;
+	return /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/.test(id.toLowerCase());
 }
 
 window.validate_email = valid_email;
@@ -384,6 +422,7 @@ $(document).ready(function() {
 	}
 
 	frappe.render_user();
+	frappe.setup_lazy_images();
 
 	$(document).trigger("page-change");
 });
@@ -420,12 +459,13 @@ frappe.ready(function() {
 		method: 'frappe.website.doctype.website_settings.website_settings.is_chat_enabled',
 		callback: (r) => {
 			if (r.message) {
-				frappe.require('/assets/js/moment-bundle.min.js', () => {
+				frappe.require(['/assets/js/moment-bundle.min.js', "/assets/css/frappe-chat-web.css", "/assets/frappe/js/lib/socket.io.min.js"], () => {
 					frappe.require('/assets/js/chat.js', () => {
 						frappe.chat.setup();
 					});
 				});
 			}
 		}
-	})
+	});
+	frappe.socketio.init(window.socketio_port);
 });

@@ -4,11 +4,11 @@
 from __future__ import unicode_literals
 from six import iteritems
 import frappe
-
+from frappe import _
 
 field_map = {
-	"Contact": [ "first_name", "last_name", "phone", "mobile_no", "email_id", "is_primary_contact" ],
-	"Address": [ "address_line1", "address_line2", "city", "state", "pincode", "country", "is_primary_address" ]
+	"Contact": ["first_name", "last_name", "address", "phone", "mobile_no", "email_id", "is_primary_contact"],
+	"Address": ["address_line1", "address_line2", "city", "state", "pincode", "country", "is_primary_address"]
 }
 
 def execute(filters=None):
@@ -27,8 +27,8 @@ def get_columns(filters):
 		"Is Primary Address:Check",
 		"First Name",
 		"Last Name",
+		"Address",
 		"Phone",
-		"Mobile No",
 		"Email Id",
 		"Is Primary Contact:Check"
 	]
@@ -49,7 +49,7 @@ def get_reference_addresses_and_contact(reference_doctype, reference_name):
 		return []
 
 	if reference_name:
-		filters = { "name": reference_name }
+		filters = {"name": reference_name}
 
 	reference_list = [d[0] for d in frappe.get_list(reference_doctype, filters=filters, fields=["name"], as_list=True)]
 
@@ -63,14 +63,21 @@ def get_reference_addresses_and_contact(reference_doctype, reference_name):
 		contacts  = details.get("contact", [])
 		if not any([addresses, contacts]):
 			result = [reference_name]
-			result.extend(add_blank_columns_for("Contact"))
 			result.extend(add_blank_columns_for("Address"))
+			result.extend(add_blank_columns_for("Contact"))
 			data.append(result)
 		else:
-			result = [reference_name]
-			result.extend(list(addresses) or add_blank_columns_for("Address"))
-			result.extend(list(contacts) or add_blank_columns_for("Contact"))
-			data.append(result)
+			addresses = list(map(list, addresses))
+			contacts = list(map(list, contacts))
+
+			max_length = max(len(addresses), len(contacts))
+			for idx in range(0, max_length):
+				result = [reference_name]
+
+				result.extend(addresses[idx] if idx < len(addresses) else add_blank_columns_for("Address"))
+				result.extend(contacts[idx] if idx < len(contacts) else add_blank_columns_for("Contact"))
+
+				data.append(result)
 
 	return data
 
@@ -82,8 +89,15 @@ def get_reference_details(reference_doctype, doctype, reference_list, reference_
 	fields = ["`tabDynamic Link`.link_name"] + field_map.get(doctype, [])
 
 	records = frappe.get_list(doctype, filters=filters, fields=fields, as_list=True)
+	temp_records = list()
+
 	for d in records:
-		reference_details[d[0]][frappe.scrub(doctype)] = d[1:]
+		temp_records.append(d[1:])
+
+	if not reference_list:
+		frappe.throw(_("No records present in {0}".format(reference_doctype)))
+
+	reference_details[reference_list[0]][frappe.scrub(doctype)] = temp_records
 	return reference_details
 
 def add_blank_columns_for(doctype):

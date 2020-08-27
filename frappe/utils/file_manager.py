@@ -78,7 +78,7 @@ def get_file_doc(dt=None, dn=None, folder=None, is_private=None, df=None):
 def save_uploaded(dt, dn, folder, is_private, df=None):
 	fname, content = get_uploaded_content()
 	if content:
-		return save_file(fname, content, dt, dn, folder, is_private=is_private, df=df);
+		return save_file(fname, content, dt, dn, folder, is_private=is_private, df=df)
 	else:
 		raise Exception
 
@@ -429,7 +429,7 @@ def get_random_filename(extn=None, content_type=None):
 
 	return random_string(7) + (extn or "")
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def validate_filename(filename):
 	from frappe.utils import now_datetime
 	timestamp = now_datetime().strftime(" %Y-%m-%d %H:%M:%S")

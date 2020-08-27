@@ -62,7 +62,7 @@ frappe.views.TreeView = Class.extend({
 
 		this.page = this.parent.page;
 		frappe.container.change_to(this.page_name);
-		frappe.breadcrumbs.add(me.opts.breadcrumb || locals.DocType[me.doctype].module);
+		frappe.breadcrumbs.add(me.opts.breadcrumb || locals.DocType[me.doctype].module, me.doctype);
 
 		this.set_title();
 
@@ -100,17 +100,19 @@ frappe.views.TreeView = Class.extend({
 				filter.default = frappe.route_options[filter.fieldname]
 			}
 
-			filter.change = function() {
-				var val = this.get_value();
-				me.args[filter.fieldname] = val;
-				if (val) {
-					me.root_label = val;
-					me.page.set_title(val);
-				} else {
-					me.root_label = me.opts.root_label;
+			if(!filter.disable_onchange) {
+				filter.change = function() {
+					filter.on_change && filter.on_change();
+					var val = this.get_value();
+					me.args[filter.fieldname] = val;
+					if (val) {
+						me.root_label = val;
+					} else {
+						me.root_label = me.opts.root_label;
+					}
 					me.set_title();
+					me.make_tree();
 				}
-				me.make_tree();
 			}
 
 			me.page.add_field(filter);
@@ -153,6 +155,12 @@ frappe.views.TreeView = Class.extend({
 		});
 
 		cur_tree = this.tree;
+		this.post_render();
+	},
+
+	post_render: function() {
+		var me = this;
+		me.opts.post_render && me.opts.post_render(me);
 	},
 
 	select_node: function(node) {
@@ -185,7 +193,7 @@ frappe.views.TreeView = Class.extend({
 					return me.can_create && node.expandable && !node.hide_add;
 				},
 				click: function(node) {
-					me.new_node();
+					me.add_new_node();
 				},
 				btnClass: "hidden-xs"
 			},
@@ -219,11 +227,22 @@ frappe.views.TreeView = Class.extend({
 		]
 
 		if(this.opts.toolbar && this.opts.extend_toolbar) {
+			toolbar = toolbar.filter(btn => {
+				return !me.opts.toolbar.find(d => d["label"]==btn["label"]);
+			});
 			return toolbar.concat(this.opts.toolbar)
 		} else if (this.opts.toolbar && !this.opts.extend_toolbar) {
 			return this.opts.toolbar
 		} else {
 			return toolbar
+		}
+	},
+	add_new_node: function () {
+		var me = this;
+		if (frappe.get_meta(me.doctype).quick_entry) {
+			me.new_node();
+		} else {
+			frappe.new_doc(me.doctype);
 		}
 	},
 	new_node: function() {
@@ -324,13 +343,22 @@ frappe.views.TreeView = Class.extend({
 		frappe.ui.get_print_settings(false, function(print_settings) {
 			var title =  __(me.docname || me.doctype);
 			frappe.render_tree({title: title, tree: tree, print_settings:print_settings});
+			frappe.call({
+				method: "frappe.core.doctype.access_log.access_log.make_access_log",
+				args: {
+					doctype: me.doctype,
+					report_name: me.page_name,
+					page: tree,
+					method: 'Print'
+				}
+			});
 		});
 	},
 	set_primary_action: function(){
 		var me = this;
 		if (!this.opts.disable_add_node && this.can_create) {
-			me.page.set_primary_action(__("New"), function() {
-				me.new_node();
+			me.page.set_primary_action(__("New"), function () {
+				me.add_new_node();
 			}, "octicon octicon-plus")
 		}
 	},
@@ -373,21 +401,5 @@ frappe.views.TreeView = Class.extend({
 				me.page.add_menu_item(menu_item["label"], menu_item["action"]);
 			}
 		});
-
-		// last menu item
-		me.page.add_menu_item(__('Add to Desktop'), () => {
-			const label = me.doctype === 'Account' ?
-				__('Chart of Accounts') :
-				__(me.doctype);
-			frappe.add_to_desktop(label, me.doctype);
-		});
 	}
 });
-
-
-
-
-
-
-
-

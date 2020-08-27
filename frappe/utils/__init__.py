@@ -10,6 +10,7 @@ from .html_utils import sanitize_html
 import frappe
 from frappe.utils.identicon import Identicon
 from email.utils import parseaddr, formataddr
+from email.header import decode_header, make_header
 # utility functions like cint, int, flt, etc.
 from frappe.utils.data import *
 from six.moves.urllib.parse import quote
@@ -59,13 +60,13 @@ def get_email_address(user=None):
 	if not user:
 		user = frappe.session.user
 
-	return frappe.db.get_value("User", user, ["email"], as_dict=True).get("email")
+	return frappe.db.get_value("User", user, "email")
 
 def get_formatted_email(user):
 	"""get Email Address of user formatted as: `John Doe <johndoe@example.com>`"""
 	fullname = get_fullname(user)
 	mail = get_email_address(user)
-	return formataddr((fullname, mail))
+	return cstr(make_header(decode_header(formataddr((fullname, mail)))))
 
 def extract_email_id(email):
 	"""fetch only the email part of the Email Address"""
@@ -75,6 +76,12 @@ def extract_email_id(email):
 	return email_id
 
 def validate_email_add(email_str, throw=False):
+	"""
+	validate_email_add will be renamed to the validate_email_address in v12
+	"""
+	return validate_email_address(email_str, throw=False)
+
+def validate_email_address(email_str, throw=False):
 	"""Validates the email string"""
 	email = email_str = (email_str or "").strip()
 
@@ -310,6 +317,12 @@ def get_backups_path():
 def get_request_site_address(full_address=False):
 	return get_url(full_address=full_address)
 
+def get_site_url(site):
+	return 'http://{site}:{port}'.format(
+		site=site,
+		port=frappe.get_conf(site).webserver_port
+	)
+
 def encode_dict(d, encoding="utf-8"):
 	for key in d:
 		if isinstance(d[key], string_types) and isinstance(d[key], text_type):
@@ -443,7 +456,7 @@ def watch(path, handler=None, debug=True):
 	observer.join()
 
 def markdown(text, sanitize=True, linkify=True):
-	html = frappe.utils.md_to_html(text)
+	html = text if is_html(text) else frappe.utils.md_to_html(text)
 
 	if sanitize:
 		html = html.replace("<!-- markdown -->", "")
@@ -454,7 +467,7 @@ def markdown(text, sanitize=True, linkify=True):
 def sanitize_email(emails):
 	sanitized = []
 	for e in split_emails(emails):
-		if not validate_email_add(e):
+		if not validate_email_address(e):
 			continue
 
 		full_name, email_id = parse_addr(e)
@@ -535,6 +548,8 @@ def get_site_info():
 	system_settings = frappe.db.get_singles_dict('System Settings')
 	space_usage = frappe._dict((frappe.local.conf.limits or {}).get('space_usage', {}))
 
+	kwargs = {"fields": ["user", "creation", "full_name"], "filters":{"Operation": "Login", "Status": "Success"}, "limit": "10"}
+
 	site_info = {
 		'installed_apps': get_installed_apps_info(),
 		'users': users,
@@ -549,7 +564,8 @@ def get_site_info():
 		'space_used': flt((space_usage.total or 0) / 1024.0, 2),
 		'database_size': space_usage.database_size,
 		'backup_size': space_usage.backup_size,
-		'files_size': space_usage.files_size
+		'files_size': space_usage.files_size,
+		'last_logins': frappe.get_all("Activity Log", **kwargs)
 	}
 
 	# from other apps
@@ -564,7 +580,9 @@ def parse_json(val):
 	Parses json if string else return
 	"""
 	if isinstance(val, string_types):
-		return json.loads(val)
+		val = json.loads(val)
+	if isinstance(val, dict):
+		val = frappe._dict(val)
 	return val
 
 def cast_fieldtype(fieldtype, value):
@@ -640,3 +658,24 @@ def gzip_decompress(data):
 	"""
 	with GzipFile(fileobj=io.BytesIO(data)) as f:
 		return f.read()
+
+def get_safe_filters(filters):
+	try:
+		filters = json.loads(filters)
+
+		if isinstance(filters, (integer_types, float)):
+			filters = frappe.as_unicode(filters)
+
+	except (TypeError, ValueError):
+		# filters are not passed, not json
+		pass
+
+	return filters
+
+def create_batch(iterable, batch_size):
+	"""
+	Convert an iterable to multiple batches of constant size of batch_size
+	"""
+	total_count = len(iterable)
+	for i in range(0, total_count, batch_size):
+		yield iterable[i:min(i + batch_size, total_count)]

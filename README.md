@@ -1,5 +1,5 @@
 <div align="center">
-    <img src=".github/frappe-bird.png" height="150">
+    <img src=".github/frappe-framework-logo.png" height="150">
     <h1>
         <a href="https://frappe.io">
             frappe
@@ -14,15 +14,15 @@
 </div>
 
 <div align="center">
-    <a href="https://travis-ci.org/frappe/frappe">
-        <img src="https://img.shields.io/travis/frappe/frappe.svg?style=flat-square">
+    <a href="https://travis-ci.org/DigiThinkIT/frappe">
+        <img src="https://img.shields.io/travis/DigiThinkIT/frappe.svg?style=flat-square">
     </a>
     <a href='https://frappe.io/docs'>
         <img src='https://img.shields.io/badge/docs-📖-7575FF.svg?style=flat-square'/>
     </a>
 	<a href='https://www.codetriage.com/frappe/frappe'>
 		<img src='https://www.codetriage.com/frappe/frappe/badges/users.svg'>
-	</a>   
+	</a>
     <a href='https://coveralls.io/github/frappe/frappe?branch=develop'>
         <img src='https://coveralls.io/repos/github/frappe/frappe/badge.svg?branch=develop'>
     </a>
@@ -38,7 +38,7 @@ Full-stack web application framework that uses Python and MariaDB on the server 
 
 ### Installation
 
-[Install via Frappe Bench](https://github.com/frappe/bench)
+[Install via Frappe Bench](https://github.com/DigiThinkIT/bench)
 
 ## Contributing
 

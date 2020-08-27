@@ -14,10 +14,6 @@ def get_notification_config():
 			"Error Snapshot": {"seen": 0, "parent_error_snapshot": None},
 			"Workflow Action": {"status": 'Open'}
 		},
-		"for_other": {
-			"Likes": "frappe.core.notifications.get_unseen_likes",
-			"Email": "frappe.core.notifications.get_unread_emails",
-		}
 	}
 
 def get_things_todo(as_list=False):
@@ -44,14 +40,14 @@ def get_todays_events(as_list=False):
 
 def get_unseen_likes():
 	"""Returns count of unseen likes"""
-	return frappe.db.sql("""select count(*) from `tabCommunication`
+	return frappe.db.sql("""select count(*) from `tabComment`
 		where
-			communication_type='Comment'
-			and modified >= DATE_SUB(NOW(),INTERVAL 1 YEAR)
-			and comment_type='Like'
+			comment_type='Like'
+			and modified >= (NOW() - INTERVAL '1' YEAR)
 			and owner is not null and owner!=%(user)s
 			and reference_owner=%(user)s
-			and seen=0""", {"user": frappe.session.user})[0][0]
+			and seen=0
+			""", {"user": frappe.session.user})[0][0]
 
 def get_unread_emails():
 	"returns unread emails for a user"
@@ -60,12 +56,12 @@ def get_unread_emails():
 		SELECT count(*)
 		FROM `tabCommunication`
 		WHERE communication_type='Communication'
-		AND communication_medium="Email"
-		AND sent_or_received="Received"
-		AND email_status not in ("Spam", "Trash")
+		AND communication_medium='Email'
+		AND sent_or_received='Received'
+		AND email_status not in ('Spam', 'Trash')
 		AND email_account in (
 			SELECT distinct email_account from `tabUser Email` WHERE parent=%(user)s
 		)
-		AND modified >= DATE_SUB(NOW(),INTERVAL 1 YEAR)
+		AND modified >= (NOW() - INTERVAL '1' YEAR)
 		AND seen=0
 		""", {"user": frappe.session.user})[0][0]

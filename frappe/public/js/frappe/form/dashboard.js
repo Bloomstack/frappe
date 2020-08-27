@@ -36,8 +36,8 @@ frappe.ui.form.Dashboard = Class.extend({
 		// clear custom
 		this.wrapper.find('.custom').remove();
 	},
-	set_headline: function(html) {
-		this.frm.layout.show_message(html);
+	set_headline: function(html, color) {
+		this.frm.layout.show_message(html, color);
 	},
 	clear_headline: function() {
 		this.frm.layout.show_message();
@@ -57,12 +57,9 @@ frappe.ui.form.Dashboard = Class.extend({
 		this.clear_headline();
 	},
 
-	set_headline_alert: function(text, indicator_color) {
-		if (!indicator_color) {
-			indicator_color = 'orange';
-		}
+	set_headline_alert: function(text, color) {
 		if(text) {
-			this.set_headline(`<div><span class="indicator ${indicator_color}">${text}</span></div>`);
+			this.set_headline(`<div>${text}</div>`, color);
 		} else {
 			this.clear_headline();
 		}
@@ -95,11 +92,14 @@ frappe.ui.form.Dashboard = Class.extend({
 
 	show_progress: function(title, percent, message) {
 		this._progress_map = this._progress_map || {};
-		if (!this._progress_map[title]) {
-			const progress_chart = this.add_progress(title, percent, message);
+		let progress_chart = this._progress_map[title];
+		// create a new progress chart if it doesnt exist
+		// or the previous one got detached from the DOM
+		if (!progress_chart || progress_chart.parent().length == 0) {
+			progress_chart = this.add_progress(title, percent, message);
 			this._progress_map[title] = progress_chart;
 		}
-		let progress_chart = this._progress_map[title];
+
 		if (!$.isArray(percent)) {
 			percent = this.format_percent(title, percent);
 		}
@@ -126,11 +126,7 @@ frappe.ui.form.Dashboard = Class.extend({
 
 	format_percent: function(title, percent) {
 		var width = cint(percent) < 1 ? 1 : cint(percent);
-		var progress_class = "";
-		if(width < 10)
-			progress_class = "progress-bar-danger";
-		if(width > 99.9)
-			progress_class = "progress-bar-success";
+		var progress_class = "progress-bar-success";
 
 		return [{
 			title: title,
@@ -156,7 +152,8 @@ frappe.ui.form.Dashboard = Class.extend({
 
 		var show = false;
 
-		if(this.data && (this.data.transactions || []).length) {
+		if(this.data && ((this.data.transactions || []).length
+			|| (this.data.reports || []).length)) {
 			if(this.data.docstatus && this.frm.doc.docstatus !== this.data.docstatus) {
 				// limited docstatus
 				return;
@@ -266,9 +263,19 @@ frappe.ui.form.Dashboard = Class.extend({
 		$(frappe.render_template('form_links', this.data))
 			.appendTo(this.transactions_area)
 
+		if (this.data.reports && this.data.reports.length) {
+			$(frappe.render_template('report_links', this.data))
+				.appendTo(this.transactions_area)
+		}
+
 		// bind links
 		this.transactions_area.find(".badge-link").on('click', function() {
 			me.open_document_list($(this).parent());
+		});
+
+		// bind reports
+		this.transactions_area.find(".report-link").on('click', function() {
+			me.open_report($(this).parent());
 		});
 
 		// bind open notifications
@@ -282,6 +289,17 @@ frappe.ui.form.Dashboard = Class.extend({
 		});
 
 		this.data_rendered = true;
+	},
+	open_report: function($link) {
+
+		let report = $link.attr('data-report');
+
+		let fieldname = this.data.non_standard_fieldnames
+			? (this.data.non_standard_fieldnames[report] || this.data.fieldname)
+			: this.data.fieldname;
+
+		frappe.route_options[fieldname] = this.frm.doc.name;
+		frappe.set_route("query-report", report);
 	},
 	open_document_list: function($link, show_open) {
 		// show document list with filters
@@ -310,6 +328,12 @@ frappe.ui.form.Dashboard = Class.extend({
 		var fieldname = this.data.non_standard_fieldnames
 			? (this.data.non_standard_fieldnames[doctype] || this.data.fieldname)
 			: this.data.fieldname;
+
+		if (this.data.dynamic_links && this.data.dynamic_links[fieldname]) {
+			let dynamic_fieldname = this.data.dynamic_links[fieldname][1];
+			filter[dynamic_fieldname] = this.data.dynamic_links[fieldname][0];
+		}
+
 		filter[fieldname] = this.frm.doc.name;
 		return filter;
 	},
@@ -346,15 +370,24 @@ frappe.ui.form.Dashboard = Class.extend({
 				});
 
 				// update from internal links
-				$.each(me.data.internal_links, function(doctype, link) {
-					var table_fieldname = link[0], link_fieldname = link[1];
-					var names = [];
-					(me.frm.doc[table_fieldname] || []).forEach(function(d) {
-						var value = d[link_fieldname];
-						if(value && names.indexOf(value)===-1) {
+				$.each(me.data.internal_links, (doctype, link) => {
+					let names = [];
+					if (typeof link === 'string' || link instanceof String) {
+						// get internal links in parent document
+						let value = me.frm.doc[link];
+						if (value && !names.includes(value)) {
 							names.push(value);
 						}
-					});
+					} else if (Array.isArray(link)) {
+						// get internal links in child documents
+						let [table_fieldname, link_fieldname] = link;
+						(me.frm.doc[table_fieldname] || []).forEach(d => {
+							let value = d[link_fieldname];
+							if (value && !names.includes(value)) {
+								names.push(value);
+							}
+						});
+					}
 					me.frm.dashboard.set_badge_count(doctype, 0, names.length, names);
 				});
 
@@ -391,16 +424,15 @@ frappe.ui.form.Dashboard = Class.extend({
 
 	update_heatmap: function(data) {
 		if(this.heatmap) {
-			this.heatmap.update(data);
+			this.heatmap.update({dataPoints: data});
 		}
 	},
 
 	// heatmap
 	render_heatmap: function() {
 		if(!this.heatmap) {
-			this.heatmap = new Chart("#heatmap-" + frappe.model.scrub(this.frm.doctype), {
+			this.heatmap = new frappe.Chart("#heatmap-" + frappe.model.scrub(this.frm.doctype), {
 				type: 'heatmap',
-				height: 120,
 				start: new Date(moment().subtract(1, 'year').toDate()),
 				count_label: "interactions",
 				discreteDomains: 0,
@@ -471,11 +503,15 @@ frappe.ui.form.Dashboard = Class.extend({
 		this.chart_area.empty().removeClass('hidden');
 		$.extend(args, {
 			type: 'line',
-			colors: ['green']
+			colors: ['green'],
+			truncateLegends: 1,
+			axisOptions: {
+				shortenYAxisNumbers: 1
+			}
 		});
 		this.show();
 
-		this.chart = new Chart('.form-graph', args);
+		this.chart = new frappe.Chart('.form-graph', args);
 		if(!this.chart) {
 			this.hide();
 		}

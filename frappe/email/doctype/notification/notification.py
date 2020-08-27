@@ -8,15 +8,11 @@ import json, os
 from frappe import _
 from frappe.model.document import Document
 from frappe.core.doctype.role.role import get_emails_from_role
-from frappe.utils import validate_email_add, nowdate, parse_val, is_html
+from frappe.utils import validate_email_address, nowdate, parse_val, is_html, add_to_date
 from frappe.utils.jinja import validate_template
 from frappe.modules.utils import export_module_json, get_doc_module
 from six import string_types
 from frappe.integrations.doctype.slack_webhook_url.slack_webhook_url import send_slack_message
-
-# imports - third-party imports
-import pymysql
-from pymysql.constants import ER
 
 class Notification(Document):
 	def onload(self):
@@ -71,7 +67,7 @@ def get_context(context):
 		temp_doc = frappe.new_doc(self.document_type)
 		if self.condition:
 			try:
-				frappe.safe_eval(self.condition, None, get_context(temp_doc))
+				frappe.safe_eval(self.condition, None, get_context(temp_doc.as_dict()))
 			except Exception:
 				frappe.throw(_("The Condition '{0}' is invalid").format(self.condition))
 
@@ -91,11 +87,19 @@ def get_context(context):
 		if self.event=="Days After":
 			diff_days = -diff_days
 
-		for name in frappe.db.sql_list("""select name from `tab{0}` where
-			DATE(`{1}`) = ADDDATE(DATE(%s), INTERVAL %s DAY)""".format(self.document_type,
-				self.date_changed), (nowdate(), diff_days or 0)):
+		reference_date = add_to_date(nowdate(), days=diff_days)
+		reference_date_start = reference_date + ' 00:00:00.000000'
+		reference_date_end = reference_date + ' 23:59:59.000000'
 
-			doc = frappe.get_doc(self.document_type, name)
+		doc_list = frappe.get_all(self.document_type,
+			fields='name',
+			filters=[
+				{ self.date_changed: ('>=', reference_date_start) },
+				{ self.date_changed: ('<=', reference_date_end) }
+			])
+
+		for d in doc_list:
+			doc = frappe.get_doc(self.document_type, d.name)
 
 			if self.condition and not frappe.safe_eval(self.condition, None, get_context(doc)):
 				continue
@@ -122,9 +126,22 @@ def get_context(context):
 			self.send_a_slack_msg(doc, context)
 
 		if self.set_property_after_alert:
-			frappe.db.set_value(doc.doctype, doc.name, self.set_property_after_alert,
-				self.property_value, update_modified = False)
-			doc.set(self.set_property_after_alert, self.property_value)
+			allow_update = True
+			if doc.docstatus == 1 and not doc.meta.get_field(self.set_property_after_alert).allow_on_submit:
+				allow_update = False
+			try:
+				if allow_update and not doc.flags.in_notification_update:
+					doc.set(self.set_property_after_alert, self.property_value)
+					doc.flags.updater_reference = {
+						'doctype': self.doctype,
+						'docname': self.name,
+						'label': _('via Notification')
+					}
+					doc.flags.in_notification_update = True
+					doc.save(ignore_permissions=True)
+					doc.flags.in_notification_update = False
+			except Exception:
+				frappe.log_error(title='Document update failed', message=frappe.get_traceback())
 
 	def send_an_email(self, doc, context):
 		from email.utils import formataddr
@@ -134,6 +151,8 @@ def get_context(context):
 
 		attachments = self.get_attachment(doc)
 		recipients, cc, bcc = self.get_list_of_recipients(doc, context)
+		if not (recipients or cc or bcc):
+			return
 		sender = None
 		if self.sender and self.sender_email:
 			sender = formataddr((self.sender, self.sender_email))
@@ -146,6 +165,7 @@ def get_context(context):
 			reference_doctype = doc.doctype,
 			reference_name = doc.name,
 			attachments = attachments,
+			expose_recipients="header",
 			print_letterhead = ((attachments
 				and attachments[0].get('print_letterhead')) or False))
 
@@ -166,7 +186,7 @@ def get_context(context):
 					continue
 			if recipient.email_by_document_field:
 				email_ids_value = doc.get(recipient.email_by_document_field)
-				if validate_email_add(email_ids_value):
+				if validate_email_address(email_ids_value):
 					email_ids = email_ids_value.replace(",", "\n")
 					recipients = recipients + email_ids.split("\n")
 
@@ -212,8 +232,15 @@ def get_context(context):
 				please enable Allow Print For {0} in Print Settings""".format(status)),
 				title=_("Error in Notification"))
 		else:
-			return [{"print_format_attachment":1, "doctype":doc.doctype, "name": doc.name,
-				"print_format":self.print_format, "print_letterhead": print_settings.with_letterhead}]
+			return [{
+				"print_format_attachment": 1,
+				"doctype": doc.doctype,
+				"name": doc.name,
+				"print_format": self.print_format,
+				"print_letterhead": print_settings.with_letterhead,
+				"lang": frappe.db.get_value('Print Format', self.print_format, 'default_print_language')
+					if self.print_format else 'en'
+			}]
 
 
 	def get_template(self):
@@ -257,9 +284,14 @@ def trigger_notifications(doc, method=None):
 		return
 
 	if method == "daily":
-		for alert in frappe.db.sql_list("""select name from `tabNotification`
-			where event in ('Days Before', 'Days After') and enabled=1"""):
-			alert = frappe.get_doc("Notification", alert)
+		doc_list = frappe.get_all('Notification',
+			filters={
+				'event': ('in', ('Days Before', 'Days After')),
+				'enabled': 1
+			})
+		for d in doc_list:
+			alert = frappe.get_doc("Notification", d.name)
+
 			for doc in alert.get_documents_for_today():
 				evaluate_alert(doc, alert, alert.event)
 				frappe.db.commit()
@@ -277,30 +309,30 @@ def evaluate_alert(doc, alert, event):
 				return
 
 		if event=="Value Change" and not doc.is_new():
-			try:
-				db_value = frappe.db.get_value(doc.doctype, doc.name, alert.value_changed)
-			except pymysql.InternalError as e:
-				if e.args[0]== ER.BAD_FIELD_ERROR:
-					alert.db_set('enabled', 0)
-					frappe.log_error('Notification {0} has been disabled due to missing field'.format(alert.name))
-					return
+			if not frappe.db.has_column(doc.doctype, alert.value_changed):
+				alert.db_set('enabled', 0)
+				frappe.log_error('Notification {0} has been disabled due to missing field'.format(alert.name))
+				return
 
-			db_value = parse_val(db_value)
-			if (doc.get(alert.value_changed) == db_value) or \
-				(not db_value and not doc.get(alert.value_changed)):
+			doc_before_save = doc.get_doc_before_save()
+			field_value_before_save = doc_before_save.get(alert.value_changed) if doc_before_save else None
 
-				return # value not changed
+			field_value_before_save = parse_val(field_value_before_save)
+			if (doc.get(alert.value_changed) == field_value_before_save):
+				# value not changed
+				return
 
 		if event != "Value Change" and not doc.is_new():
 			# reload the doc for the latest values & comments,
 			# except for validate type event.
-			doc = frappe.get_doc(doc.doctype, doc.name)
+			doc.reload()
 		alert.send(doc)
 	except TemplateError:
 		frappe.throw(_("Error while evaluating Notification {0}. Please fix your template.").format(alert))
 	except Exception as e:
-		frappe.log_error(message=frappe.get_traceback(), title=str(e))
-		frappe.throw(_("Error in Notification"))
+		error_log = frappe.log_error(message=frappe.get_traceback(), title=str(e))
+		frappe.throw(_("Error in Notification: {}".format(
+			frappe.utils.get_link_to_form('Error Log', error_log.name))))
 
 def get_context(doc):
-	return {"doc": doc, "nowdate": nowdate, "frappe.utils": frappe.utils}
+	return {"doc": doc, "nowdate": nowdate, "frappe": frappe._dict(utils=frappe.utils)}

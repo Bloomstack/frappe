@@ -15,20 +15,22 @@ from frappe.utils import get_datetime, now, strip_html
 from frappe.utils.jinja import render_template
 from frappe.website.doctype.website_slideshow.website_slideshow import get_slideshow
 from frappe.website.router import resolve_route
-from frappe.website.utils import extract_title, find_first_image, get_comment_list
+from frappe.website.utils import (extract_title, find_first_image, get_comment_list,
+	get_html_content_based_on_type)
 from frappe.website.website_generator import WebsiteGenerator
 
 
 class WebPage(WebsiteGenerator):
 	def validate(self):
 		self.validate_dates()
+		self.set_route()
 
 	def get_feed(self):
 		return self.title
 
 	def get_context(self, context):
-		if context.main_section == None:
-			context.main_section = ''
+		context.main_section = get_html_content_based_on_type(self, 'main_section', self.content_type)
+		self.render_dynamic(context)
 
 		# if static page, get static content
 		if context.slideshow:
@@ -45,9 +47,6 @@ class WebPage(WebsiteGenerator):
 			"text_align": self.text_align,
 		})
 
-		if self.description:
-			context.setdefault("metatags", {})["description"] = self.description
-
 		if not self.show_title:
 			context["no_header"] = 1
 
@@ -59,7 +58,7 @@ class WebPage(WebsiteGenerator):
 
 	def render_dynamic(self, context):
 		# dynamic
-		is_jinja = "<!-- jinja -->" in context.main_section
+		is_jinja = context.dynamic_template or "<!-- jinja -->" in context.main_section
 		if is_jinja or ("{{" in context.main_section):
 			try:
 				context["main_section"] = render_template(context.main_section,
@@ -122,8 +121,7 @@ class WebPage(WebsiteGenerator):
 
 	def set_metatags(self, context):
 		context.metatags = {
-			"name": context.title,
-			"description": (context.description or "").replace("\n", " ")[:500]
+			"name": context.title
 		}
 
 		image = find_first_image(context.main_section or "")

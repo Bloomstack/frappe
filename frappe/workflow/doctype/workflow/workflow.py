@@ -16,6 +16,7 @@ class Workflow(Document):
 		self.validate_docstatus()
 
 	def on_update(self):
+		self.update_doc_status()
 		frappe.clear_cache(doctype=self.document_type)
 		frappe.cache().delete_key('workflow_' + self.name) # clear cache created in model/workflow.py
 
@@ -46,10 +47,38 @@ class Workflow(Document):
 		states = self.get("states")
 		for d in states:
 			if not d.doc_status in docstatus_map:
-				frappe.db.sql("""update `tab%s` set `%s` = %s where \
-					ifnull(`%s`, '')='' and docstatus=%s""" % (self.document_type, self.workflow_state_field,
-						'%s', self.workflow_state_field, "%s"), (d.state, d.doc_status))
+				frappe.db.sql("""
+					UPDATE `tab{doctype}`
+					SET `{field}` = %s
+					WHERE ifnull(`{field}`, '') = ''
+					AND `docstatus` = %s
+				""".format(doctype=self.document_type, field=self.workflow_state_field),
+				(d.state, d.doc_status))
+
 				docstatus_map[d.doc_status] = d.state
+
+	def update_doc_status(self):
+		'''
+			Checks if the docstatus of a state was updated.
+			If yes then the docstatus of the document with same state will be updated
+		'''
+		doc_before_save = self.get_doc_before_save()
+		before_save_states, new_states = {}, {}
+		if doc_before_save:
+			for d in doc_before_save.states:
+				before_save_states[d.state] = d
+			for d in self.states:
+				new_states[d.state] = d
+
+			for key in new_states:
+				if key in before_save_states:
+					if not new_states[key].doc_status == before_save_states[key].doc_status:
+						frappe.db.set_value(self.document_type, {
+								self.workflow_state_field: before_save_states[key].state
+							},
+							'docstatus',
+							new_states[key].doc_status,
+							update_modified = False)
 
 	def validate_docstatus(self):
 		def get_state(state):
@@ -75,11 +104,23 @@ class Workflow(Document):
 	def set_active(self):
 		if int(self.is_active or 0):
 			# clear all other
-			frappe.db.sql("""update tabWorkflow set is_active=0
-				where document_type=%s""",
+			frappe.db.sql("""UPDATE `tabWorkflow` SET `is_active`=0
+				WHERE `document_type`=%s""",
 				self.document_type)
 
 @frappe.whitelist()
 def get_fieldnames_for(doctype):
 	return [f.fieldname for f in frappe.get_meta(doctype).fields \
 		if f.fieldname not in no_value_fields]
+
+@frappe.whitelist()
+def get_workflow_state_count(doctype, workflow_state_field, states):
+	states = frappe.parse_json(states)
+	result = frappe.get_all(
+		doctype,
+		fields=[workflow_state_field, 'count(*) as count', 'docstatus'],
+		filters = {'workflow_state': ['not in', states]},
+		group_by = workflow_state_field
+	)
+	return [r for r in result if r[workflow_state_field]]
+

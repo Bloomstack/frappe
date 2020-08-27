@@ -54,9 +54,9 @@ frappe.ui.form.on('Auto Email Report', {
 	show_filters: function(frm) {
 		var wrapper = $(frm.get_field('filters_display').wrapper);
 		wrapper.empty();
-		if(frm.doc.report_type !== 'Report Builder'
+		if(frm.doc.report_type === 'Custom Report' || (frm.doc.report_type !== 'Report Builder'
 			&& frappe.query_reports[frm.doc.report]
-			&& frappe.query_reports[frm.doc.report].filters) {
+			&& frappe.query_reports[frm.doc.report].filters)) {
 
 			// make a table to show filters
 			var table = $('<table class="table table-bordered" style="cursor:pointer; margin:0px;"><thead>\
@@ -65,9 +65,24 @@ frappe.ui.form.on('Auto Email Report', {
 			$('<p class="text-muted small">' + __("Click table to edit") + '</p>').appendTo(wrapper);
 
 			var filters = JSON.parse(frm.doc.filters || '{}');
-			var report_filters = frappe.query_reports[frm.doc.report].filters;
+
+			let report_filters, report_name;
+
+			if (frm.doc.report_type === 'Custom Report'
+				&& frappe.query_reports[frm.doc.reference_report]
+				&& frappe.query_reports[frm.doc.reference_report].filters) {
+				report_filters = frappe.query_reports[frm.doc.reference_report].filters;
+				report_name = frm.doc.reference_report;
+			} else {
+				report_filters = frappe.query_reports[frm.doc.report].filters;
+				report_name = frm.doc.report;
+			}
+
 			if(report_filters && report_filters.length > 0) {
 				frm.set_value('filter_meta', JSON.stringify(report_filters));
+				if (frm.is_dirty()) {
+					frm.save();
+				}
 			}
 
 			var report_filters_list = []
@@ -97,8 +112,20 @@ frappe.ui.form.on('Auto Email Report', {
 					}
 				});
 				dialog.show();
+
+				//Set query report object so that it can be used while fetching filter values in the report
+				frappe.query_report = new frappe.views.QueryReport({'filters': dialog.fields_list});
+				frappe.query_reports[report_name].onload && frappe.query_reports[report_name].onload(frappe.query_report);
 				dialog.set_values(filters);
 			})
+
+			// populate dynamic date field selection
+			let date_fields = report_filters
+				.filter(df => df.fieldtype === 'Date')
+				.map(df => ({ label: df.label, value: df.fieldname }));
+			frm.set_df_property('from_date_field', 'options', date_fields);
+			frm.set_df_property('to_date_field', 'options', date_fields);
+			frm.toggle_display('dynamic_report_filters_section', date_fields.length > 0);
 		}
 	}
 });

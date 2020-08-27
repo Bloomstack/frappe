@@ -38,7 +38,8 @@ frappe.provide("frappe.views");
 					cards: cards,
 					columns: columns,
 					cur_list: opts.cur_list,
-					empty_state: false
+					empty_state: false,
+					wrapper: opts.wrapper
 				});
 			},
 			update_cards: function(updater, cards) {
@@ -97,21 +98,33 @@ frappe.provide("frappe.views");
 				var doc_fields = {};
 				doc_fields[field.fieldname] = card_title;
 				doc_fields[this.board.field_name] = column_title;
-				this.board.filters_array.forEach(function(f) {
+				this.cur_list.filter_area.get().forEach(function(f) {
 					if (f[2] !== "=") return;
 					doc_fields[f[1]] = f[3];
 				});
 
 				$.extend(doc, doc_fields);
 
+				// add the card directly
+				// for better ux
+				const card = prepare_card(doc, state);
+				card._disable_click = true;
+				const cards = [...state.cards, card];
+				// remember the name which we will override later
+				const old_name = doc.name;
+				updater.set({ cards });
+
 				if (field && !quick_entry) {
 					return insert_doc(doc)
 						.then(function(r) {
-							var updated_doc = r.message;
-							var card = prepare_card(doc, state, updated_doc);
-							var cards = state.cards.slice();
-							cards.push(card);
-							updater.set({ cards: cards });
+							// update the card in place with the updated doc
+							const updated_doc = r.message;
+							const index = state.cards.findIndex(card => card.name === old_name);
+							const card = prepare_card(updated_doc, state);
+							const new_cards = state.cards.slice();
+							new_cards[index] = card;
+							updater.set({ cards: new_cards });
+							fluxify.doAction('update_order');
 						});
 				} else {
 					frappe.new_doc(this.doctype, doc);
@@ -142,10 +155,21 @@ frappe.provide("frappe.views");
 					fluxify.doAction('update_card', updated_card);
 				});
 			},
-			update_order: function(updater, order) {
+			update_order: function(updater) {
 				// cache original order
 				const _cards = this.cards.slice();
 				const _columns = this.columns.slice();
+
+				const order = {};
+				this.wrapper.find('.kanban-column[data-column-value]')
+					.each(function() {
+						var col_name = $(this).data().columnValue;
+						order[col_name] = [];
+						$(this).find('.kanban-card-wrapper').each(function() {
+							var card_name = $(this).data().name;
+							order[col_name].push(card_name);
+						});
+					});
 
 				frappe.call({
 					method: method_prefix + "update_order",
@@ -431,17 +455,7 @@ frappe.provide("frappe.views");
 					wrapper.find('.kanban-card.add-card').fadeIn(100);
 					wrapper.find('.kanban-cards').height('auto');
 					// update order
-					var order = {};
-					wrapper.find('.kanban-column[data-column-value]')
-						.each(function() {
-							var col_name = $(this).data().columnValue;
-							order[col_name] = [];
-							$(this).find('.kanban-card-wrapper').each(function() {
-								var card_name = $(this).data().name;
-								order[col_name].push(card_name);
-							});
-						});
-					fluxify.doAction('update_order', order);
+					fluxify.doAction('update_order');
 				},
 				onAdd: function() {
 				},
@@ -470,11 +484,11 @@ frappe.provide("frappe.views");
 						// not already working -- double entry
 						e.preventDefault();
 						var card_title = $textarea.val();
+						$new_card_area.hide();
+						$textarea.val('');
 						fluxify.doAction('add_card', card_title, column.title)
 							.then(() => {
 								$btn_add.show();
-								$new_card_area.hide();
-								$textarea.val('');
 							});
 					}
 				}
@@ -524,14 +538,15 @@ frappe.provide("frappe.views");
 			if(!card) return;
 			make_dom();
 			render_card_meta();
-			bind_edit_card();
+			add_task_link();
 			// edit_card_title();
 		}
 
 		function make_dom() {
 			var opts = {
 				name: card.name,
-				title: remove_img_tags(card.title)
+				title: remove_img_tags(card.title),
+				disable_click: card._disable_click ? 'disable-click' : ''
 			};
 			self.$card = $(frappe.render_template('kanban_card', opts))
 				.appendTo(wrapper);
@@ -561,11 +576,9 @@ frappe.provide("frappe.views");
 			self.$card.find(".kanban-card-meta").empty().append(html);
 		}
 
-		function bind_edit_card() {
-			self.$card.find('.kanban-card.content').on('click', function() {
-				frappe.set_route('Form', card.doctype, card.name);
-				// setup_edit_card();
-			});
+		function add_task_link() {
+			let taskLink = frappe.utils.get_form_link(card.doctype, card.name);
+			self.$card.find('.kanban-card-redirect').attr('href', taskLink);			
 		}
 
 		function refresh_dialog() {

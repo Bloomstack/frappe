@@ -11,6 +11,9 @@ FrappeClient is a library that helps you connect with other frappe systems
 class AuthError(Exception):
 	pass
 
+class SiteExpiredError(Exception):
+	pass
+
 class FrappeException(Exception):
 	pass
 
@@ -39,10 +42,11 @@ class FrappeClient(object):
 			'pwd': password
 		}, verify=self.verify, headers=self.headers)
 
-		if r.status_code==200 and r.json().get('message') == "Logged In":
+		if r.status_code==200 and r.json().get('message') in ("Logged In", "No App"):
 			return r.json()
 		else:
-			print(r.text)
+			if json.loads(r.text).get('exc_type') == "SiteExpiredError":
+				raise SiteExpiredError
 			raise AuthError
 
 	def logout(self):

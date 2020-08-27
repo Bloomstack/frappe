@@ -19,19 +19,28 @@ frappe.ui.Filter = class {
 			[">=", ">="],
 			["<=", "<="],
 			["Between", __("Between")],
+			["Previous", __("Previous")],
+			["Next", __("Next")]
+		];
+
+		this.nested_set_conditions = [
 			["descendants of", __("Descendants Of")],
 			["not descendants of", __("Not Descendants Of")],
 			["ancestors of", __("Ancestors Of")],
-			["not ancestors of", __("Not Ancestors Of")]
+			["not ancestors of", __("Not Ancestors Of")],
 		];
+
+		this.conditions.push(...this.nested_set_conditions);
+
 		this.invalid_condition_map = {
 			Date: ['like', 'not like'],
 			Datetime: ['like', 'not like'],
-			Data: ['Between'],
-			Select: ["Between", "<=", ">=", "<", ">"],
-			Link: ["Between"],
-			Currency: ["Between"],
-			Color: ["Between"]
+			Data: ['Between', 'Previous', 'Next'],
+			Select: ['like', 'not like', 'Between', 'Previous', 'Next'],
+			Link: ["Between", 'Previous', 'Next', '>', '<', '>=', '<='],
+			Currency: ["Between", 'Previous', 'Next'],
+			Color: ["Between", 'Previous', 'Next'],
+			Check: this.conditions.map(c => c[0]).filter(c => c !== '=')
 		};
 		this.make();
 		this.make_select();
@@ -115,10 +124,14 @@ frappe.ui.Filter = class {
 	}
 
 	update_filter_tag() {
-		return this._filter_value_set.then(() => {
-			!this.$filter_tag ? this.make_tag() : this.set_filter_button_text();
-			this.filter_edit_area.hide();
-		});
+		if (this._filter_value_set) {
+			return this._filter_value_set.then(() => {
+				!this.$filter_tag ? this.make_tag() : this.set_filter_button_text();
+				this.filter_edit_area.hide();
+			});
+		} else {
+			return Promise.resolve();
+		}
 	}
 
 	remove() {
@@ -160,6 +173,7 @@ frappe.ui.Filter = class {
 		if(this.field) for(let k in this.field.df) cur[k] = this.field.df[k];
 
 		let original_docfield = (this.fieldselect.fields_by_name[doctype] || {})[fieldname];
+
 		if(!original_docfield) {
 			console.warn(`Field ${fieldname} is not selectable.`);
 			this.remove();
@@ -181,7 +195,7 @@ frappe.ui.Filter = class {
 		// called when condition is changed,
 		// don't change if all is well
 		if(this.field && cur.fieldname == fieldname && df.fieldtype == cur.fieldtype &&
-			df.parent == cur.parent) {
+			df.parent == cur.parent && df.options == cur.options) {
 			return;
 		}
 
@@ -189,13 +203,39 @@ frappe.ui.Filter = class {
 		this.fieldselect.selected_doctype = doctype;
 		this.fieldselect.selected_fieldname = fieldname;
 
+		if(["Previous", "Next"].includes(condition) && ['Date', 'Datetime', 'DateRange', 'Select'].includes(this.field.df.fieldtype)) {
+			df.fieldtype = 'Select';
+			df.options = [
+				{
+					label: __('1 week'),
+					value: '1 week'
+				},
+				{
+					label: __('1 month'),
+					value: '1 month'
+				},
+				{
+					label: __('3 months'),
+					value: '3 months'
+				},
+				{
+					label: __('6 months'),
+					value: '6 months'
+				},
+				{
+					label: __('1 year'),
+					value: '1 year'
+				}
+			];
+		}
+
 		this.make_field(df, cur.fieldtype);
 	}
 
 	make_field(df, old_fieldtype) {
 		let old_text = this.field ? this.field.get_value() : null;
 		this.hide_invalid_conditions(df.fieldtype, df.original_type);
-		this.hide_nested_set_conditions(df);
+		this.toggle_nested_set_conditions(df);
 		let field_area = this.filter_edit_area.find('.filter-field').empty().get(0);
 		let f = frappe.ui.form.make_control({
 			df: df,
@@ -243,7 +283,7 @@ frappe.ui.Filter = class {
 
 	make_tag() {
 		this.$filter_tag = this.get_filter_tag_element()
-			.insertAfter(this.parent.find(".active-tag-filters .add-filter"));
+			.insertAfter(this.parent.find(".active-tag-filters .clear-filters"));
 		this.set_filter_button_text();
 		this.bind_tag();
 	}
@@ -291,8 +331,8 @@ frappe.ui.Filter = class {
 	}
 
 	hide_invalid_conditions(fieldtype, original_type) {
-		let invalid_conditions = this.invalid_condition_map[fieldtype] ||
-			this.invalid_condition_map[original_type] || [];
+		let invalid_conditions = this.invalid_condition_map[original_type]
+			|| this.invalid_condition_map[fieldtype] || [];
 
 		for (let condition of this.conditions) {
 			this.filter_edit_area.find(`.condition option[value="${condition[0]}"]`).toggle(
@@ -301,18 +341,11 @@ frappe.ui.Filter = class {
 		}
 	}
 
-	hide_nested_set_conditions(df) {
-		if ( !( df.fieldtype == "Link" && frappe.boot.nested_set_doctypes.includes(df.options))) {
-			this.filter_edit_area.find(`.condition option[value="descendants of"]`).hide();
-			this.filter_edit_area.find(`.condition option[value="not descendants of"]`).hide();
-			this.filter_edit_area.find(`.condition option[value="ancestors of"]`).hide();
-			this.filter_edit_area.find(`.condition option[value="not ancestors of"]`).hide();
-		}else {
-			this.filter_edit_area.find(`.condition option[value="descendants of"]`).show();
-			this.filter_edit_area.find(`.condition option[value="not descendants of"]`).show();
-			this.filter_edit_area.find(`.condition option[value="ancestors of"]`).show();
-			this.filter_edit_area.find(`.condition option[value="not ancestors of"]`).show();
-		}
+	toggle_nested_set_conditions(df) {
+		let show_condition = df.fieldtype === "Link" && frappe.boot.nested_set_doctypes.includes(df.options);
+		this.nested_set_conditions.forEach(condition => {
+			this.filter_edit_area.find(`.condition option[value="${condition[0]}"]`).toggle(show_condition);
+		});
 	}
 };
 
@@ -329,24 +362,28 @@ frappe.ui.filter_utils = {
 	get_selected_value(field, condition) {
 		let val = field.get_value();
 
-		if(typeof val==='string') {
+		if (typeof val === 'string') {
 			val = strip(val);
 		}
 
-		if(field.df.original_type == 'Check') {
+		if (condition == 'is' && !val) {
+			val = field.df.options[0].value;
+		}
+
+		if (field.df.original_type == 'Check') {
 			val = (val=='Yes' ? 1 :0);
 		}
 
-		if(condition.indexOf('like', 'not like')!==-1) {
+		if (condition.indexOf('like', 'not like') !== -1) {
 			// automatically append wildcards
-			if(val && !(val.startsWith('%') || val.endsWith('%'))) {
+			if (val && !(val.startsWith('%') || val.endsWith('%'))) {
 				val = '%' + val + '%';
 			}
-		} else if(in_list(["in", "not in"], condition)) {
-			if(val) {
+		} else if (in_list(["in", "not in"], condition)) {
+			if (val) {
 				val = val.split(',').map(v => strip(v));
 			}
-		} if(val === '%') {
+		} if (val === '%') {
 			val = "";
 		}
 

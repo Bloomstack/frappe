@@ -70,6 +70,7 @@ frappe.ui.form.ControlMultiCheck = frappe.ui.form.Control.extend({
 			if (option.danger) {
 				checkbox.find('.label-area').addClass('text-danger');
 			}
+			option.$checkbox = checkbox;
 		});
 		if(this.df.select_all) {
 			this.setup_select_all();
@@ -86,7 +87,9 @@ frappe.ui.form.ControlMultiCheck = frappe.ui.form.Control.extend({
 				this.selected_options.push(option_name);
 			} else {
 				let index = this.selected_options.indexOf(option_name);
-				this.selected_options.splice(index, 1);
+				if(index > -1) {
+					this.selected_options.splice(index, 1);
+				}
 			}
 			this.df.on_change && this.df.on_change();
 		});
@@ -136,7 +139,7 @@ frappe.ui.form.ControlMultiCheck = frappe.ui.form.Control.extend({
 		const column_size = this.get_column_size();
 		return $(`
 			<div class="checkbox unit-checkbox col-sm-${column_size}">
-				<label>
+				<label title="${option.description || ''}">
 				<input type="checkbox" data-unit="${option.value}">
 				</input>
 				<span class="label-area small" data-unit="${option.value}">${__(option.label)}</span>

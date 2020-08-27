@@ -22,7 +22,11 @@ def pass_context(f):
 			pr = cProfile.Profile()
 			pr.enable()
 
-		ret = f(frappe._dict(ctx.obj), *args, **kwargs)
+		try:
+			ret = f(frappe._dict(ctx.obj), *args, **kwargs)
+		except frappe.exceptions.SiteNotSpecifiedError as e:
+			click.secho(str(e), fg='yellow')
+			sys.exit(1)
 
 		if profile:
 			pr.disable()
@@ -39,13 +43,14 @@ def pass_context(f):
 
 	return click.pass_context(_func)
 
-def get_site(context):
+def get_site(context, raise_err=True):
 	try:
 		site = context.sites[0]
 		return site
 	except (IndexError, TypeError):
-		print('Please specify --site sitename')
-		sys.exit(1)
+		if raise_err:
+			raise frappe.SiteNotSpecifiedError
+		return None
 
 def popen(command, *args, **kwargs):
 	output    = kwargs.get('output', True)
@@ -62,7 +67,7 @@ def popen(command, *args, **kwargs):
 
 	return_ = proc.wait()
 
-	if raise_err:
+	if return_ and raise_err:
 		raise subprocess.CalledProcessError(return_, command)
 
 	return return_
@@ -72,12 +77,11 @@ def call_command(cmd, context):
 
 def get_commands():
 	# prevent circular imports
-	from .docs import commands as doc_commands
 	from .scheduler import commands as scheduler_commands
 	from .site import commands as site_commands
 	from .translate import commands as translate_commands
 	from .utils import commands as utils_commands
 
-	return list(set(doc_commands + scheduler_commands + site_commands + translate_commands + utils_commands))
+	return list(set(scheduler_commands + site_commands + translate_commands + utils_commands))
 
 commands = get_commands()

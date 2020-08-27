@@ -3,30 +3,37 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+import dropbox
+import json
 import frappe
 import os
 from frappe import _
 from frappe.model.document import Document
-import dropbox, json
+from frappe.integrations.offsite_backup_utils import get_latest_backup_file, send_email, validate_file_size
+from frappe.integrations.utils import make_post_request
+from frappe.utils import (cint, get_request_site_address,
+	get_files_path, get_backups_path, get_url, encode)
 from frappe.utils.backups import new_backup
 from frappe.utils.background_jobs import enqueue
 from six.moves.urllib.parse import urlparse, parse_qs
-from frappe.integrations.utils import make_post_request
 from rq.timeouts import JobTimeoutException
-from frappe.utils import (cint, split_emails, get_request_site_address,
-	get_files_path, get_backups_path, get_url, encode)
 from six import text_type
 
 ignore_list = [".DS_Store"]
+
 
 class DropboxSettings(Document):
 	def onload(self):
 		if not self.app_access_key and frappe.conf.dropbox_access_key:
 			self.set_onload("dropbox_setup_via_site_config", 1)
 
+	def validate(self):
+		if self.enabled and self.limit_no_of_backups and self.no_of_backups < 1:
+			frappe.throw(_('Number of DB backups cannot be less than 1'))
+
 @frappe.whitelist()
 def take_backup():
-	"Enqueue longjob for taking backup to dropbox"
+	"""Enqueue longjob for taking backup to dropbox"""
 	enqueue("frappe.integrations.doctype.dropbox_settings.dropbox_settings.take_backup_to_dropbox", queue='long', timeout=1500)
 	frappe.msgprint(_("Queued for backup. It may take a few minutes to an hour."))
 
@@ -44,10 +51,12 @@ def take_backup_to_dropbox(retry_count=0, upload_db_backup=True):
 	did_not_upload, error_log = [], []
 	try:
 		if cint(frappe.db.get_value("Dropbox Settings", None, "enabled")):
+			validate_file_size()
 			did_not_upload, error_log = backup_to_dropbox(upload_db_backup)
 			if did_not_upload: raise Exception
 
-			send_email(True, "Dropbox")
+			if cint(frappe.db.get_value("Dropbox Settings", None, "send_email_for_successful_backup")):
+				send_email(True, "Dropbox", "Dropbox Settings", "send_notifications_to")
 	except JobTimeoutException:
 		if retry_count < 2:
 			args = {
@@ -57,36 +66,12 @@ def take_backup_to_dropbox(retry_count=0, upload_db_backup=True):
 			enqueue("frappe.integrations.doctype.dropbox_settings.dropbox_settings.take_backup_to_dropbox",
 				queue='long', timeout=1500, **args)
 	except Exception:
-		file_and_error = [" - ".join(f) for f in zip(did_not_upload, error_log)]
-		error_message = ("\n".join(file_and_error) + "\n" + frappe.get_traceback())
-		frappe.errprint(error_message)
-		send_email(False, "Dropbox", error_message)
-
-def send_email(success, service_name, error_status=None):
-	if success:
-		if frappe.db.get_value("Dropbox Settings", None, "send_email_for_successful_backup") == '0':
-			return
-
-		subject = "Backup Upload Successful"
-		message ="""<h3>Backup Uploaded Successfully</h3><p>Hi there, this is just to inform you
-		that your backup was successfully uploaded to your %s account. So relax!</p>
-		""" % service_name
-
-	else:
-		subject = "[Warning] Backup Upload Failed"
-		message ="""<h3>Backup Upload Failed</h3><p>Oops, your automated backup to %s
-		failed.</p>
-		<p>Error message: <br>
-		<pre><code>%s</code></pre>
-		</p>
-		<p>Please contact your system manager for more information.</p>
-		""" % (service_name, error_status)
-
-	if not frappe.db:
-		frappe.connect()
-
-	recipients = split_emails(frappe.db.get_value("Dropbox Settings", None, "send_notifications_to"))
-	frappe.sendmail(recipients=recipients, subject=subject, message=message)
+		if isinstance(error_log, str):
+			error_message = error_log + "\n" + frappe.get_traceback()
+		else:
+			file_and_error = [" - ".join(f) for f in zip(did_not_upload, error_log)]
+			error_message = ("\n".join(file_and_error) + "\n" + frappe.get_traceback())
+		send_email(False, "Dropbox", "Dropbox Settings", "send_notifications_to", error_message)
 
 def backup_to_dropbox(upload_db_backup=True):
 	if not frappe.db:
@@ -104,12 +89,19 @@ def backup_to_dropbox(upload_db_backup=True):
 		dropbox_settings['access_token'] = access_token['oauth2_token']
 		set_dropbox_access_token(access_token['oauth2_token'])
 
-	dropbox_client = dropbox.Dropbox(dropbox_settings['access_token'])
+	dropbox_client = dropbox.Dropbox(dropbox_settings['access_token'], timeout=None)
 
 	if upload_db_backup:
-		backup = new_backup(ignore_files=True)
-		filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_db))
+		if frappe.flags.create_new_backup:
+			backup = new_backup(ignore_files=True)
+			filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_db))
+		else:
+			filename = get_latest_backup_file()
 		upload_file_to_dropbox(filename, "/database", dropbox_client)
+
+		# delete older databases
+		if dropbox_settings['no_of_backups']:
+			delete_older_backups(dropbox_client, "/database", dropbox_settings['no_of_backups'])
 
 	# upload files to files folder
 	did_not_upload = []
@@ -147,11 +139,14 @@ def upload_from_folder(path, is_private, dropbox_folder, dropbox_client, did_not
 
 		found = False
 		for file_metadata in response.entries:
-			if (os.path.basename(filepath) == file_metadata.name
-				and os.stat(encode(filepath)).st_size == int(file_metadata.size)):
-				found = True
-				update_file_dropbox_status(f.name)
-				break
+			try:
+				if (os.path.basename(filepath) == file_metadata.name
+					and os.stat(encode(filepath)).st_size == int(file_metadata.size)):
+					found = True
+					update_file_dropbox_status(f.name)
+					break
+			except Exception:
+				error_log.append(frappe.get_traceback())
 
 		if not found:
 			try:
@@ -235,7 +230,8 @@ def get_dropbox_settings(redirect_uri=False):
 			if settings.dropbox_access_token else '',
 		'access_key': settings.get_password('dropbox_access_key', raise_exception=False),
 		'access_secret': settings.get_password('dropbox_access_secret', raise_exception=False),
-		'file_backup':settings.file_backup
+		'file_backup':settings.file_backup,
+		'no_of_backups': settings.no_of_backups if settings.limit_no_of_backups else None
 	}
 
 	if redirect_uri:
@@ -250,6 +246,20 @@ def get_dropbox_settings(redirect_uri=False):
 		raise Exception(_("Please set Dropbox access keys in your site config"))
 
 	return app_details
+
+def delete_older_backups(dropbox_client, folder_path, to_keep):
+	res = dropbox_client.files_list_folder(path=folder_path)
+	files = []
+	for f in res.entries:
+		if isinstance(f, dropbox.files.FileMetadata) and 'sql' in f.name:
+			files.append(f)
+
+	if len(files) <= to_keep:
+		return
+
+	files.sort(key=lambda item:item.client_modified, reverse=True)
+	for f in files[to_keep:]:
+		dropbox_client.files_delete(os.path.join(folder_path, f.name))
 
 @frappe.whitelist()
 def get_redirect_url():

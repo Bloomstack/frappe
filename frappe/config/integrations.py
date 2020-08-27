@@ -42,6 +42,11 @@ def get_data():
 					"name": "S3 Backup Settings",
 					"description": _("S3 Backup Settings"),
 				},
+				{
+					"type": "doctype",
+					"name": "Google Drive",
+					"description": _("Google Drive Backup."),
+				}
 			]
 		},
 		{
@@ -89,28 +94,23 @@ def get_data():
 			"items": [
 				{
 					"type": "doctype",
-					"name": "Google Maps Settings",
-					"description": _("Google Maps integration"),
+					"name": "Google Settings",
+					"description": _("Google API Settings."),
 				},
 				{
 					"type": "doctype",
-					"name": "GCalendar Settings",
-					"description": _("Configure your google calendar integration"),
+					"name": "Google Contacts",
+					"description": _("Google Contacts Integration."),
 				},
 				{
 					"type": "doctype",
-					"name": "GCalendar Account",
-					"description": _("Configure accounts for google calendar"),
+					"name": "Google Calendar",
+					"description": _("Google Calendar Integration."),
 				},
 				{
 					"type": "doctype",
-					"name": "GSuite Settings",
-					"description": _("Enter keys to enable integration with Google GSuite"),
-				},
-				{
-					"type": "doctype",
-					"name": "GSuite Templates",
-					"description": _("Google GSuite Templates to integration with DocTypes"),
+					"name": "Google Drive",
+					"description": _("Google Drive Integration."),
 				}
 			]
 		}

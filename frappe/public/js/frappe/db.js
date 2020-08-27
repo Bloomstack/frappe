@@ -17,6 +17,7 @@ frappe.db = {
 			frappe.call({
 				method: 'frappe.model.db_query.get_list',
 				args: args,
+				type: 'GET',
 				callback: function(r) {
 					resolve(r.message);
 				}
@@ -30,14 +31,15 @@ frappe.db = {
 			});
 		});
 	},
-	get_value: function(doctype, filters, fieldname, callback, parent) {
+	get_value: function(doctype, filters, fieldname, callback, parent_doc) {
 		return frappe.call({
 			method: "frappe.client.get_value",
+			type: 'GET',
 			args: {
 				doctype: doctype,
 				fieldname: fieldname,
 				filters: filters,
-				parent: parent
+				parent: parent_doc
 			},
 			callback: function(r) {
 				callback && callback(r.message);
@@ -46,8 +48,11 @@ frappe.db = {
 	},
 	get_single_value: (doctype, field) => {
 		return new Promise(resolve => {
-			frappe.call('frappe.client.get_single_value', { doctype, field })
-				.then(r => resolve(r ? r.message : null));
+			frappe.call({
+				method: 'frappe.client.get_single_value',
+				args: { doctype, field },
+				type: 'GET',
+			}).then(r => resolve(r ? r.message : null));
 		});
 	},
 	set_value: function(doctype, docname, fieldname, value, callback) {
@@ -68,15 +73,17 @@ frappe.db = {
 		return new Promise((resolve, reject) => {
 			frappe.call({
 				method: "frappe.client.get",
+				type: 'GET',
 				args: { doctype, name, filters },
-				callback: r => resolve(r.message)
+				callback: r => {
+					frappe.model.sync(r.message);
+					resolve(r.message);
+				}
 			}).fail(reject);
 		});
 	},
 	insert: function(doc) {
-		return new Promise(resolve => {
-			frappe.call('frappe.client.insert', { doc }, r => resolve(r.message));
-		});
+		return frappe.xcall('frappe.client.insert', { doc });
 	},
 	delete_doc: function(doctype, name) {
 		return new Promise(resolve => {
@@ -84,12 +91,42 @@ frappe.db = {
 		});
 	},
 	count: function(doctype, args={}) {
+		let filters = args.filters || {};
+		const with_child_table_filter = Array.isArray(filters) && filters.some(filter => {
+			return filter[0] !== doctype;
+		});
+
+		const fields = [
+			// cannot break this line as it adds extra \n's and \t's which breaks the query
+			`count(${with_child_table_filter ? 'distinct': ''} ${frappe.model.get_full_column_name('name', doctype)}) AS total_count`
+		];
+
+		return frappe.call({
+			type: 'GET',
+			method: 'frappe.desk.reportview.get',
+			args: {
+				doctype,
+				filters,
+				fields,
+			}
+		}).then(r => {
+			return r.message.values[0][0];
+		});
+	},
+	get_link_options(doctype, txt = '', filters={}) {
 		return new Promise(resolve => {
-			frappe.call(
-				'frappe.client.get_count',
-				Object.assign(args, { doctype }),
-				r => resolve(r.message)
-			);
+			frappe.call({
+				type: 'GET',
+				method: 'frappe.desk.search.search_link',
+				args: {
+					doctype,
+					txt,
+					filters
+				},
+				callback(r) {
+					resolve(r.results);
+				}
+			});
 		});
 	}
 };

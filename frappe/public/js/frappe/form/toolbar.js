@@ -1,7 +1,7 @@
 // Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 // MIT License. See license.txt
+import './linked_with';
 
-frappe.provide("frappe.ui.form");
 frappe.ui.form.Toolbar = Class.extend({
 	init: function(opts) {
 		$.extend(this, opts);
@@ -30,7 +30,8 @@ frappe.ui.form.Toolbar = Class.extend({
 	},
 	set_title: function() {
 		if(this.frm.meta.title_field) {
-			var title = strip_html((this.frm.doc[this.frm.meta.title_field] || "").trim() || this.frm.docname);
+			let title_field = (this.frm.doc[this.frm.meta.title_field] || "").toString().trim();
+			var title = strip_html(title_field || this.frm.docname);
 			if(this.frm.doc.__islocal || title === this.frm.docname || this.frm.meta.autoname==="hash") {
 				this.page.set_title_sub("");
 			} else {
@@ -52,10 +53,14 @@ frappe.ui.form.Toolbar = Class.extend({
 		this.set_indicator();
 	},
 	is_title_editable: function() {
-		if (this.frm.meta.title_field==="title"
+		let title_field = this.frm.meta.title_field;
+		let doc_field = this.frm.get_docfield(title_field);
+
+		if (title_field
 			&& this.frm.perm[0].write
-			&& !this.frm.get_docfield("title").options
-			&& !this.frm.doc.__islocal) {
+			&& !this.frm.doc.__islocal
+			&& doc_field.fieldtype === "Data"
+			&& !doc_field.read_only) {
 			return true;
 		} else {
 			return false;
@@ -64,25 +69,82 @@ frappe.ui.form.Toolbar = Class.extend({
 	can_rename: function() {
 		return this.frm.perm[0].write && this.frm.meta.allow_rename && !this.frm.doc.__islocal;
 	},
-	setup_editable_title: function() {
-		var me = this;
-		this.page.$title_area.find(".title-text").on("click", function() {
-			if(me.is_title_editable()) {
-				frappe.prompt({fieldname: "title", fieldtype:"Data",
-					label: __("Title"), reqd: 1, "default": me.frm.doc.title },
-					function(data) {
-						if(data.title) {
-							me.frm.set_value("title", data.title);
-							if(!me.frm.doc.__islocal) {
-								me.frm.save_or_update();
-							} else {
-								me.set_title();
-							}
-						}
-					}, __("Edit Title"), __("Update"));
+	setup_editable_title: function () {
+		let me = this;
+
+		this.page.$title_area.find(".title-text").on("click", () => {
+			let fields = [];
+			let doctype = me.frm.doctype;
+			let docname = me.frm.doc.name;
+			let title_field = me.frm.meta.title_field || '';
+
+			// check if title is updateable
+			if (me.is_title_editable()) {
+				let title_field_label = me.frm.get_docfield(title_field).label;
+
+				fields.push({
+					label: __("New {0}", [__(title_field_label)]),
+					fieldname: "title",
+					fieldtype: "Data",
+					reqd: 1,
+					default: me.frm.doc[title_field]
+				});
 			}
-			if(me.can_rename()) {
-				me.frm.rename_doc();
+
+			// check if docname is updateable
+			if (me.can_rename()) {
+				fields.push(...[{
+					label: __("New Name"),
+					fieldname: "name",
+					fieldtype: "Data",
+					reqd: 1,
+					default: docname
+				}, {
+					label: __("Merge with existing"),
+					fieldname: "merge",
+					fieldtype: "Check",
+					default: 0
+				}]);
+			}
+
+			// create dialog
+			if (fields.length > 0) {
+				let d = new frappe.ui.Dialog({
+					title: __("Rename"),
+					fields: fields
+				});
+				d.show();
+
+				d.set_primary_action(__("Rename"), function () {
+					let args = d.get_values();
+					if (args.title != me.frm.doc[title_field] || args.name != docname) {
+						frappe.call({
+							method: "frappe.model.rename_doc.update_document_title",
+							args: {
+								doctype,
+								docname,
+								title_field,
+								old_title: me.frm.doc[title_field],
+								new_title: args.title,
+								new_name: args.name,
+								merge: args.merge
+							},
+							btn: d.get_primary_btn()
+						}).then((res) => {
+							me.frm.reload_doc();
+							if (!res.exc && (args.name != docname)) {
+								$(document).trigger("rename", [doctype, docname, res.message || args.name]);
+								if (locals[doctype] && locals[doctype][docname]) delete locals[doctype][docname];
+							}
+						});
+					} else {
+						frappe.show_alert({
+							indicator: "yellow",
+							message: __("Unchanged")
+						});
+					}
+					d.hide();
+				});
 			}
 		});
 	},
@@ -120,15 +182,25 @@ frappe.ui.form.Toolbar = Class.extend({
 				this.page.add_menu_item(__("Print"), function() {
 					me.frm.print_doc();}, true);
 				this.print_icon = this.page.add_action_icon("fa fa-print", function() {
-					me.frm.print_doc();});
+					me.frm.print_doc();
+				});
 			}
 		}
 
 		// email
 		if(frappe.model.can_email(null, me.frm) && me.frm.doc.docstatus < 2) {
 			this.page.add_menu_item(__("Email"), function() {
-				me.frm.email_doc();}, true);
+				me.frm.email_doc();
+			}, true, {
+				shortcut: 'Ctrl+E',
+				condition: () => !this.frm.is_new()
+			});
 		}
+
+		// go to field modal
+		this.page.add_menu_item(__("Jump to field"), function() {
+			me.show_jump_to_field_dialog();
+		}, true, 'Ctrl+J');
 
 		// Linked With
 		if(!me.frm.meta.issingle) {
@@ -140,41 +212,51 @@ frappe.ui.form.Toolbar = Class.extend({
 		// copy
 		if(in_list(frappe.boot.user.can_create, me.frm.doctype) && !me.frm.meta.allow_copy) {
 			this.page.add_menu_item(__("Duplicate"), function() {
-				me.frm.copy_doc();}, true);
+				me.frm.copy_doc();
+			}, true);
 		}
 
 		// rename
 		if(this.can_rename()) {
 			this.page.add_menu_item(__("Rename"), function() {
-				me.frm.rename_doc();}, true);
+				me.frm.rename_doc();
+			}, true);
 		}
 
 		// reload
 		this.page.add_menu_item(__("Reload"), function() {
-			me.frm.reload_doc();}, true);
-
-		// add to desktop
-		if(me.frm.meta.issingle) {
-			this.page.add_menu_item(__('Add to Desktop'), function () {
-				frappe.add_to_desktop(me.frm.doctype, me.frm.doctype);
-			}, true);
-		}
+			me.frm.reload_doc();
+		}, true);
 
 		// delete
 		if((cint(me.frm.doc.docstatus) != 1) && !me.frm.doc.__islocal
 			&& frappe.model.can_delete(me.frm.doctype)) {
 			this.page.add_menu_item(__("Delete"), function() {
-				me.frm.savetrash();}, true);
+				me.frm.savetrash();
+			}, true, {
+				shortcut: 'Shift+Ctrl+D',
+				condition: () => !this.frm.is_new()
+			});
 		}
 
-		if(frappe.user_roles.includes("System Manager")) {
-			this.page.add_menu_item(__("Customize"), function() {
-				frappe.set_route("Form", "Customize Form", {
-					doc_type: me.frm.doctype
-				})
-			}, true);
+		if (frappe.user_roles.includes("System Manager") && me.frm.meta.issingle === 0) {
+			let is_doctype_form = me.frm.doctype === 'DocType';
+			let doctype = is_doctype_form ? me.frm.docname : me.frm.doctype;
+			let is_doctype_custom = is_doctype_form ? me.frm.doc.custom : false;
 
-			if (frappe.boot.developer_mode===1 && me.frm.meta.issingle) {
+			if (doctype != 'DocType' && !is_doctype_custom) {
+				this.page.add_menu_item(__("Customize"), function() {
+					if (me.frm.meta && me.frm.meta.custom) {
+						frappe.set_route('Form', 'DocType', doctype);
+					} else {
+						frappe.set_route('Form', 'Customize Form', {
+							doc_type: doctype
+						});
+					}
+				}, true);
+			}
+
+			if (frappe.boot.developer_mode===1 && !is_doctype_form) {
 				// edit doctype
 				this.page.add_menu_item(__("Edit DocType"), function() {
 					frappe.set_route('Form', 'DocType', me.frm.doctype);
@@ -182,21 +264,54 @@ frappe.ui.form.Toolbar = Class.extend({
 			}
 		}
 
-		// feedback
-		if(!this.frm.doc.__unsaved) {
-			if(is_submittable && docstatus == 1) {
-				this.page.add_menu_item(__("Request Feedback"), function() {
-					var feedback = new frappe.utils.Feedback();
-					feedback.manual_feedback_request(me.frm.doc);
-				}, true)
-			}
+		// Auto Repeat
+		if(this.can_repeat()) {
+			this.page.add_menu_item(__("Repeat"), function(){
+				frappe.utils.new_auto_repeat_prompt(me.frm);
+			}, true);
+		}
+
+		// Expand all sections
+		let section_fields = this.frm.meta.fields.filter((field) => field.fieldtype == "Section Break" && field.collapsible == 1);
+		if(section_fields.length != 0) {
+			this.page.add_menu_item(__("Expand Sections"), function () {
+				me.toggleSectionBreaks(section_fields, false);
+			}, true);
+			this.page.add_action_icon("fa fa-angle-double-down fa-lg", function() {
+				me.toggleSectionBreaks(section_fields, false);
+			});
+			this.page.add_menu_item(__("Collapse Sections"), function () {
+				me.toggleSectionBreaks(section_fields, true);
+			}, true);
+			this.page.add_action_icon("fa fa-angle-double-up fa-lg", function() {
+				me.toggleSectionBreaks(section_fields, true);
+			});
 		}
 
 		// New
 		if(p[CREATE] && !this.frm.meta.issingle) {
-			this.page.add_menu_item(__("New {0} (Ctrl+B)", [__(me.frm.doctype)]), function() {
-				frappe.new_doc(me.frm.doctype, true);}, true);
+			this.page.add_menu_item(__("New {0}", [__(me.frm.doctype)]), function() {
+				frappe.new_doc(me.frm.doctype, true);
+			}, true, {
+				shortcut: 'Ctrl+B',
+				condition: () => !this.frm.is_new()
+			});
 		}
+
+		// Navigate
+		if(!this.frm.is_new() && !issingle) {
+			this.page.add_action_icon("fa fa-chevron-left prev-doc", function() {
+				me.frm.navigate_records(1);
+			});
+			this.page.add_action_icon("fa fa-chevron-right next-doc", function() {
+				me.frm.navigate_records(0);
+			});
+		}
+	},
+	can_repeat: function() {
+		return this.frm.meta.allow_auto_repeat
+			&& !this.frm.is_new()
+			&& !this.frm.doc.auto_repeat;
 	},
 	can_save: function() {
 		return this.get_docstatus()===0;
@@ -248,7 +363,23 @@ frappe.ui.form.Toolbar = Class.extend({
 
 		var status = this.get_action_status();
 		if (status) {
-			if (status !== this.current_status) {
+			// When moving from a page with status amend to another page with status amend
+			// We need to check if document is already amened specifcally and hide
+			// or clear the menu actions accordingly
+
+			if (status !== this.current_status || status === 'Amend') {
+				let doc = this.frm.doc;
+				frappe.xcall('frappe.client.is_document_amended', {
+					'doctype': doc.doctype,
+					'docname': doc.name
+				}).then(is_amended => {
+					if (is_amended) {
+						this.page.clear_actions();
+						return;
+					}
+					this.set_page_actions(status);
+				});
+			} else {
 				this.set_page_actions(status);
 			}
 		} else {
@@ -294,9 +425,23 @@ frappe.ui.form.Toolbar = Class.extend({
 				me.frm.page.set_view('main');
 			}, 'octicon octicon-pencil');
 		} else if(status === "Cancel") {
-			this.page.set_secondary_action(__(status), function() {
-				me.frm.savecancel(this);
-			}, "octicon octicon-circle-slash");
+			let add_cancel_button = () => {
+				this.page.set_secondary_action(__(status), function() {
+					me.frm.savecancel(this);
+				}, "octicon octicon-circle-slash");
+			};
+			if (this.has_workflow()) {
+				frappe.xcall(
+					'frappe.model.workflow.can_cancel_document', {
+						'doctype': this.frm.doc.doctype,
+					}).then((can_cancel) => {
+					if (can_cancel) {
+						add_cancel_button();
+					}
+				});
+			} else {
+				add_cancel_button();
+			}
 		} else {
 			var click = {
 				"Save": function() {
@@ -325,22 +470,6 @@ frappe.ui.form.Toolbar = Class.extend({
 
 		this.current_status = status;
 	},
-	make_cancel_amend_button: function() {
-		var me = this;
-		var docstatus = cint(this.frm.doc.docstatus);
-		var p = this.frm.perm[0];
-		var has_workflow = this.has_workflow();
-
-		if(has_workflow) {
-			return;
-		} else if(docstatus==1 && p[CANCEL]) {
-			this.page.set_secondary_action(__('Cancel'), function() {
-				me.frm.savecancel(this) }, 'fa fa-ban-circle');
-		} else if(docstatus==2 && p[AMEND]) {
-			this.page.set_secondary_action(__('Amend'), function() {
-				me.frm.amend_doc() }, 'fa fa-pencil', true);
-		}
-	},
 	add_update_button_on_dirty: function() {
 		var me = this;
 		$(this.frm.wrapper).on("dirty", function() {
@@ -364,5 +493,42 @@ frappe.ui.form.Toolbar = Class.extend({
 		}
 
 		$(this.frm.wrapper).attr("data-state", this.frm.doc.__unsaved ? "dirty" : "clean");
+	},
+
+	show_jump_to_field_dialog() {
+		let visible_fields_filter = f =>
+			!['Section Break', 'Column Break'].includes(f.df.fieldtype)
+			&& !f.df.hidden
+			&& f.disp_status !== 'None';
+
+		let fields = this.frm.fields
+			.filter(visible_fields_filter)
+			.map(f => ({ label: f.df.label, value: f.df.fieldname }));
+
+		let dialog = new frappe.ui.Dialog({
+			title: __('Jump to field'),
+			fields: [
+				{
+					fieldtype: 'Autocomplete',
+					fieldname: 'fieldname',
+					label: __('Select Field'),
+					options: fields,
+					reqd: 1
+				}
+			],
+			primary_action_label: __('Go'),
+			primary_action: ({ fieldname }) => {
+				dialog.hide();
+				this.frm.scroll_to_field(fieldname);
+			}
+		});
+
+		dialog.show();
+	},
+
+	toggleSectionBreaks: function(section_fields, collapse_state) {
+		for (let section of section_fields) {
+			this.frm.get_field(section.fieldname).collapse(collapse_state);
+		}
 	}
 })

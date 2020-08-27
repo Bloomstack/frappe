@@ -2,13 +2,128 @@
 # MIT License. See license.txt
 from __future__ import unicode_literals
 
-import frappe, json
+import json
+from collections import defaultdict
+from six import string_types
+import frappe
+import frappe.desk.form.load
+import frappe.desk.form.meta
+from frappe import _
 from frappe.model.meta import is_single
 from frappe.modules import load_doctype_module
-import frappe.desk.form.meta
-import frappe.desk.form.load
-from six import string_types
-from collections import defaultdict
+
+
+@frappe.whitelist()
+def get_submitted_linked_docs(doctype, name, only_submittable=True, skip_doctypes=None, docs=None):
+	"""
+	Get all nested submitted linked doctype linkinfo
+
+	Arguments:
+		doctype (str) - The doctype for which get all linked doctypes
+		name (str) - The docname for which get all linked doctypes,
+
+	Keyword Arguments:
+		only_submittable (boolean) - Check for submittable and non-submittable doctype
+		skip_doctypes (list) - List of doctypes to skip for validate docs
+		docs (list of dict) - (Optional) Get list of dictionary for linked doctype.
+
+	Returns:
+		dict - Return list of documents and link count
+	"""
+
+	if not docs:
+		docs = []
+
+	linkinfo = get_linked_doctypes(doctype)
+	linked_docs = get_linked_docs(doctype, name, linkinfo)
+
+	link_count = 0
+	for link_doctype, link_names in linked_docs.items():
+		for link in link_names:
+			docinfo = link.update({"doctype": link_doctype})
+			validated_doc = validate_linked_doc(docinfo, only_submittable=only_submittable, skip_doctypes=skip_doctypes)
+
+			if not validated_doc:
+				continue
+
+			link_count += 1
+			if link.name in [doc.get("name") for doc in docs]:
+				continue
+
+			links = get_submitted_linked_docs(link_doctype, link.name, only_submittable=only_submittable, skip_doctypes=skip_doctypes, docs=docs)
+			docs.append({
+				"doctype": link_doctype,
+				"name": link.name,
+				"docstatus": link.docstatus,
+				"link_count": links.get("count")
+			})
+
+	# sort linked documents by ascending number of links
+	docs.sort(key=lambda doc: doc.get("link_count"))
+	return {
+		"docs": docs,
+		"count": link_count
+	}
+
+
+@frappe.whitelist()
+def cancel_all_linked_docs(docs):
+	"""
+	Cancel all linked doctype
+
+	Arguments:
+		docs (str) - JSON string containing list of all linked documents.
+	"""
+
+	docs = json.loads(docs)
+	for i, doc in enumerate(docs, 1):
+		if validate_linked_doc(doc) is True:
+			frappe.publish_progress(percent=i * 100 / len(docs), title=_("Cancelling documents"))
+			linked_doc = frappe.get_doc(doc.get("doctype"), doc.get("name"))
+			linked_doc.cancel()
+
+
+def validate_linked_doc(docinfo, only_submittable=True, skip_doctypes=None):
+	"""
+	Validate a document to be submitted and non-exempted from auto-cancel.
+
+	Args:
+		docs (dict): The document to check for submitted and non-exempt from auto-cancel
+
+	Returns:
+		bool: True if linked document passes all validations, else False
+	"""
+		# skip doctype which is not needed for linking like ToDo, Activity Log
+	if skip_doctypes:
+		if docinfo.get('doctype') in skip_doctypes:
+			return False
+
+	if only_submittable == True:
+		# skip non-submittable doctypes since they don't need to be cancelled
+		if not frappe.get_meta(docinfo.get('doctype')).is_submittable:
+			return False
+
+		# skip draft or cancelled documents
+		if docinfo.get('docstatus') != 1:
+			return False
+
+		# skip other doctypes since they don't need to be cancelled
+		auto_cancel_exempt_doctypes = get_exempted_doctypes()
+		if docinfo.get('doctype') in auto_cancel_exempt_doctypes:
+			return False
+
+	return True
+
+
+def get_exempted_doctypes():
+	"""
+	Get list of doctypes exempted from being auto-cancelled
+	"""
+
+	auto_cancel_exempt_doctypes = []
+	for doctypes in frappe.get_hooks('auto_cancel_exempt_doctypes'):
+		auto_cancel_exempt_doctypes.append(doctypes)
+	return auto_cancel_exempt_doctypes
 
 
 @frappe.whitelist()
@@ -42,9 +157,10 @@ def get_linked_docs(doctype, name, linkinfo=None, for_doctype=None):
 		link_meta_bundle = frappe.desk.form.load.get_meta_bundle(dt)
 		linkmeta = link_meta_bundle[0]
 		if not linkmeta.get("issingle"):
-			fields = [d.fieldname for d in linkmeta.get("fields", {"in_list_view":1,
-				"fieldtype": ["not in", ["Image", "HTML", "Button", "Table"]]})] \
-				+ ["name", "modified", "docstatus"]
+			fields = [d.fieldname for d in linkmeta.get("fields", {
+				"in_list_view": 1,
+				"fieldtype": ["not in", ("Image", "HTML", "Button") + frappe.model.table_fields]
+			})] + ["name", "modified", "docstatus"]
 
 			if link.get("add_fields"):
 				fields += link["add_fields"]
@@ -116,7 +232,7 @@ def _get_linked_doctypes(doctype, without_ignore_user_permissions_enabled=False)
 	ret.update(get_linked_fields(doctype, without_ignore_user_permissions_enabled))
 	ret.update(get_dynamic_linked_fields(doctype, without_ignore_user_permissions_enabled))
 
-	filters=[['fieldtype','=','Table'], ['options', '=', doctype]]
+	filters=[['fieldtype', 'in', frappe.model.table_fields], ['options', '=', doctype]]
 	if without_ignore_user_permissions_enabled: filters.append(['ignore_user_permissions', '!=', 1])
 	# find links of parents
 	links = frappe.get_all("DocField", fields=["parent as dt"], filters=filters)
@@ -159,7 +275,7 @@ def get_linked_fields(doctype, without_ignore_user_permissions_enabled=False):
 	for doctype_name in links_dict:
 		ret[doctype_name] = { "fieldname": links_dict.get(doctype_name) }
 	table_doctypes = frappe.get_all("DocType", filters=[["istable", "=", "1"], ["name", "in", tuple(links_dict)]])
-	child_filters = [['fieldtype','=', 'Table'], ['options', 'in', tuple(doctype.name for doctype in table_doctypes)]]
+	child_filters = [['fieldtype','in', frappe.model.table_fields], ['options', 'in', tuple(doctype.name for doctype in table_doctypes)]]
 	if without_ignore_user_permissions_enabled: child_filters.append(['ignore_user_permissions', '!=', 1])
 
 	# find out if linked in a child table
@@ -182,10 +298,8 @@ def get_dynamic_linked_fields(doctype, without_ignore_user_permissions_enabled=F
 	for df in links:
 		if is_single(df.doctype): continue
 
-		# optimized to get both link exists and parenttype
-		possible_link = frappe.db.sql("""select distinct `{doctype_fieldname}`, parenttype
-			from `tab{doctype}` where `{doctype_fieldname}`=%s""".format(**df), doctype, as_dict=True)
-
+		# removed doctype_fieldname form fields it only check with child with parenttype
+		possible_link = frappe.get_all(df.doctype, filters={df.doctype_fieldname: doctype}, fields=['parenttype'], distinct=True)
 		if not possible_link: continue
 
 		for d in possible_link:

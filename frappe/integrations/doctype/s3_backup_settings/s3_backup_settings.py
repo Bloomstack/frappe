@@ -8,10 +8,13 @@ import os.path
 import frappe
 import boto3
 from frappe import _
+from frappe.integrations.offsite_backup_utils import get_latest_backup_file, send_email, validate_file_size
 from frappe.model.document import Document
-from frappe.utils import cint, split_emails
+from frappe.utils import cint
 from frappe.utils.background_jobs import enqueue
+from rq.timeouts import JobTimeoutException
 from botocore.exceptions import ClientError
+
 
 class S3BackupSettings(Document):
 
@@ -34,14 +37,15 @@ class S3BackupSettings(Document):
 			frappe.throw(_("Invalid Access Key ID or Secret Access Key."))
 
 		try:
-			conn.create_bucket(Bucket=bucket_lower)
+			conn.create_bucket(Bucket=bucket_lower, CreateBucketConfiguration={
+				'LocationConstraint': self.region})
 		except ClientError:
 			frappe.throw(_("Unable to create bucket: {0}. Change it to a more unique name.").format(bucket_lower))
 
 
 @frappe.whitelist()
 def take_backup():
-	"Enqueue longjob for taking backup to s3"
+	"""Enqueue longjob for taking backup to s3"""
 	enqueue("frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_s3", queue='long', timeout=1500)
 	frappe.msgprint(_("Queued for backup. It may take a few minutes to an hour."))
 
@@ -65,37 +69,27 @@ def take_backups_if(freq):
 
 
 @frappe.whitelist()
-def take_backups_s3():
+def take_backups_s3(retry_count=0):
 	try:
+		validate_file_size()
 		backup_to_s3()
-		send_email(True, "S3 Backup Settings")
+		send_email(True, "Amazon S3", "S3 Backup Settings", "notify_email")
+	except JobTimeoutException:
+		if retry_count < 2:
+			args = {
+				"retry_count": retry_count + 1
+			}
+			enqueue("frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_s3",
+				queue='long', timeout=1500, **args)
+		else:
+			notify()
 	except Exception:
-		error_message = frappe.get_traceback()
-		frappe.errprint(error_message)
-		send_email(False, "S3 Backup Settings", error_message)
+		notify()
 
 
-def send_email(success, service_name, error_status=None):
-	if success:
-		if frappe.db.get_value("S3 Backup Settings", None, "send_email_for_successful_backup") == '0':
-			return
-
-		subject = "Backup Upload Successful"
-		message = """<h3>Backup Uploaded Successfully! </h3><p>Hi there, this is just to inform you
-		that your backup was successfully uploaded to your Amazon S3 bucket. So relax!</p> """
-
-	else:
-		subject = "[Warning] Backup Upload Failed"
-		message = """<h3>Backup Upload Failed! </h3><p>Oops, your automated backup to Amazon S3 failed.
-		</p> <p>Error message: %s</p> <p>Please contact your system manager
-		for more information.</p>""" % error_status
-
-	if not frappe.db:
-		frappe.connect()
-
-	if frappe.db.get_value("S3 Backup Settings", None, "notification_email"):
-		recipients = split_emails(frappe.db.get_value("S3 Backup Settings", None, "notification_email"))
-		frappe.sendmail(recipients=recipients, subject=subject, message=message)
+def notify():
+	error_message = frappe.get_traceback()
+	send_email(False, 'Amazon S3', "S3 Backup Settings", "notify_email", error_message)
 
 
 def backup_to_s3():
@@ -104,6 +98,7 @@ def backup_to_s3():
 
 	doc = frappe.get_single("S3 Backup Settings")
 	bucket = doc.bucket
+	backup_files = cint(doc.backup_files)
 
 	conn = boto3.client(
 			's3',
@@ -112,32 +107,41 @@ def backup_to_s3():
 			endpoint_url=doc.endpoint_url or 'https://s3.amazonaws.com'
 			)
 
-	backup = new_backup(ignore_files=False, backup_path_db=None,
-						backup_path_files=None, backup_path_private_files=None, force=True)
-	db_filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_db))
-	files_filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_files))
-	private_files = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_private_files))
+	if frappe.flags.create_new_backup:
+		backup = new_backup(ignore_files=False, backup_path_db=None,
+							backup_path_files=None, backup_path_private_files=None, force=True)
+		db_filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_db))
+		if backup_files:
+			files_filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_files))
+			private_files = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_private_files))
+	else:
+		if backup_files:
+			db_filename, files_filename, private_files = get_latest_backup_file(with_files=backup_files)
+		else:
+			db_filename = get_latest_backup_file()
 	folder = os.path.basename(db_filename)[:15] + '/'
 	# for adding datetime to folder name
 
 	upload_file_to_s3(db_filename, folder, conn, bucket)
-	upload_file_to_s3(private_files, folder, conn, bucket)
-	upload_file_to_s3(files_filename, folder, conn, bucket)
+	if backup_files:
+		upload_file_to_s3(private_files, folder, conn, bucket)
+		upload_file_to_s3(files_filename, folder, conn, bucket)
 	delete_old_backups(doc.backup_limit, bucket)
 
-def upload_file_to_s3(filename, folder, conn, bucket):
 
+def upload_file_to_s3(filename, folder, conn, bucket):
 	destpath = os.path.join(folder, os.path.basename(filename))
 	try:
 		print("Uploading file:", filename)
 		conn.upload_file(filename, bucket, destpath)
 
 	except Exception as e:
+		frappe.log_error()
 		print("Error uploading: %s" % (e))
 
 
 def delete_old_backups(limit, bucket):
-	all_backups = list()
+	all_backups = []
 	doc = frappe.get_single("S3 Backup Settings")
 	backup_limit = int(limit)
 
@@ -149,8 +153,9 @@ def delete_old_backups(limit, bucket):
 			)
 	bucket = s3.Bucket(bucket)
 	objects = bucket.meta.client.list_objects_v2(Bucket=bucket.name, Delimiter='/')
-	for obj in objects.get('CommonPrefixes'):
-		all_backups.append(obj.get('Prefix'))
+	if objects:
+		for obj in objects.get('CommonPrefixes'):
+			all_backups.append(obj.get('Prefix'))
 
 	oldest_backup = sorted(all_backups)[0]
 

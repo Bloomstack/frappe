@@ -7,7 +7,6 @@ import frappe, json, os
 from frappe.utils import strip, cint
 from frappe.translate import (set_default_language, get_dict, send_translations)
 from frappe.geo.country_info import get_country_info
-from frappe.utils.file_manager import save_file
 from frappe.utils.password import update_password
 from werkzeug.useragents import UserAgent
 from . import install_fixtures
@@ -55,13 +54,14 @@ def setup_complete(args):
 
 	# Setup complete: do not throw an exception, let the user continue to desk
 	if cint(frappe.db.get_single_value('System Settings', 'setup_complete')):
-		return
+		return {'status': 'ok'}
 
 	args = parse_args(args)
 
 	stages = get_setup_stages(args)
 
 	try:
+		frappe.flags.in_setup_wizard = True
 		current_task = None
 		for idx, stage in enumerate(stages):
 			frappe.publish_realtime('setup_task', {"progress": [idx, len(stages)],
@@ -76,6 +76,8 @@ def setup_complete(args):
 	else:
 		run_setup_success(args)
 		return {'status': 'ok'}
+	finally:
+		frappe.flags.in_setup_wizard = False
 
 def update_global_settings(args):
 	if args.language and args.language != "English":
@@ -187,7 +189,15 @@ def update_user_name(args):
 		attach_user = args.get("attach_user").split(",")
 		if len(attach_user)==3:
 			filename, filetype, content = attach_user
-			fileurl = save_file(filename, content, "User", args.get("name"), decode=True).file_url
+			_file = frappe.get_doc({
+				"doctype": "File",
+				"file_name": filename,
+				"attached_to_doctype": "User",
+				"attached_to_name": args.get("name"),
+				"content": content,
+				"decode": True})
+			_file.save()
+			fileurl = _file.file_url
 			frappe.db.set_value("User", args.get("name"), "user_image", fileurl)
 
 	if args.get('name'):
@@ -341,6 +351,11 @@ def email_setup_wizard_exception(traceback, args):
 		message=message,
 		delayed=False)
 
+def log_setup_wizard_exception(traceback, args):
+	with open('../logs/setup-wizard.log', 'w+') as setup_log:
+		setup_log.write(traceback)
+		setup_log.write(json.dumps(args))
+
 def get_language_code(lang):
 	return frappe.db.get_value('Language', {'language_name':lang})
 
@@ -382,7 +397,7 @@ def make_records(records, debug=False):
 			# pass DuplicateEntryError and continue
 			if e.args and e.args[0]==doc.doctype and e.args[1]==doc.name:
 				# make sure DuplicateEntryError is for the exact same doc and not a related doc
-				pass
+				frappe.clear_messages()
 			else:
 				raise
 

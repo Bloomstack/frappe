@@ -5,6 +5,8 @@ from __future__ import unicode_literals
 
 # IMPORTANT: only import safe functions as this module will be included in jinja environment
 import frappe
+from dateutil.parser._parser import ParserError
+import subprocess
 import operator
 import re, datetime, math, time
 import babel.dates
@@ -21,6 +23,11 @@ DATE_FORMAT = "%Y-%m-%d"
 TIME_FORMAT = "%H:%M:%S.%f"
 DATETIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT
 
+
+def is_invalid_date_string(date_string):
+	# dateutil parser does not agree with dates like "0001-01-01" or "0000-00-00"
+	return (not date_string) or (date_string or "").startswith(("0001-01-01", "0000-00-00"))
+
 # datetime functions
 def getdate(string_date=None):
 	"""
@@ -35,10 +42,14 @@ def getdate(string_date=None):
 	elif isinstance(string_date, datetime.date):
 		return string_date
 
-	# dateutil parser does not agree with dates like 0000-00-00
-	if not string_date or string_date=="0000-00-00":
+	if is_invalid_date_string(string_date):
 		return None
-	return parser.parse(string_date).date()
+	try:
+		return parser.parse(string_date).date()
+	except ParserError:
+		frappe.throw(frappe._('{} is not a valid date string.').format(
+			frappe.bold(string_date)
+		), title=frappe._('Invalid Date'))
 
 def get_datetime(datetime_str=None):
 	if not datetime_str:
@@ -53,8 +64,7 @@ def get_datetime(datetime_str=None):
 	elif isinstance(datetime_str, datetime.date):
 		return datetime.datetime.combine(datetime_str, datetime.time())
 
-	# dateutil parser does not agree with dates like 0000-00-00
-	if not datetime_str or (datetime_str or "").startswith("0000-00-00"):
+	if is_invalid_date_string(datetime_str):
 		return None
 
 	try:
@@ -70,7 +80,7 @@ def to_timedelta(time_str):
 	else:
 		return time_str
 
-def add_to_date(date, years=0, months=0, days=0, hours=0, as_string=False, as_datetime=False):
+def add_to_date(date, years=0, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0, as_string=False, as_datetime=False):
 	"""Adds `days` to the given date"""
 	from dateutil.relativedelta import relativedelta
 
@@ -86,7 +96,7 @@ def add_to_date(date, years=0, months=0, days=0, hours=0, as_string=False, as_da
 			as_datetime = True
 		date = parser.parse(date)
 
-	date = date + relativedelta(years=years, months=months, days=days, hours=hours)
+	date = date + relativedelta(years=years, months=months, weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds)
 
 	if as_string:
 		if as_datetime:
@@ -107,6 +117,11 @@ def add_years(date, years):
 
 def date_diff(string_ed_date, string_st_date):
 	return (getdate(string_ed_date) - getdate(string_st_date)).days
+
+def month_diff(string_ed_date, string_st_date):
+	ed_date = getdate(string_ed_date)
+	st_date = getdate(string_st_date)
+	return (ed_date.year - st_date.year) * 12 + ed_date.month - st_date.month + 1
 
 def time_diff(string_ed_date, string_st_date):
 	return get_datetime(string_ed_date) - get_datetime(string_st_date)
@@ -176,6 +191,9 @@ def get_first_day(dt, d_years=0, d_months=0):
 	year = dt.year + d_years + overflow_years
 
 	return datetime.date(year, month + 1, 1)
+
+def get_first_day_of_week(dt):
+	return dt - datetime.timedelta(days=dt.weekday())
 
 def get_last_day(dt):
 	"""
@@ -253,6 +271,15 @@ def format_datetime(datetime_string, format_string=None):
 		formatted_datetime = datetime.strftime('%Y-%m-%d %H:%M:%S')
 	return formatted_datetime
 
+def get_weekdays():
+	return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+def get_weekday(datetime=None):
+	if not datetime:
+		datetime = now_datetime()
+	weekdays = get_weekdays()
+	return weekdays[datetime.weekday()]
+
 def global_date_format(date, format="long"):
 	"""returns localized date in the form of January 1, 2012"""
 	date = getdate(date)
@@ -276,6 +303,19 @@ def flt(s, precision=None):
 		num = 0
 
 	return num
+
+def get_wkhtmltopdf_version():
+	wkhtmltopdf_version = frappe.cache().hget("wkhtmltopdf_version", None)
+
+	if not wkhtmltopdf_version:
+		try:
+			res = subprocess.check_output(["wkhtmltopdf", "--version"])
+			wkhtmltopdf_version = res.decode('utf-8').split(" ")[1]
+			frappe.cache().hset("wkhtmltopdf_version", None, wkhtmltopdf_version)
+		except Exception:
+			pass
+
+	return (wkhtmltopdf_version or '0')
 
 def cint(s):
 	"""Convert to integer"""
@@ -338,7 +378,10 @@ def rounded(num, precision=0):
 	if not precision and decimal_part == 0.5:
 		num = floor if (floor % 2 == 0) else floor + 1
 	else:
-		num = round(num)
+		if decimal_part == 0.5:
+			num = floor + 1
+		else:
+			num = round(num)
 
 	return (num / multiplier) if precision else num
 
@@ -351,7 +394,7 @@ def remainder(numerator, denominator, precision=2):
 	else:
 		_remainder = numerator % denominator
 
-	return flt(_remainder, precision);
+	return flt(_remainder, precision)
 
 def safe_div(numerator, denominator, precision=2):
 	"""
@@ -635,7 +678,7 @@ def pretty_date(iso_datetime):
 	elif dt_diff_days < 7.0:
 		return _('{0} days ago').format(cint(dt_diff_days))
 	elif dt_diff_days < 12:
-		return _('1 weeks ago')
+		return _('1 week ago')
 	elif dt_diff_days < 31.0:
 		return _('{0} weeks ago').format(cint(math.ceil(dt_diff_days / 7.0)))
 	elif dt_diff_days < 46:
@@ -694,9 +737,10 @@ def get_url(uri=None, full_address=False):
 		return uri
 
 	if not host_name:
-		if hasattr(frappe.local, "request") and frappe.local.request and frappe.local.request.host:
-			protocol = 'https://' if 'https' == frappe.get_request_header('X-Forwarded-Proto', "") else 'http://'
-			host_name = protocol + frappe.local.request.host
+		request_host_name = get_host_name_from_request()
+
+		if request_host_name:
+			host_name = request_host_name
 
 		elif frappe.local.site:
 			protocol = 'http://'
@@ -733,6 +777,11 @@ def get_url(uri=None, full_address=False):
 
 	return url
 
+def get_host_name_from_request():
+	if hasattr(frappe.local, "request") and frappe.local.request and frappe.local.request.host:
+		protocol = 'https://' if 'https' == frappe.get_request_header('X-Forwarded-Proto', "") else 'http://'
+		return protocol + frappe.local.request.host
+
 def url_contains_port(url):
 	parts = url.split(':')
 	return len(parts) > 2
@@ -745,6 +794,27 @@ def get_link_to_form(doctype, name, label=None):
 
 	return """<a href="{0}">{1}</a>""".format(get_url_to_form(doctype, name), label)
 
+def get_link_to_report(name, label=None, report_type=None, doctype=None, filters=None):
+	if not label: label = name
+
+	if filters:
+		conditions = []
+		for k,v in iteritems(filters):
+			if isinstance(v, list):
+				for value in v:
+					conditions.append(str(k)+'='+'["'+str(value[0]+'"'+','+'"'+str(value[1])+'"]'))
+			else:
+				conditions.append(str(k)+"="+str(v))
+
+		filters = "&".join(conditions)
+
+		return """<a href='{0}'>{1}</a>""".format(get_url_to_report_with_filters(name, filters, report_type, doctype), label)
+	else:
+		return """<a href='{0}'>{1}</a>""".format(get_url_to_report(name, report_type, doctype), label)
+
+def get_absolute_url(doctype, name):
+	return "desk#Form/{0}/{1}".format(quoted(doctype), quoted(name))
+
 def get_url_to_form(doctype, name):
 	return get_url(uri = "desk#Form/{0}/{1}".format(quoted(doctype), quoted(name)))
 
@@ -756,6 +826,12 @@ def get_url_to_report(name, report_type = None, doctype = None):
 		return get_url(uri = "desk#Report/{0}/{1}".format(quoted(doctype), quoted(name)))
 	else:
 		return get_url(uri = "desk#query-report/{0}".format(quoted(name)))
+
+def get_url_to_report_with_filters(name, filters, report_type = None, doctype = None):
+	if report_type == "Report Builder":
+		return get_url(uri = "desk#Report/{0}?{1}".format(quoted(doctype), filters))
+	else:
+		return get_url(uri = "desk#query-report/{0}?{1}".format(quoted(name), filters))
 
 operator_map = {
 	# startswith
@@ -834,9 +910,8 @@ def get_filter(doctype, f):
 		# if operator is missing
 		f.operator = "="
 
-	valid_operators = ("=", "!=", ">", "<", ">=", "<=", "like", "not like", "in", "not in",
-		"between", "descendants of", "ancestors of", "not descendants of", "not ancestors of", "is")
-
+	valid_operators = ("=", "!=", ">", "<", ">=", "<=", "like", "not like", "in", "not in", "is",
+		"between", "descendants of", "ancestors of", "not descendants of", "not ancestors of", "previous", "next")
 	if f.operator.lower() not in valid_operators:
 		frappe.throw(frappe._("Operator must be one of {0}").format(", ".join(valid_operators)))
 
@@ -920,8 +995,7 @@ def expand_relative_urls(html):
 	html = re.sub('(href|src){1}([\s]*=[\s]*[\'"]?)((?!http)[^\'" >]+)([\'"]?)', _expand_relative_urls, html)
 
 	# background-image: url('/assets/...')
-	html = re.sub('(:[\s]?url)(\([\'"]?)([^\)]*)([\'"]?\))', _expand_relative_urls, html)
-
+	html = re.sub('(:[\s]?url)(\([\'"]?)((?!http)[^\'" >]+)([\'"]?\))', _expand_relative_urls, html)
 	return html
 
 def quoted(url):
@@ -950,7 +1024,7 @@ def strip(val, chars=None):
 def to_markdown(html):
 	text = None
 	try:
-		text = html2text(html)
+		text = html2text(html or '')
 	except HTMLParser.HTMLParseError:
 		pass
 
@@ -970,7 +1044,7 @@ def md_to_html(markdown_text):
 
 	html = None
 	try:
-		html = markdown(markdown_text, extras=extras)
+		html = markdown(markdown_text or '', extras=extras)
 	except MarkdownError:
 		pass
 
@@ -986,3 +1060,81 @@ def get_source_value(source, key):
 def is_subset(list_a, list_b):
 	'''Returns whether list_a is a subset of list_b'''
 	return len(list(set(list_a) & set(list_b))) == len(list_a)
+
+def generate_hash(*args, **kwargs):
+	return frappe.generate_hash(*args, **kwargs)
+
+
+
+def guess_date_format(date_string):
+	DATE_FORMATS = [
+		r"%d-%m-%Y",
+		r"%m-%d-%Y",
+		r"%Y-%m-%d",
+		r"%d-%m-%y",
+		r"%m-%d-%y",
+		r"%y-%m-%d",
+		r"%d/%m/%Y",
+		r"%m/%d/%Y",
+		r"%Y/%m/%d",
+		r"%d/%m/%y",
+		r"%m/%d/%y",
+		r"%y/%m/%d",
+		r"%d.%m.%Y",
+		r"%m.%d.%Y",
+		r"%Y.%m.%d",
+		r"%d.%m.%y",
+		r"%m.%d.%y",
+		r"%y.%m.%d",
+		r"%d %b %Y",
+		r"%d %B %Y",
+	]
+
+	TIME_FORMATS = [
+		r"%H:%M:%S.%f",
+		r"%H:%M:%S",
+		r"%H:%M",
+		r"%I:%M:%S.%f %p",
+		r"%I:%M:%S %p",
+		r"%I:%M %p",
+	]
+
+	def _get_date_format(date_str):
+		for f in DATE_FORMATS:
+			try:
+				# if date is parsed without any exception
+				# capture the date format
+				datetime.datetime.strptime(date_str, f)
+				return f
+			except ValueError:
+				pass
+
+	def _get_time_format(time_str):
+		for f in TIME_FORMATS:
+			try:
+				# if time is parsed without any exception
+				# capture the time format
+				datetime.datetime.strptime(time_str, f)
+				return f
+			except ValueError:
+				pass
+
+	date_format = None
+	time_format = None
+	date_string = date_string.strip()
+
+	# check if date format can be guessed
+	date_format = _get_date_format(date_string)
+	if date_format:
+		return date_format
+
+	# date_string doesnt look like date, it can have a time part too
+	# split the date string into date and time parts
+	if " " in date_string:
+		date_str, time_str = date_string.split(" ", 1)
+
+		date_format = _get_date_format(date_str) or ''
+		time_format = _get_time_format(time_str) or ''
+
+		if date_format and time_format:
+			return (date_format + ' ' + time_format).strip()

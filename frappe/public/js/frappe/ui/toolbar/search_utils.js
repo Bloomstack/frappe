@@ -6,6 +6,7 @@ frappe.search.utils = {
 	},
 
 	get_recent_pages: function(keywords) {
+		if (keywords === null) keywords = '';
 		var me = this, values = [], options = [];
 
 		function find(list, keywords, process) {
@@ -20,7 +21,9 @@ frappe.search.utils = {
 						if($.isPlainObject(option)) {
 							option = [option];
 						}
-						option.forEach(function(o) { o.match = item; o.recent = true;});
+						option.forEach(function(o) {
+							o.match = item; o.recent = true;
+						});
 
 						options = option.concat(options);
 					}
@@ -37,14 +40,12 @@ frappe.search.utils = {
 		frappe.route_history.forEach(function(route, i) {
 			if(route[0]==='Form') {
 				values.push([route[2], route]);
-			}
-			else if(['List', 'Tree', 'modules', 'query-report'].includes(route[0]) || route[2]==='Report') {
+			} else if(['List', 'Tree', 'modules', 'query-report'].includes(route[0]) || route[2]==='Report') {
 				if(route[1]) {
 					values.push([route[1], route]);
 				}
-			}
-			else if(route[0]) {
-				values.push([frappe.route_titles[route[0]] || route[0], route]);
+			} else if(route[0]) {
+				values.push([frappe.route_titles[route.join('/')] || route[0], route]);
 			}
 		});
 
@@ -80,12 +81,29 @@ frappe.search.utils = {
 		return options;
 	},
 
+	get_frequent_links() {
+		let options = [];
+		frappe.boot.frequently_visited_links.forEach(link => {
+			const label = frappe.utils.get_route_label(link.route);
+			options.push({
+				'route': link.route,
+				'label': label,
+				'value': label,
+				'index': link.count,
+			});
+		});
+		if (!options.length) {
+			return this.get_recent_pages('');
+		}
+		return options;
+	},
+
 	get_search_in_list: function(keywords) {
 		var me = this;
 		var out = [];
 		if(in_list(keywords.split(" "), "in") && (keywords.slice(-2) !== "in")) {
 			var parts = keywords.split(" in ");
-			frappe.boot.user.can_read.forEach(function (item) {
+			frappe.boot.user.can_read.forEach(function(item) {
 				if(frappe.boot.user.can_search.includes(item)) {
 					var level = me.fuzzy_search(parts[1], item);
 					if(level) {
@@ -109,7 +127,7 @@ frappe.search.utils = {
 		var out = [];
 		var firstKeyword = keywords.split(" ")[0];
 		if(firstKeyword.toLowerCase() === __("new")) {
-			frappe.boot.user.can_create.forEach(function (item) {
+			frappe.boot.user.can_create.forEach(function(item) {
 				var level = me.fuzzy_search(keywords.substr(4), item);
 				if(level) {
 					out.push({
@@ -118,7 +136,9 @@ frappe.search.utils = {
 						value: __("New {0}", [__(item)]),
 						index: 1 + level,
 						match: item,
-						onclick: function() { frappe.new_doc(item, true); }
+						onclick: function() {
+							frappe.new_doc(item, true);
+						}
 					});
 				}
 			});
@@ -132,16 +152,22 @@ frappe.search.utils = {
 
 		var level, target;
 		var option = function(type, route, order) {
+			// check to skip extra list in the text
+			// eg. Price List List should be only Price List
+			let skip_list = type === 'List' && target.endsWith('List');
+			let label = me.bolden_match_part(__(target), keywords);
+			label += skip_list ? '' : ` ${__(type)}`;
+
 			return {
 				type: type,
-				label: me.bolden_match_part(__(target), keywords) + " " + __(type),
+				label: label,
 				value: __(target + " " + type),
 				index: level + order,
 				match: target,
 				route: route,
-			}
+			};
 		};
-		frappe.boot.user.can_read.forEach(function (item) {
+		frappe.boot.user.can_read.forEach(function(item) {
 			level = me.fuzzy_search(keywords, item);
 			if (level) {
 				target = item;
@@ -158,7 +184,9 @@ frappe.search.utils = {
 							value: __("New {0}", [__(item)]),
 							index: level + 0.015,
 							match: item,
-							onclick: function () { frappe.new_doc(match, true); }
+							onclick: function() {
+								frappe.new_doc(match, true);
+							}
 						});
 					}
 					if (in_list(frappe.boot.treeviews, item)) {
@@ -274,7 +302,7 @@ frappe.search.utils = {
 					label: __("Open {0}", [me.bolden_match_part(__(item), keywords)]),
 					value: __("Open {0}", [__(item)]),
 					index: level,
-				}
+				};
 				if(module.link) {
 					ret.route = [module.link];
 				} else {
@@ -286,11 +314,11 @@ frappe.search.utils = {
 		return out;
 	},
 
-	get_global_results: function (keywords, start, limit, doctype = "") {
+	get_global_results: function(keywords, start, limit, doctype = "") {
 		var me = this;
 		function get_results_sets(data) {
 			var results_sets = [], result, set;
-			function get_existing_set (doctype) {
+			function get_existing_set(doctype) {
 				return results_sets.find(function(set) {
 					return set.title === doctype;
 				});
@@ -321,7 +349,7 @@ frappe.search.utils = {
 							var field_data = "";
 							var index = field_value.indexOf(keywords);
 							field_data += index < field_length/2 ? field_value.slice(0, index)
-								: '...' + field_value.slice(index - field_length/2, index)
+								: '...' + field_value.slice(index - field_length/2, index);
 							field_data += field_value.slice(index, index + field_length/2);
 							field_data += index + field_length/2 < field_value.length ? "..." : "";
 							field_value = field_data;
@@ -368,7 +396,7 @@ frappe.search.utils = {
 					value: d.name,
 					description: make_description(d.content, d.name),
 					route: ['Form', d.doctype, d.name],
-				}
+				};
 				if(d.image || d.image === null){
 					result.image = d.image;
 				}
@@ -380,7 +408,7 @@ frappe.search.utils = {
 						title: d.doctype,
 						results: [result],
 						fetch_type: "Global"
-					}
+					};
 					results_sets.push(set);
 				}
 
@@ -443,36 +471,71 @@ frappe.search.utils = {
 			}
 		});
 		var in_keyword = keywords.split(" in ")[0];
-		return [
-			{title: "Recents", fetch_type: "Nav", results: sort_uniques(this.get_recent_pages(keywords))},
-			{title: "Create a new ...", fetch_type: "Nav", results: sort_uniques(this.get_creatables(keywords))},
-			{title: "Find '" + in_keyword + "' in ... ", fetch_type: "Nav", results: sort_uniques(this.get_search_in_list(keywords))},
-			{title: "Lists", fetch_type: "Nav", results: lists},
-			{title: "Reports", fetch_type: "Nav", results: sort_uniques(this.get_reports(keywords))},
-			{title: "Administration", fetch_type: "Nav", results: sort_uniques(this.get_pages(keywords))},
-			{title: "Modules", fetch_type: "Nav", results: sort_uniques(this.get_modules(keywords))},
-			{title: "Setup", fetch_type: "Nav", results: setup},
-		]
+		return [{
+			title: "Recents",
+			fetch_type: "Nav",
+			results: sort_uniques(this.get_recent_pages(keywords))
+		},
+		{
+			title: "Create a new ...",
+			fetch_type: "Nav",
+			results: sort_uniques(this.get_creatables(keywords))
+		},
+		{
+			title: "Lists",
+			fetch_type: "Nav",
+			results: lists
+		},
+		{
+			title: "Reports",
+			fetch_type: "Nav",
+			results: sort_uniques(this.get_reports(keywords))
+		},
+		{
+			title: "Administration",
+			fetch_type: "Nav",
+			results: sort_uniques(this.get_pages(keywords))
+		},
+		{
+			title: "Modules",
+			fetch_type: "Nav",
+			results: sort_uniques(this.get_modules(keywords))
+		},
+		{
+			title: "Setup",
+			fetch_type: "Nav",
+			results: setup
+		},
+		{
+			title: "Find '" + in_keyword + "' in ... ",
+			fetch_type: "Nav",
+			results: sort_uniques(this.get_search_in_list(keywords))
+		}];
 	},
 
 	fuzzy_search: function(keywords, _item) {
 		// Returns 10 for case-perfect contain, 0 for not found
-			// 9 for perfect contain,
-			// 0 - 6 for fuzzy contain
+		//  	9 for perfect contain,
+		//  	0 - 6 for fuzzy contain
 
 		// **Specific use-case step**
 		keywords = keywords || '';
+		var item = __(_item || '');
+		var item_without_hyphen = item.replace(/-/g, " ");
 
-		var item = __(_item || '').replace(/-/g, " ");
-
-		var ilen = item.length;
-		var klen = keywords.length;
-		var length_ratio = klen/ilen;
+		var item_length = item.length;
+		var query_length = keywords.length;
+		var length_ratio = query_length / item_length;
 		var max_skips = 3, max_mismatch_len = 2;
 
-		if (klen > ilen) {	return 0;  }
+		if (query_length > item_length) {
+			return 0;
+		}
 
-		if(keywords === item || item.toLowerCase().indexOf(keywords) === 0) {
+		// check for perfect string matches or
+		// matches that start with the keyword
+		if ([item, item_without_hyphen].includes(keywords)
+				|| [item, item_without_hyphen].some((txt) => txt.toLowerCase().indexOf(keywords) === 0)) {
 			return 10 + length_ratio;
 		}
 
@@ -488,12 +551,12 @@ frappe.search.utils = {
 		}
 
 		var skips = 0, mismatches = 0;
-		outer: for (var i = 0, j = 0; i < klen; i++) {
-			if(mismatches !== 0) skips++;
-			if(skips > max_skips) return 0;
+		outer: for (var i = 0, j = 0; i < query_length; i++) {
+			if (mismatches !== 0) skips++;
+			if (skips > max_skips) return 0;
 			var k_ch = keywords.charCodeAt(i);
 			mismatches = 0;
-			while (j < ilen) {
+			while (j < item_length) {
 				if (item.charCodeAt(j++) === k_ch) {
 					continue outer;
 				}
@@ -547,4 +610,34 @@ frappe.search.utils = {
 		}
 
 	},
-}
+
+	get_executables(keywords) {
+		let results = [];
+		this.searchable_functions.forEach(item => {
+			const target = item.label.toLowerCase();
+			const txt = keywords.toLowerCase();
+			if (txt === target || target.indexOf(txt) === 0) {
+				results.push({
+					type: "Executable",
+					value:  this.bolden_match_part(__(item.label), txt),
+					index: this.fuzzy_search(txt, target),
+					match: item.label,
+					onclick: () => item.action.apply(this, item.args)
+				});
+			}
+		});
+		return results;
+	},
+	make_function_searchable(_function, label=null, args=null) {
+		if (typeof _function !== 'function') {
+			throw new Error('First argument should be a function');
+		}
+
+		this.searchable_functions.push({
+			'label': label || _function.name,
+			'action': _function,
+			'args': args,
+		});
+	},
+	searchable_functions: [],
+};

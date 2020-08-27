@@ -7,11 +7,11 @@ import frappe, os, copy, json, re
 from frappe import _
 
 from frappe.modules import get_doc_path
+from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils import cint, strip_html
 from six import string_types
 
 no_cache = 1
-no_sitemap = 1
 
 base_template_path = "templates/www/printview.html"
 standard_format = "templates/print_formats/standard.html"
@@ -34,8 +34,10 @@ def get_context(context):
 
 	print_format = get_print_format_doc(None, meta = meta)
 
+	make_access_log(doctype=frappe.form_dict.doctype, document=frappe.form_dict.name, file_type='PDF', method='Print')
+
 	return {
-		"body": get_html(doc, print_format = print_format,
+		"body": get_rendered_template(doc, print_format = print_format,
 			meta=meta, trigger_print = frappe.form_dict.trigger_print,
 			no_letterhead=frappe.form_dict.no_letterhead),
 		"css": get_print_style(frappe.form_dict.style, print_format),
@@ -59,7 +61,7 @@ def get_print_format_doc(print_format_name, meta):
 			# if old name, return standard!
 			return None
 
-def get_html(doc, name=None, print_format=None, meta=None,
+def get_rendered_template(doc, name=None, print_format=None, meta=None,
 	no_letterhead=None, trigger_print=False):
 
 	print_settings = frappe.db.get_singles_dict("Print Settings")
@@ -82,8 +84,7 @@ def get_html(doc, name=None, print_format=None, meta=None,
 		if doc.docstatus==2 and not cint(print_settings.allow_print_for_cancelled):
 			frappe.throw(_("Not allowed to print cancelled documents"), frappe.PermissionError)
 
-	if hasattr(doc, "before_print"):
-		doc.before_print()
+	doc.run_method("before_print")
 
 	if not hasattr(doc, "print_heading"): doc.print_heading = None
 	if not hasattr(doc, "sub_heading"): doc.sub_heading = None
@@ -96,9 +97,9 @@ def get_html(doc, name=None, print_format=None, meta=None,
 
 	# determine template
 	if print_format:
-		doc._show_section_headings = print_format.show_section_headings
-		doc._line_breaks = print_format.line_breaks
-		doc._align_labels_right = print_format.align_labels_right
+		doc.print_section_headings = print_format.show_section_headings
+		doc.print_line_breaks = print_format.line_breaks
+		doc.align_labels_right = print_format.align_labels_right
 
 		def get_template_from_string():
 			return jenv.from_string(get_print_format(doc.doctype,
@@ -172,7 +173,7 @@ def convert_markdown(doc, meta):
 
 @frappe.whitelist()
 def get_html_and_style(doc, name=None, print_format=None, meta=None,
-	no_letterhead=None, trigger_print=False, style=None, lang=None):
+	no_letterhead=None, trigger_print=False, style=None):
 	"""Returns `html` and `style` of print format, used in PDF etc"""
 
 	if isinstance(doc, string_types) and isinstance(name, string_types):
@@ -182,10 +183,37 @@ def get_html_and_style(doc, name=None, print_format=None, meta=None,
 		doc = frappe.get_doc(json.loads(doc))
 
 	print_format = get_print_format_doc(print_format, meta=meta or frappe.get_meta(doc.doctype))
+
+	try:
+		html = get_rendered_template(doc, name=name, print_format=print_format, meta=meta,
+			no_letterhead=no_letterhead, trigger_print=trigger_print)
+	except frappe.TemplateNotFoundError:
+		frappe.clear_last_message()
+		html = None
+
 	return {
-		"html": get_html(doc, name=name, print_format=print_format, meta=meta,
-	no_letterhead=no_letterhead, trigger_print=trigger_print),
+		"html": html,
 		"style": get_print_style(style=style, print_format=print_format)
+	}
+
+@frappe.whitelist()
+def get_rendered_raw_commands(doc, name=None, print_format=None, meta=None, lang=None):
+	"""Returns Rendered Raw Commands of print format, used to send directly to printer"""
+
+	if isinstance(doc, string_types) and isinstance(name, string_types):
+		doc = frappe.get_doc(doc, name)
+
+	if isinstance(doc, string_types):
+		doc = frappe.get_doc(json.loads(doc))
+
+	print_format = get_print_format_doc(print_format, meta=meta or frappe.get_meta(doc.doctype))
+
+	if not print_format or (print_format and not print_format.raw_printing):
+		frappe.throw(_("{0} is not a raw printing format.").format(print_format),
+				frappe.TemplateNotFoundError)
+
+	return {
+		"raw_commands": get_rendered_template(doc, name=name, print_format=print_format, meta=meta)
 	}
 
 def validate_print_permission(doc):
@@ -219,11 +247,13 @@ def get_print_format(doctype, print_format):
 		with open(path, "r") as pffile:
 			return pffile.read()
 	else:
+		if print_format.raw_printing:
+			return print_format.raw_commands
 		if print_format.html:
 			return print_format.html
-		else:
-			frappe.throw(_("No template found at path: {0}").format(path),
-				frappe.TemplateNotFoundError)
+
+		frappe.throw(_("No template found at path: {0}").format(path),
+			frappe.TemplateNotFoundError)
 
 def make_layout(doc, meta, format_data=None):
 	"""Builds a hierarchical layout object from the fields list to be rendered
@@ -285,6 +315,10 @@ def make_layout(doc, meta, format_data=None):
 		if df.fieldtype=="HTML" and df.options:
 			doc.set(df.fieldname, True) # show this field
 
+		if df.fieldtype=='Signature' and not doc.get(df.fieldname):
+			placeholder_image = '/assets/frappe/images/signature-placeholder.png'
+			doc.set(df.fieldname, placeholder_image)
+
 		if is_visible(df, doc) and has_value(df, doc):
 			append_empty_field_dict_to_page_column(page)
 
@@ -326,7 +360,7 @@ def is_visible(df, doc):
 		if df.fieldname in doc.hide_in_print_layout:
 			return False
 
-	if df.permlevel or 0 > 0 and not doc.has_permlevel_access_to(df.fieldname, df):
+	if (df.permlevel or 0) > 0 and not doc.has_permlevel_access_to(df.fieldname, df):
 		return False
 
 	return not doc.is_print_hide(df.fieldname, df)

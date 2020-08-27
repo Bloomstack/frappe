@@ -9,8 +9,7 @@ frappe.views.BaseList = class BaseList {
 		frappe.run_serially([
 			() => this.init(),
 			() => this.before_refresh(),
-			() => this.refresh(),
-			() => frappe.route_options = null
+			() => this.refresh()
 		]);
 	}
 
@@ -104,7 +103,9 @@ frappe.views.BaseList = class BaseList {
 			}
 			return f;
 		});
-		//de-dup
+		// remove null or undefined values
+		this.fields = this.fields.filter(Boolean);
+		//de-duplicate
 		this.fields = this.fields.uniqBy(f => f[0] + f[1]);
 	}
 
@@ -175,7 +176,7 @@ frappe.views.BaseList = class BaseList {
 			if (item.condition && item.condition() === false) {
 				return;
 			}
-			const $item = this.page.add_menu_item(item.label, item.action, item.standard);
+			const $item = this.page.add_menu_item(item.label, item.action, item.standard, item.shortcut);
 			if (item.class) {
 				$item && $item.addClass(item.class);
 			}
@@ -198,13 +199,21 @@ frappe.views.BaseList = class BaseList {
 	}
 
 	toggle_side_bar() {
-		this.list_sidebar.parent.toggleClass('hide');
-		this.page.current_view.find('.layout-main-section-wrapper').toggleClass('col-md-10 col-md-12');
+		let show_sidebar = JSON.parse(localStorage.show_sidebar || 'true');
+		show_sidebar = !show_sidebar;
+		localStorage.show_sidebar = show_sidebar;
+		this.show_or_hide_sidebar();
+	}
+
+	show_or_hide_sidebar() {
+		let show_sidebar = JSON.parse(localStorage.show_sidebar || 'true');
+		$(document.body).toggleClass('no-list-sidebar', !show_sidebar);
 	}
 
 	setup_main_section() {
 		return frappe.run_serially([
 			this.setup_list_wrapper,
+			this.show_or_hide_sidebar,
 			this.setup_filter_area,
 			this.setup_sort_selector,
 			this.setup_result_area,
@@ -221,7 +230,7 @@ frappe.views.BaseList = class BaseList {
 	setup_filter_area() {
 		this.filter_area = new FilterArea(this);
 
-		if (this.filters.length > 0) {
+		if (this.filters && this.filters.length > 0) {
 			return this.filter_area.set(this.filters);
 		}
 	}
@@ -335,7 +344,8 @@ frappe.views.BaseList = class BaseList {
 			filters: this.get_filters_for_args(),
 			order_by: this.sort_selector.get_sql_string(),
 			start: this.start,
-			page_length: this.page_length
+			page_length: this.page_length,
+			view: this.view
 		};
 	}
 
@@ -363,7 +373,11 @@ frappe.views.BaseList = class BaseList {
 			this.toggle_result_area();
 			this.before_render();
 			this.render();
+			this.after_render();
 			this.freeze(false);
+			if (this.settings.refresh) {
+				this.settings.refresh(this);
+			}
 		});
 	}
 
@@ -385,6 +399,10 @@ frappe.views.BaseList = class BaseList {
 	}
 
 	before_render() {
+
+	}
+
+	after_render() {
 
 	}
 
@@ -523,7 +541,7 @@ class FilterArea {
 			out.promise = out.promise || Promise.resolve();
 			out.non_standard_filters = out.non_standard_filters || [];
 
-			if (fields_dict[fieldname] && condition === '=') {
+			if (fields_dict[fieldname] && (condition === '=' || condition === "like")) {
 				// standard filter
 				out.promise = out.promise.then(
 					() => fields_dict[fieldname].set_value(value)
@@ -542,10 +560,12 @@ class FilterArea {
 		const fields_dict = this.list_view.page.fields_dict;
 
 		if (fieldname in fields_dict) {
-			fields_dict[fieldname].set_value('');
-			return;
+			return fields_dict[fieldname].set_value('');
 		}
-		this.filter_list.get_filter(fieldname).remove();
+
+		let filter = this.filter_list.get_filter(fieldname);
+		if (filter) filter.remove();
+		return Promise.resolve();
 	}
 
 	clear(refresh = true) {
@@ -571,7 +591,7 @@ class FilterArea {
 		let fields = [
 			{
 				fieldtype: 'Data',
-				label: 'ID',
+				label: 'Name',
 				condition: 'like',
 				fieldname: 'name',
 				onchange: () => this.refresh_list_view()
@@ -587,15 +607,15 @@ class FilterArea {
 		}
 
 		const doctype_fields = this.list_view.meta.fields;
+		const title_field = this.list_view.meta.title_field;
 
 		fields = fields.concat(doctype_fields.filter(
-			df => df.in_standard_filter &&
-				frappe.model.is_value_type(df.fieldtype)
+			df => (df.fieldname === title_field) || (df.in_standard_filter && frappe.model.is_value_type(df.fieldtype))
 		).map(df => {
 			let options = df.options;
 			let condition = '=';
 			let fieldtype = df.fieldtype;
-			if (['Text', 'Small Text', 'Text Editor', 'Data'].includes(fieldtype)) {
+			if (['Text', 'Small Text', 'Text Editor', 'HTML Editor', 'Data', 'Code', 'Read Only'].includes(fieldtype)) {
 				fieldtype = 'Data';
 				condition = 'like';
 			}
@@ -606,32 +626,24 @@ class FilterArea {
 					options = options.join("\n");
 				}
 			}
+			let default_value = (fieldtype === 'Link') ? frappe.defaults.get_user_default(options) : null;
+			if (['__default', '__global'].includes(default_value)) {
+				default_value = null;
+			}
 			return {
 				fieldtype: fieldtype,
 				label: __(df.label),
 				options: options,
 				fieldname: df.fieldname,
 				condition: condition,
-				onchange: () => this.refresh_list_view()
+				default: default_value,
+				onchange: () => this.refresh_list_view(),
+				ignore_link_validation: fieldtype === 'Dynamic Link',
+				is_filter: 1,
 			};
 		}));
 
 		fields.map(df => this.list_view.page.add_field(df));
-
-		// search icon in name filter
-		$('<span class="octicon octicon-search text-muted small"></span>')
-			.appendTo(this.list_view.page.fields_dict.name.$wrapper)
-			.css({
-				'position': 'absolute',
-				'z-index': '1',
-				'right': '7px',
-				'top': '9px',
-				'font-size': '90%'
-			});
-
-		this.list_view.page.fields_dict.name.$wrapper
-			.find('.form-control')
-			.css('padding-right', '2em');
 	}
 
 	get_standard_filters() {

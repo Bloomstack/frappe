@@ -2,61 +2,87 @@
 # MIT License. See license.txt
 from __future__ import unicode_literals
 
-import pdfkit, os, frappe
-from frappe.utils import scrub_urls
-from frappe import _
-from bs4 import BeautifulSoup
-from PyPDF2 import PdfFileReader
+import io
+import os
 import re
+from distutils.version import LooseVersion
 
-def get_pdf(html, options=None, output = None):
+import pdfkit
+import six
+from bs4 import BeautifulSoup
+from PyPDF2 import PdfFileReader, PdfFileWriter
+
+import frappe
+from frappe import _
+from frappe.utils import get_wkhtmltopdf_version, scrub_urls
+
+PDF_CONTENT_ERRORS = ["ContentNotFoundError", "ContentOperationNotPermittedError",
+	"UnknownContentError", "RemoteHostClosedError"]
+
+
+def get_pdf(html, options=None, output=None):
 	html = scrub_urls(html)
 	html, options = prepare_options(html, options)
-	fname = os.path.join("/tmp", "frappe-pdf-{0}.pdf".format(frappe.generate_hash()))
 
 	options.update({
 		"disable-javascript": "",
-		"disable-local-file-access": "",
+		"disable-local-file-access": ""
 	})
 
-	try:
-		pdfkit.from_string(html, fname, options=options or {})
-		if output:
-			append_pdf(PdfFileReader(fname),output)
-		else:
-			with open(fname, "rb") as fileobj:
-				filedata = fileobj.read()
+	filedata = ''
+	if LooseVersion(get_wkhtmltopdf_version()) > LooseVersion('0.12.3'):
+		options.update({"disable-smart-shrinking": ""})
 
-	except IOError as e:
-		if ("ContentNotFoundError" in e.message
-			or "ContentOperationNotPermittedError" in e.message
-			or "UnknownContentError" in e.message
-			or "RemoteHostClosedError" in e.message):
+	try:
+		# Set filename property to false, so no file is actually created
+		filedata = pdfkit.from_string(html, False, options=options or {})
+
+		# https://pythonhosted.org/PyPDF2/PdfFileReader.html
+		# create in-memory binary streams from filedata and create a PdfFileReader object
+		reader = PdfFileReader(io.BytesIO(filedata))
+	except OSError as e:
+		if any([error in str(e) for error in PDF_CONTENT_ERRORS]):
+			if not filedata:
+				frappe.throw(_("PDF generation failed because of broken image links"))
 
 			# allow pdfs with missing images if file got created
-			if os.path.exists(fname):
-				if output:
-					append_pdf(PdfFileReader(file(fname,"rb")),output)
-				else:
-					with open(fname, "rb") as fileobj:
-						filedata = fileobj.read()
-
-			else:
-				frappe.throw(_("PDF generation failed because of broken image links"))
+			if output:  # output is a PdfFileWriter object
+				output.appendPagesFromReader(reader)
 		else:
 			raise
 
-	finally:
-		cleanup(fname, options)
+	if "password" in options:
+		password = options["password"]
+		if six.PY2:
+			password = frappe.safe_encode(password)
 
 	if output:
+		output.appendPagesFromReader(reader)
 		return output
+
+	writer = PdfFileWriter()
+	writer.appendPagesFromReader(reader)
+
+	if "password" in options:
+		writer.encrypt(password)
+
+	filedata = get_file_data_from_writer(writer)
 
 	return filedata
 
-def append_pdf(input,output):
-	# Merging multiple pdf files
-    [output.addPage(input.getPage(page_num)) for page_num in range(input.numPages)]
+
+def get_file_data_from_writer(writer_obj):
+
+	# https://docs.python.org/3/library/io.html
+	stream = io.BytesIO()
+	writer_obj.write(stream)
+
+	# Change the stream position to start of the stream
+	stream.seek(0)
+
+	# Read up to size bytes from the object and return them
+	return stream.read()
+
 
 def prepare_options(html, options):
 	if not options:
@@ -69,12 +95,14 @@ def prepare_options(html, options):
 		'quiet': None,
 		# 'no-outline': None,
 		'encoding': "UTF-8",
-		#'load-error-handling': 'ignore',
-
-		# defaults
-		'margin-right': '15mm',
-		'margin-left': '15mm'
+		#'load-error-handling': 'ignore'
 	})
+
+	if not options.get("margin-right"):
+		options['margin-right'] = '15mm'
+
+	if not options.get("margin-left"):
+		options['margin-left'] = '15mm'
 
 	html, html_options = read_options_from_html(html)
 	options.update(html_options or {})
@@ -88,6 +116,7 @@ def prepare_options(html, options):
 		options['page-size'] = frappe.db.get_single_value("Print Settings", "pdf_page_size") or "A4"
 
 	return html, options
+
 
 def read_options_from_html(html):
 	options = {}
@@ -107,7 +136,8 @@ def read_options_from_html(html):
 		except:
 			pass
 
-	return soup.prettify(), options
+	return str(soup), options
+
 
 def prepare_header_footer(soup):
 	options = {}
@@ -151,6 +181,7 @@ def prepare_header_footer(soup):
 
 	return options
 
+
 def cleanup(fname, options):
 	if os.path.exists(fname):
 		os.remove(fname)
@@ -158,6 +189,7 @@ def cleanup(fname, options):
 	for key in ("header-html", "footer-html"):
 		if options.get(key) and os.path.exists(options[key]):
 			os.remove(options[key])
+
 
 def toggle_visible_pdf(soup):
 	for tag in soup.find_all(attrs={"class": "visible-pdf"}):

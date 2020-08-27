@@ -1,5 +1,11 @@
 frappe.provide('frappe.ui.form');
 
+frappe.quick_edit = function(doctype, name) {
+	frappe.db.get_doc(doctype, name).then(doc => {
+		frappe.ui.form.make_quick_entry(doctype, null, null, doc);
+	});
+};
+
 frappe.ui.form.make_quick_entry = (doctype, after_insert, init_callback, doc) => {
 	var trimmed_doctype = doctype.replace(/ /g, '');
 	var controller_name = "QuickEntryForm";
@@ -24,6 +30,7 @@ frappe.ui.form.QuickEntryForm = Class.extend({
 		let me = this;
 		return new Promise(resolve => {
 			frappe.model.with_doctype(this.doctype, function() {
+				me.check_quick_entry_doc();
 				me.set_meta_and_mandatory_fields();
 				if(me.is_quick_entry()) {
 					me.render_dialog();
@@ -38,16 +45,16 @@ frappe.ui.form.QuickEntryForm = Class.extend({
 	},
 
 	set_meta_and_mandatory_fields: function(){
-		let fields = frappe.get_meta(this.doctype).fields;
-		if (fields.length < 7) {
-			// if less than 7 fields, then show everything
-			this.mandatory = fields;
-		} else {
-			// prepare a list of mandatory and bold fields
-			this.mandatory = $.map(fields,
-				function(d) { return ((d.reqd || d.bold || d.allow_in_quick_entry) && !d.read_only) ? $.extend({}, d) : null; });
-		}
 		this.meta = frappe.get_meta(this.doctype);
+		let fields = this.meta.fields;
+
+		// prepare a list of mandatory, bold and allow in quick entry fields
+		this.mandatory = $.map(fields, function(d) {
+			return ((d.reqd || d.bold || d.allow_in_quick_entry) && !d.read_only) ? $.extend({}, d) : null;
+		});
+	},
+
+	check_quick_entry_doc: function() {
 		if (!this.doc) {
 			this.doc = frappe.model.get_new_doc(this.doctype, null, null, true);
 		}
@@ -60,8 +67,7 @@ frappe.ui.form.QuickEntryForm = Class.extend({
 
 		this.validate_for_prompt_autoname();
 
-		if (this.has_child_table()
-			|| !this.mandatory.length) {
+		if (this.has_child_table() || !this.mandatory.length) {
 			return false;
 		}
 
@@ -97,8 +103,8 @@ frappe.ui.form.QuickEntryForm = Class.extend({
 		this.dialog = new frappe.ui.Dialog({
 			title: __("New {0}", [__(this.doctype)]),
 			fields: this.mandatory,
+			doc: this.doc
 		});
-		this.dialog.doc = this.doc;
 
 		this.register_primary_action();
 		this.render_edit_in_full_page_link();
@@ -116,9 +122,6 @@ frappe.ui.form.QuickEntryForm = Class.extend({
 
 		this.dialog.onhide = () => frappe.quick_entry = null;
 		this.dialog.show();
-		this.dialog.$wrapper.on('shown.bs.modal', function() {
-			$(document).trigger('quick-entry-dialog-open');
-		});
 
 		this.dialog.refresh_dependency();
 		this.set_defaults();
@@ -151,27 +154,41 @@ frappe.ui.form.QuickEntryForm = Class.extend({
 		return new Promise(resolve => {
 			me.update_doc();
 			frappe.call({
-				method: "frappe.client.insert",
+				method: "frappe.client.save",
 				args: {
 					doc: me.dialog.doc
 				},
 				callback: function(r) {
-					me.dialog.hide();
-					// delete the old doc
-					frappe.model.clear_doc(me.dialog.doc.doctype, me.dialog.doc.name);
-					me.dialog.doc = r.message;
-					if(frappe._from_link) {
-						frappe.ui.form.update_calling_link(me.dialog.doc);
+
+					if (frappe.model.is_submittable(me.doctype)) {
+						frappe.run_serially([
+							() => me.dialog.working = true,
+							() => {
+								me.dialog.set_primary_action(__('Submit'), function() {
+									me.submit(r.message);
+								});
+							}
+						]);
 					} else {
-						if(me.after_insert) {
-							me.after_insert(me.dialog.doc);
+						me.dialog.hide();
+						// delete the old doc
+						frappe.model.clear_doc(me.dialog.doc.doctype, me.dialog.doc.name);
+						me.dialog.doc = r.message;
+						if(frappe._from_link) {
+							frappe.ui.form.update_calling_link(me.dialog.doc);
 						} else {
-							me.open_form_if_not_list();
+							if(me.after_insert) {
+								me.after_insert(me.dialog.doc);
+							} else {
+								me.open_form_if_not_list();
+							}
 						}
 					}
 				},
 				error: function() {
-					me.open_doc();
+					if (!me.skip_redirect_on_error) {
+						me.open_doc();
+					}
 				},
 				always: function() {
 					me.dialog.working = false;
@@ -179,6 +196,26 @@ frappe.ui.form.QuickEntryForm = Class.extend({
 				},
 				freeze: true
 			});
+		});
+	},
+
+	submit: function(doc) {
+		var me = this;
+		frappe.call({
+			method: "frappe.client.submit",
+			args : {
+				doc: doc
+			},
+			callback: function(r) {
+				me.dialog.hide();
+				// delete the old doc
+				frappe.model.clear_doc(me.dialog.doc.doctype, me.dialog.doc.name);
+				me.dialog.doc = r.message;
+				if (frappe._from_link) {
+					frappe.ui.form.update_calling_link(me.dialog.doc);
+				}
+				cur_frm.reload_doc();
+			}
 		});
 	},
 

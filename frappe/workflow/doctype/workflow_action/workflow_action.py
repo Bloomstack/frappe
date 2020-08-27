@@ -9,20 +9,24 @@ from frappe.utils import get_url, get_datetime
 from frappe.desk.form.utils import get_pdf_link
 from frappe.utils.verified_command import get_signed_params, verify_request
 from frappe import _
-from frappe.model.workflow import apply_workflow, get_workflow_name, \
-	has_approval_access, get_workflow_state_field, send_email_alert
+from frappe.model.workflow import apply_workflow, get_workflow_name, has_approval_access, \
+	get_workflow_state_field, send_email_alert, get_workflow_field_value, is_transition_condition_satisfied
 from frappe.desk.notifications import clear_doctype_notifications
+from frappe.utils.user import get_users_with_role
 
 class WorkflowAction(Document):
 	pass
 
+
+def on_doctype_update():
+	frappe.db.add_index("Workflow Action", ["status", "user"])
 
 def get_permission_query_conditions(user):
 	if not user: user = frappe.session.user
 
 	if user == "Administrator": return ""
 
-	return "(`tabWorkflow Action`.user='{user}')".format(user=user)
+	return "(`tabWorkflow Action`.`user`='{user}')".format(user=user)
 
 def has_permission(doc, user):
 	if user not in ['Administrator', doc.user]:
@@ -42,7 +46,7 @@ def process_workflow_actions(doc, state):
 	update_completed_workflow_actions(doc)
 	clear_doctype_notifications('Workflow Action')
 
-	next_possible_transitions = get_next_possible_transitions(workflow, get_doc_workflow_state(doc))
+	next_possible_transitions = get_next_possible_transitions(workflow, get_doc_workflow_state(doc), doc)
 
 	if not next_possible_transitions: return
 
@@ -90,7 +94,8 @@ def confirm_action(doctype, docname, user, action):
 	return_success_page(newdoc)
 
 	# reset session user
-	frappe.set_user(logged_in_user)
+	if logged_in_user == 'Guest':
+		frappe.set_user(logged_in_user)
 
 def return_success_page(doc):
 	frappe.respond_as_web_page(_("Success"),
@@ -112,9 +117,10 @@ def return_action_confirmation_page(doc, action, action_link, alert_doc_change=F
 
 	template_params['pdf_link'] = get_pdf_link(doc.get('doctype'), doc.get('name'))
 
-	frappe.respond_as_web_page(None, None,
-		indicator_color="blue",
-		template="confirm_workflow_action",
+	frappe.respond_as_web_page(title=None,
+		html=None,
+		indicator_color='blue',
+		template='confirm_workflow_action',
 		context=template_params)
 
 def return_link_expired_page(doc, doc_workflow_state):
@@ -128,21 +134,34 @@ def return_link_expired_page(doc, doc_workflow_state):
 
 def clear_old_workflow_actions(doc, user=None):
 	user = user if user else frappe.session.user
-	frappe.db.sql('''delete from `tabWorkflow Action`
-		where reference_doctype=%s and reference_name=%s and user!=%s and status="Open"''',
+	frappe.db.sql("""DELETE FROM `tabWorkflow Action`
+		WHERE `reference_doctype`=%s AND `reference_name`=%s AND `user`!=%s AND `status`='Open'""",
 		(doc.get('doctype'), doc.get('name'), user))
 
 def update_completed_workflow_actions(doc, user=None):
 	user = user if user else frappe.session.user
-	frappe.db.sql('''update `tabWorkflow Action` set status='Completed', completed_by=%s
-		where reference_doctype=%s and reference_name=%s and user=%s and status="Open"''',
+	frappe.db.sql("""UPDATE `tabWorkflow Action` SET `status`='Completed', `completed_by`=%s
+		WHERE `reference_doctype`=%s AND `reference_name`=%s AND `user`=%s AND `status`='Open'""",
 		(user, doc.get('doctype'), doc.get('name'), user))
 
-def get_next_possible_transitions(workflow_name, state):
-	return frappe.get_all('Workflow Transition',
-		fields=['allowed', 'action', 'state', 'allow_self_approval'],
+def get_next_possible_transitions(workflow_name, state, doc=None):
+	transitions = frappe.get_all('Workflow Transition',
+		fields=['allowed', 'action', 'state', 'allow_self_approval', 'next_state', '`condition`'],
 		filters=[['parent', '=', workflow_name],
 		['state', '=', state]])
+
+	transitions_to_return = []
+
+	for transition in transitions:
+		is_next_state_optional = get_state_optional_field_value(workflow_name, transition.next_state)
+		# skip transition if next state of the transition is optional
+		if is_next_state_optional:
+			continue
+		if not is_transition_condition_satisfied(transition, doc):
+			continue
+		transitions_to_return.append(transition)
+
+	return transitions_to_return
 
 def get_users_next_action_data(transitions, doc):
 	user_data_map = {}
@@ -151,15 +170,15 @@ def get_users_next_action_data(transitions, doc):
 		filtered_users = filter_allowed_users(users, doc, transition)
 		for user in filtered_users:
 			if not user_data_map.get(user):
-				user_data_map[user] = {
+				user_data_map[user] = frappe._dict({
 					'possible_actions': [],
 					'email': frappe.db.get_value('User', user, 'email'),
-				}
+				})
 
-			user_data_map[user].get('possible_actions').append({
+			user_data_map[user].get('possible_actions').append(frappe._dict({
 				'action_name': transition.action,
 				'action_link': get_workflow_action_url(transition.action, doc, user)
-			})
+			}))
 	return user_data_map
 
 
@@ -174,9 +193,6 @@ def create_workflow_actions_for_users(users, doc):
 			'user': user
 		}).insert(ignore_permissions=True)
 
-	frappe.db.commit()
-
-
 def send_workflow_action_email(users_data, doc):
 	common_args = get_common_email_args(doc)
 	message = common_args.pop('message', None)
@@ -184,12 +200,22 @@ def send_workflow_action_email(users_data, doc):
 		email_args = {
 			'recipients': [d.get('email')],
 			'args': {
-				'actions': d.get('possible_actions'),
+				'actions': list(deduplicate_actions(d.get('possible_actions'))),
 				'message': message
 			},
+			'reference_name': doc.name,
+			'reference_doctype': doc.doctype
 		}
 		email_args.update(common_args)
 		enqueue(method=frappe.sendmail, queue='short', **email_args)
+
+def deduplicate_actions(action_list):
+	action_map = {}
+	for action_data in action_list:
+		if not action_map.get(action_data.action_name):
+			action_map[action_data.action_name] = action_data
+
+	return action_map.values()
 
 def get_workflow_action_url(action, doc, user):
 	apply_action_method = "/api/method/frappe.workflow.doctype.workflow_action.workflow_action.apply_action"
@@ -216,15 +242,6 @@ def get_confirm_workflow_action_url(doc, action, user):
 	}
 
 	return get_url(confirm_action_method + "?" + get_signed_params(params))
-
-
-def get_users_with_role(role):
-	return [p[0] for p in frappe.db.sql("""select distinct tabUser.name
-		from `tabHas Role`, tabUser
-		where `tabHas Role`.role=%s
-		and tabUser.name != "Administrator"
-		and `tabHas Role`.parent = tabUser.name
-		and tabUser.enabled=1""", role)]
 
 def is_workflow_action_already_created(doc):
 	return frappe.db.exists({
@@ -253,6 +270,7 @@ def filter_allowed_users(users, doc, transition):
 	"""
 	from frappe.permissions import has_permission
 	filtered_users = []
+	users = [user[0] for user in users]
 	for user in users:
 		if (has_approval_access(user, doc, transition)
 			and has_permission(doctype=doc, user=user)):
@@ -293,3 +311,8 @@ def get_email_template(doc):
 	if not template_name: return
 	return frappe.get_doc('Email Template', template_name)
 
+def get_state_optional_field_value(workflow_name, state):
+	return frappe.get_cached_value('Workflow Document State', {
+		'parent': workflow_name,
+		'state': state
+	}, 'is_optional_state')
