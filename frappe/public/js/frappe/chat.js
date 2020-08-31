@@ -23,7 +23,8 @@ import './utils/user'
  * try
  *      throw new frappe.Error("foobar")
  * catch (e)
- *      console.log(e.name)
+ *
+ *      (e.name)
  * // returns "FrappeError"
  *
  * @see  https://stackoverflow.com/a/32749533
@@ -980,6 +981,8 @@ frappe.chat.message.seen   = (mess, user) => {
 
 frappe.provide('frappe.chat.message.on')
 frappe.chat.message.on.create = function (fn) {
+	console.log("frappe.chat.message.on.create");
+	console.log(fn);
 	frappe.realtime.on("frappe.chat.message:create", r =>
 		fn({ ...r, creation: new frappe.datetime.datetime(r.creation) })
 	)
@@ -1444,9 +1447,21 @@ class extends Component {
 						}
 						else
 							update.typing = frappe._.as_array(update.typing)
+
+						return { ...r, ...update }
+					}
+
+					if(update.seen) {
+						const last_message = {
+							...r.last_message,
+							seen: update.seen
+						}
+
+						return { ...r, last_message: last_message };
 					}
 
 					return { ...r, ...update }
+
 				}
 
 				return r
@@ -1460,6 +1475,7 @@ class extends Component {
 			}
 
 			if ( state.room.name === room ) {
+				let room = { ...state.room };
 				if ( update.typing ) {
 					if ( !frappe._.is_empty(state.room.typing) ) {
 						const usr = update.typing
@@ -1469,9 +1485,18 @@ class extends Component {
 						}
 					} else
 						update.typing = frappe._.as_array(update.typing)
+
+					room  = { ...state.room, ...update }
 				}
 
-				const room  = { ...state.room, ...update }
+				if(update.seen) {
+					const last_message = {
+						...state.room.last_message,
+						seen: update.seen
+					}
+
+					room = { ...state.room, last_message: last_message };
+				}
 
 				this.set_state({ room })
 			}
@@ -1484,6 +1509,10 @@ class extends Component {
 				this.set_state({
 					room: { ...state.room, ...room, messages: messages }
 				})
+
+				if (room.last_message) {
+					frappe.chat.message.seen(room.last_message.name);
+				}
 			})
 		}
 
@@ -1550,6 +1579,7 @@ class extends Component {
 			}
 		})
 
+		console.log("binding");
 		frappe.chat.message.on.create((r) => {
 			const { state } = this
 
@@ -1595,7 +1625,11 @@ class extends Component {
 		})
 
 		frappe.chat.message.on.update((message, update) => {
+			const { state } = this
 			frappe.log.warn(`TRIGGER: Chat Message ${message} update ${JSON.stringify(update)} recieved.`)
+			if(state.room.name) {
+				this.room.update(state.room.name, update);
+			}
 		})
 	}
 
@@ -2002,19 +2036,20 @@ class extends Component {
 			}
 		}
 
-		let is_unread = false
+		let is_unread = false;
 		if ( props.last_message ) {
 			item.timestamp = frappe.chat.pretty_datetime(props.last_message.creation)
-			is_unread = !props.last_message.seen.includes(frappe.session.user)
+			is_unread = (props.last_message.user != frappe.session.user) && (!props.last_message.seen.includes(frappe.session.user))
+
 		}
 
 		return (
 			h("li", null,
 				h("a", { class: props.active ? "active": "", onclick: () => {
-					if (props.last_message) {
-						frappe.chat.message.seen(props.last_message.name);
-					}
-					props.click(props)
+					props.click(props);
+					// if (props.last_message) {
+					// 	frappe.chat.message.seen(props.last_message.name);
+					// }
 				} },
 					h("div", { class: "row" },
 						h("div", { class: "col-xs-9" },
@@ -2154,8 +2189,8 @@ class extends Component {
 						doctype: "Chat Room",
 						docname: props.name,
 						on_success(file_doc) {
-							const { file_url, filename } = file_doc
-							frappe.chat.message.send(props.name, { path: file_url, name: filename }, "File")
+							const { file_url, file_name } = file_doc
+							frappe.chat.message.send(props.name, { path: file_url, name: file_name }, "File")
 						}
 					})
 				}
