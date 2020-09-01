@@ -1825,7 +1825,7 @@ class extends Component {
 									[
 										props.heading,
 										h("button", {
-											class: "test dropdown-toggle frappe-chat-toggle",
+											class: "dropdown-toggle frappe-chat-toggle",
 											style: { "font-size": "9px" },
 											onclick: () => this.toggle()
 										}, "X"),
@@ -2193,6 +2193,16 @@ class extends Component {
 						)
 					:
 					h("div", { class: "panel-body", style: { "height": "100%" } },
+						h("button", {
+								class: "dropdown-toggle frappe-chat-toggle",
+								style: { "font-size": "9px" },
+								onclick: () => {
+									var expandButton = document.getElementsByClassName("btn-action")[1];
+									expandButton.click();
+									var chatButtonToggle = document.getElementsByClassName("frappe-chat-toggle")[0];
+									chatButtonToggle.click();
+								}
+								}, "X"),
 						h("div", { class: "vcenter" },
 							h("div", { class: "text-center text-extra-muted" },
 								h(frappe.components.Octicon, { type: "comment-discussion", style: "font-size: 125px" }),
