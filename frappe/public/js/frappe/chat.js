@@ -1827,6 +1827,7 @@ class extends Component {
 										h("button", {
 											class: "dropdown-toggle frappe-chat-toggle",
 											style: { "font-size": "9px" },
+											id: "chat_close_button",
 											onclick: () => this.toggle()
 										}, "X"),
 									]
@@ -1894,6 +1895,7 @@ class extends Component {
 				!frappe._.is_mobile() ?
 					h(frappe.Chat.Widget.ActionBar.Action, {
 						icon: `octicon octicon-screen-${state.span ? "normal" : "full"}`,
+						id: "resize_button",
 						onclick: () => {
 							const span = !state.span
 							me.set_state({ span })
@@ -2197,9 +2199,9 @@ class extends Component {
 								class: "dropdown-toggle frappe-chat-toggle",
 								style: { "font-size": "9px" },
 								onclick: () => {
-									var expandButton = document.getElementsByClassName("btn-action")[1];
+									var expandButton = document.getElementById("resize_button");
 									expandButton.click();
-									var chatButtonToggle = document.getElementsByClassName("frappe-chat-toggle")[0];
+									var chatButtonToggle = document.getElementById("chat_toggle_navbar");
 									chatButtonToggle.click();
 								}
 								}, "X"),
@@ -2690,7 +2692,7 @@ frappe.chat.render = (render = true, force = false) =>
 		// Render if frappe-chat-toggle doesn't exist.
 		if ( frappe.utils.is_empty($placeholder.has('.frappe-chat-toggle')) ) {
 			const $template = $(`
-				<a class="dropdown-toggle frappe-chat-toggle" data-toggle="dropdown">
+				<a class="dropdown-toggle frappe-chat-toggle" data-toggle="dropdown" id="chat_toggle_navbar">
 					<div>
 						<i class="octicon octicon-comment-discussion"/>
 					</div>
