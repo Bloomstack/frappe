@@ -981,8 +981,6 @@ frappe.chat.message.seen   = (mess, user) => {
 
 frappe.provide('frappe.chat.message.on')
 frappe.chat.message.on.create = function (fn) {
-	console.log("frappe.chat.message.on.create");
-	console.log(fn);
 	frappe.realtime.on("frappe.chat.message:create", r =>
 		fn({ ...r, creation: new frappe.datetime.datetime(r.creation) })
 	)
@@ -1416,25 +1414,18 @@ class extends Component {
 		this.isUnreadMessages = function(rooms) {
 			let is_unread = false;
 			rooms.map(room => {
-					if(room.last_message && room.last_message.user != frappe.session.user && !room.last_message.seen.includes(frappe.session.user))
-						is_unread = true;
+				if(room.last_message && room.last_message.user != frappe.session.user && !room.last_message.seen.includes(frappe.session.user)) {
+					is_unread = true;
+				}
 			})
 			const unreadMessageIndicator = document.getElementById("unread_message_indicator");
-			if(is_unread) {
-				console.log("adding child");
-				unreadMessageIndicator.style.display = "inline";
-			}
-			else {
-				console.log("removing child");
-				unreadMessageIndicator.style.display = "none";
-				// chatNavbarItem.removeChild(unreadMessageIndicator);
-			}
+			unreadMessageIndicator.style.display = is_unread ? "inline" : "none";
 		}
 		this.room           = { }
 		this.room.add       = rooms => {
+			rooms           = frappe._.as_array(rooms)
 			// unread messages for each room being checked
 			this.isUnreadMessages(rooms);
-			rooms           = frappe._.as_array(rooms)
 			const names     = rooms.map(r => r.name)
 
 			frappe.log.info(`Subscribing ${frappe.session.user} to Chat Rooms ${names.join(", ")}.`)
@@ -1445,6 +1436,7 @@ class extends Component {
 			for (const room of rooms)
 				  if ( ["Group", "Visitor"].includes(room.type) || room.owner === frappe.session.user || room.last_message || room.users.includes(frappe.session.user)) {
 					frappe.log.info(`Adding ${room.name} to component.`)
+					room.is_open = false;
 					state.push(room)
 				}
 
@@ -1452,8 +1444,7 @@ class extends Component {
 		}
 		this.room.update    = (room, update) => {
 			const { state } = this
-			var   exists    = false
-			this.isUnreadMessages(state.rooms);
+			let   exists    = false;
 			const rooms     = state.rooms.map(r => {
 				if ( r.name === room ) {
 					exists  = true
@@ -1477,9 +1468,13 @@ class extends Component {
 							seen: update.seen
 						}
 
-						let item = document.getElementById(last_message.name)
-						if(last_message.user === frappe.session.user)
-							item.innerHTML = `<i type="check" class="octicon octicon-check"></i>`;
+						let seen = Array.from(new Set([...update.seen, frappe.session.user]));
+						let users = Array.from(new Set([...r.users, frappe.session.user]));
+						let item = document.getElementById(last_message.name);
+						if(last_message.user === frappe.session.user && seen.length === users.length) {
+							item.nextSibling.innerHTML = `<i type="check" class="octicon octicon-check"></i>`;
+						}
+
 
 						return { ...r, last_message: last_message };
 					}
@@ -1495,10 +1490,11 @@ class extends Component {
 				if ( !exists )
 					frappe.chat.room.get(room, (room) => {
 						this.room.add(room)
-						isUnreadMessages(room)
 					})
 				else
 					this.set_state({ rooms })
+
+				this.isUnreadMessages(state.rooms);
 			}
 
 			if ( state.room.name === room ) {
@@ -1514,6 +1510,8 @@ class extends Component {
 						update.typing = frappe._.as_array(update.typing)
 
 					room  = { ...state.room, ...update }
+				} else if ( update.typing === null ) {
+					room  = { ...state.room, ...update }
 				}
 
 				if(update.seen) {
@@ -1526,12 +1524,14 @@ class extends Component {
 				}
 
 				this.set_state({ room })
+				this.isUnreadMessages(state.rooms);
 			}
 		}
 		this.room.select    = (name) => {
 			frappe.chat.room.history(name, (messages) => {
 				const  { state } = this
 				const room       = state.rooms.find(r => r.name === name)
+				room.is_open = true;
 
 				this.set_state({
 					room: { ...state.room, ...room, messages: messages }
@@ -1605,8 +1605,7 @@ class extends Component {
 				setTimeout(() => this.room.update(room, { typing: null }), 5000)
 			}
 		})
-
-		console.log("binding");
+		
 		frappe.chat.message.on.create((r) => {
 			const { state } = this
 
@@ -1617,6 +1616,7 @@ class extends Component {
 				state.profile.notification_tones && frappe.chat.sound.play('notification')
 
 			if ( r.user !== frappe.session.user && state.profile.message_preview && !state.toggle ) {
+
 				const $element = $('body').find('.frappe-chat-alert')
 				$element.remove()
 
@@ -1648,7 +1648,12 @@ class extends Component {
 				mess.push(r)
 
 				this.set_state({ room: { ...state.room, messages: mess } })
+
+				if ( r.user !== frappe.session.user ) {
+					frappe.chat.message.seen(r.name)
+				}
 			}
+
 		})
 
 		frappe.chat.message.on.update((message, update) => {
@@ -1782,7 +1787,7 @@ class extends Component {
 			}})
 		const Room       = h(frappe.Chat.Widget.Room, { ...state.room, layout: layout, destroy: () => {
 			this.set_state({
-				room: { name: null, messages: [ ] }
+				room: { name: null, messages: [ ], is_open: false }
 			})
 		}})
 
@@ -2247,7 +2252,8 @@ class extends Component {
 				props.name ?
 					!frappe._.is_empty(props.messages) ?
 						h(frappe.chat.component.ChatList, {
-							messages: props.messages
+							messages: props.messages,
+							users: props.users
 						})
 						:
 						h("div", { class: "panel-body", style: { "height": "100%" } },
@@ -2396,7 +2402,7 @@ class extends Component {
 		return (
 			h("div",{class:"chat-list list-group"},
 				!frappe._.is_empty(messages) ?
-					messages.map(m => h(frappe.chat.component.ChatList.Item, {...m})) : null
+					messages.map(m => h(frappe.chat.component.ChatList.Item, {...m, users: this.props.users})) : null
 			)
 		)
 	}
@@ -2480,8 +2486,9 @@ class extends Component {
 		const creation 	= props.creation.format('hh:mm A')
 
 		const me        = props.user === frappe.session.user
-		let seen = Array.from(new Set(props.seen))
-		const read      = !frappe._.is_empty(seen) && !(seen.length===1);
+		const seen      = Array.from(new Set([...props.seen, frappe.session.user]));
+		const users     = Array.from(new Set([...props.users, frappe.session.user]));
+		const read      = !frappe._.is_empty(seen) && seen.length === users.length;
 
 		const content   = props.content
 
@@ -2509,10 +2516,9 @@ class extends Component {
 						class:"chat-bubble-creation",
 						id: props.name
 					},creation),
-					me && read ?
-						h("span",{class:"chat-bubble-check"},
-							h(frappe.components.Octicon,{type:"check"})
-						) : null
+					h("span",{class:"chat-bubble-check"},
+						me && read ? h(frappe.components.Octicon,{type:"check"}) : null
+					)
 				)
 			)
 		)
