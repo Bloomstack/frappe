@@ -1470,10 +1470,14 @@ class extends Component {
 							seen: update.seen
 						}
 
-						let seen = Array.from(new Set([...update.seen, frappe.session.user]));
-						let users = Array.from(new Set([...r.users, frappe.session.user]));
-						let item = document.getElementById(last_message.name);
-						if(last_message.user === frappe.session.user && seen.length === users.length) {
+						const me = last_message.user === frappe.session.user
+						const seen = Array.from(new Set([...update.seen, frappe.session.user]));
+						const users = Array.from(new Set([...r.users, r.owner]));
+						const read = !frappe._.is_empty(seen) && seen.length === users.length;
+
+						const item = document.getElementById(last_message.name);
+						const is_check_added = item.nextSibling.innerHTML;
+						if(me && read && !is_check_added) {
 							item.nextSibling.innerHTML = `<i type="check" class="octicon octicon-check"></i>`;
 						}
 
@@ -2237,8 +2241,9 @@ class extends Component {
 			if (props.messages) {
 				props.messages = frappe._.as_array(props.messages)
 				for (const message of props.messages)
-					if ( !message.seen.includes(frappe.session.user) )
-						frappe.chat.message.seen(message.name)
+					if ( !message.seen.includes(frappe.session.user) ) {
+\						frappe.chat.message.seen(message.name)
+					}
 					else
 						break
 			}
@@ -2254,7 +2259,7 @@ class extends Component {
 					!frappe._.is_empty(props.messages) ?
 						h(frappe.chat.component.ChatList, {
 							messages: props.messages,
-							users: props.users
+							users: [...props.users, props.owner]
 						})
 						:
 						h("div", { class: "panel-body", style: { "height": "100%" } },
@@ -2488,7 +2493,7 @@ class extends Component {
 
 		const me        = props.user === frappe.session.user
 		const seen      = Array.from(new Set([...props.seen, frappe.session.user]));
-		const users     = Array.from(new Set([...props.users, frappe.session.user]));
+		const users     = Array.from(new Set([...props.users]));
 		const read      = !frappe._.is_empty(seen) && seen.length === users.length;
 
 		const content   = props.content
