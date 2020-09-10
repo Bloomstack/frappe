@@ -1412,14 +1412,15 @@ class extends Component {
 	setup (props) {
 		// room actions
 		this.isUnreadMessages = function(rooms) {
-			let is_unread = false;
+			let is_unread = 0;
 			rooms.map(room => {
 				if(room.last_message && room.last_message.user != frappe.session.user && !room.last_message.seen.includes(frappe.session.user)) {
-					is_unread = true;
+					is_unread++;
 				}
 			})
 
 			const unreadMessageIndicator = document.getElementById("unread_message_indicator");
+			unreadMessageIndicator.innerHTML = is_unread;
 			unreadMessageIndicator.style.display = is_unread ? "inline" : "none";
 		}
 		this.room           = { }
@@ -2790,7 +2791,7 @@ frappe.chat.render = (render = true, force = false) =>
 					<div>
 						<i class="octicon octicon-comment-discussion"/>
 					</div>
-					<span class="notifications-indicator" style="display: none; color: red;" id="unread_message_indicator">
+					<span class="notifications-indicator" style="display: none; color: red; font-size:10px; top: 0; right: 5px" id="unread_message_indicator">
 						<i class="fa fa-circle"></i>
 					</span>
 				</a>
