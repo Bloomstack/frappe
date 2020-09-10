@@ -981,8 +981,6 @@ frappe.chat.message.seen   = (mess, user) => {
 
 frappe.provide('frappe.chat.message.on')
 frappe.chat.message.on.create = function (fn) {
-	console.log("frappe.chat.message.on.create");
-	console.log(fn);
 	frappe.realtime.on("frappe.chat.message:create", r =>
 		fn({ ...r, creation: new frappe.datetime.datetime(r.creation) })
 	)
@@ -1420,6 +1418,7 @@ class extends Component {
 					is_unread = true;
 				}
 			})
+
 			const unreadMessageIndicator = document.getElementById("unread_message_indicator");
 			unreadMessageIndicator.style.display = is_unread ? "inline" : "none";
 		}
@@ -2238,15 +2237,29 @@ class extends Component {
 		])
 
 		if ( frappe.session.user !== 'Guest' ) {
+			/**
+			 * Made some changes to fix the logic. But, for now commenting the following code
+			 * as it was firing twice.
+
 			if (props.messages) {
-				props.messages = frappe._.as_array(props.messages)
-				for (const message of props.messages)
-					if ( !message.seen.includes(frappe.session.user) ) {
-\						frappe.chat.message.seen(message.name)
+				const messages = [...frappe._.as_array(props.messages)];
+				messages.reverse();
+				console.log("going through all");
+				for (const message of messages) {
+					const me = frappe.session.user === message.user;
+					if( me ) {
+						break;
 					}
-					else
+					if (!message.seen.includes(frappe.session.user)) {
+						console.log("fire seen !");
+						frappe.chat.message.seen(message.name)
+					} else {
 						break
+					}
+				}
 			}
+
+			 */
 		}
 
 		return (
