@@ -20,6 +20,7 @@
   "email_id",
   "phone",
   "fax",
+  "tax_category",
   "is_primary_address",
   "is_shipping_address",
   "disabled",
@@ -149,11 +150,17 @@
    "fieldtype": "Table",
    "label": "Links",
    "options": "Dynamic Link"
+  },
+  {
+   "fieldname": "tax_category",
+   "fieldtype": "Link",
+   "label": "Tax Category",
+   "options": "Tax Category"
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
- "modified": "2019-09-08 11:41:04.145589",
+ "modified": "2020-09-23 06:53:23.581962",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
