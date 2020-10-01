@@ -40,7 +40,7 @@ frappe.ui.form.save = function (frm, action, callback, btn) {
 		}
 	};
 
-	var remove_empty_rows = function() {
+	var remove_empty_rows = function () {
 		/*
 			This function removes empty rows. Note that in this function, a row is considered
 			empty if the fields with `in_list_view: 1` are undefined or falsy because that's
@@ -62,7 +62,7 @@ frappe.ui.form.save = function (frm, action, callback, btn) {
 				return cint(df.in_list_view) === 1;
 			});
 
-			const is_empty_row = function(cells) {
+			const is_empty_row = function (cells) {
 				for (let i = 0; i < cells.length; i++) {
 					if (locals[doc.doctype][doc.name][cells[i].fieldname]) {
 						return false;
@@ -195,7 +195,7 @@ frappe.ui.form.save = function (frm, action, callback, btn) {
 		}
 
 		// ensure we remove new docs routes ONLY
-		if ( frm.is_new() ) {
+		if (frm.is_new()) {
 			frappe.ui.form.remove_old_form_route();
 		}
 		frappe.ui.form.is_saving = true;
@@ -215,7 +215,15 @@ frappe.ui.form.save = function (frm, action, callback, btn) {
 				frappe.ui.form.is_saving = false;
 
 				if (!r.exc) {
-					frappe.show_alert({message: __('Saved'), indicator: 'green'});
+					frappe.show_alert({ message: __('Saved'), indicator: 'green' });
+					frappe.confirm('Want to create New order',
+						() => {
+							window.location.reload();
+						}, () => {
+							frappe.set_route("Form",r.docs[0].doctype,r.docs[0].name );
+
+						})
+
 				}
 
 				if (r) {
@@ -246,7 +254,7 @@ frappe.ui.form.update_calling_link = (newdoc) => {
 	var doc = frappe.get_doc(frappe._from_link.doctype, frappe._from_link.docname);
 
 	let is_valid_doctype = () => {
-		if (frappe._from_link.df.fieldtype==='Link') {
+		if (frappe._from_link.df.fieldtype === 'Link') {
 			return newdoc.doctype === frappe._from_link.df.options;
 		} else {
 			// dynamic link, type is dynamic
