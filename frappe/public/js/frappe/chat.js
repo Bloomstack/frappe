@@ -1900,7 +1900,7 @@ class extends Component {
 											style: { "font-size": "9px" },
 											id: "chat_close_button",
 											onclick: () => this.toggle()
-										}, "X"),
+										}, h(frappe.components.Octicon, { type: "x" })),
 									]
 								),
 								props.children
@@ -2084,9 +2084,6 @@ class extends Component {
 			h("li", null,
 				h("a", { class: props.active ? "active": "", onclick: () => {
 					props.click(props);
-					// if (props.last_message) {
-					// 	frappe.chat.message.seen(props.last_message.name);
-					// }
 				} },
 					h("div", { class: "row" },
 						h("div", { class: "col-xs-9" },
@@ -2295,7 +2292,7 @@ class extends Component {
 									var chatButtonToggle = document.getElementById("chat_toggle_navbar");
 									chatButtonToggle.click();
 								}
-								}, "X"),
+								}, h(frappe.components.Octicon, { type: "x" })),
 						h("div", { class: "vcenter" },
 							h("div", { class: "text-center text-extra-muted" },
 								h(frappe.components.Octicon, { type: "comment-discussion", style: "font-size: 125px" }),
@@ -2791,7 +2788,7 @@ frappe.chat.render = (render = true, force = false) =>
 					<div>
 						<i class="octicon octicon-comment-discussion"/>
 					</div>
-					<span class="notifications-indicator" style="display: none; color: red; font-size:10px; top: 0; right: 5px" id="unread_message_indicator">
+					<span class="notifications-indicator" style="display: none; color: #ffa00a; font-size:10px; top: 0; right: 5px" id="unread_message_indicator">
 						<i class="fa fa-circle"></i>
 					</span>
 				</a>
