@@ -37,6 +37,8 @@
     "quill": "2.0.0-dev.4",
     "qz-tray": "^2.0.8",
     "redis": "^2.8.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-globals": "^1.4.0",
     "showdown": "^1.9.1",
     "socket.io": "^2.0.4",
     "superagent": "^3.8.2",
