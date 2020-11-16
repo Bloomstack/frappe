@@ -66,6 +66,9 @@ def application(request):
 		elif frappe.request.path.startswith('/backups'):
 			response = frappe.utils.response.download_backup(request.path)
 
+		elif frappe.request.path.startswith('/resize/'):
+			response = frappe.utils.response.resize_image(request.path)
+
 		elif frappe.request.path.startswith('/private/files/'):
 			response = frappe.utils.response.download_private_file(request.path)
 

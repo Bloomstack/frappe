@@ -8,7 +8,7 @@ import decimal
 import mimetypes
 import os
 import frappe
-from frappe import _
+from frappe import _, _dict
 import frappe.model.document
 import frappe.utils
 import frappe.sessions
@@ -184,6 +184,53 @@ def download_private_file(path):
 
 	return send_private_file(path.split("/private", 1)[1])
 
+def resize_image(path):
+	"""Processes a /resize/<image file> path with optional resize, resampling and
+	quality settings while keeping its aspect ratio intact.
+
+	Examples: 
+	
+	/resize/myimage.jpg?size=small
+
+	Where size refers to the name of a predefined "Image Resize Preset" record
+	"""
+
+	# Transform thumbnail path to public/files/ path
+	file_path = os.path.join('public', 'files', *os.path.split(path)[1:])
+	filename = os.path.basename(file_path)
+
+	# Get image resize preset or default to small if one isn't found
+	image_resize_preset_name = frappe.local.form_dict.size or "small"
+	if frappe.db.exists("Image Resize Preset", image_resize_preset_name):
+		image_resize_preset = frappe.get_doc("Image Resize Preset", image_resize_preset_name)
+	else:
+		image_resize_preset = frappe.get_doc("Image Resize Preset", "small")
+
+	# build image options
+	options = _dict({ 
+		key: image_resize_preset.get(key) \
+			for key in ("width", "height", "resample", "quality")
+	})
+
+	# Build cache path for this image and retrieve data
+	cache_path = "{}?size={}".format(path, image_resize_preset_name)
+	buffer = frappe.cache().hget("thumbnail_cache", cache_path)
+
+	if not buffer:
+		from frappe.utils.image import process_thumbnail
+		buffer = process_thumbnail(file_path, options)
+
+		# set cache only when generating a new thumbnail
+		frappe.cache().hset("thumbnail_cache", cache_path, buffer)
+
+	if buffer:
+		response = Response(buffer.getvalue(), direct_passthrough=True)
+		response.mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+		return response
+
+	else:
+		from werkzeug.exceptions import HTTPException, NotFound
+		raise NotFound
 
 def send_private_file(path):
 	path = os.path.join(frappe.local.conf.get('private_path', 'private'), path.strip("/"))

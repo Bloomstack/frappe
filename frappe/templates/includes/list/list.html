@@ -1,6 +1,7 @@
 {% if sub_title %}
 <h4 class="text-muted">{{ sub_title }}</h4>
 {% endif %}
+{% if page_heading_template %}{% include page_heading_template %}{% endif %}
 {% if not result -%}
 	<div class="text-muted" style="min-height: 300px;">
 		{{ no_result_message or _("Nothing to show") }}

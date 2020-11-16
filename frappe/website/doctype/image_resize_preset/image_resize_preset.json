@@ -1,0 +1,117 @@
+{
+ "allow_import": 1,
+ "autoname": "field:preset_name",
+ "creation": "2020-11-10 10:42:24.401873",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "preset_name",
+  "sb1",
+  "width",
+  "cb1",
+  "height",
+  "sb2",
+  "resample",
+  "cb2",
+  "quality"
+ ],
+ "fields": [
+  {
+   "fieldname": "preset_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Preset Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "sb1",
+   "fieldtype": "Section Break",
+   "label": "Dimentions"
+  },
+  {
+   "fieldname": "width",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Width",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "height",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Height",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sb2",
+   "fieldtype": "Section Break",
+   "label": "Options"
+  },
+  {
+   "default": "Bilinear",
+   "description": "Image resampling fliter. From fastest(worse) to slowest(best)",
+   "fieldname": "resample",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Resample",
+   "options": "Nearest\nBox\nBilinear\nHamming\nBicubic\nLanczos",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "75",
+   "description": "For jpeg images a quality value from 0 to 100. At 100 having no compression and the largest file size.",
+   "fieldname": "quality",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Quality",
+   "reqd": 1
+  }
+ ],
+ "modified": "2020-11-10 10:47:14.838106",
+ "modified_by": "Administrator",
+ "module": "Website",
+ "name": "Image Resize Preset",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Website Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "preset_name"
+}
