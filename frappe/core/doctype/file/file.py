@@ -30,6 +30,7 @@ import frappe
 from frappe import _, conf
 from frappe.model.document import Document
 from frappe.utils import call_hook_method, cint, cstr, encode, get_files_path, get_hook_method, random_string, strip
+from frappe.desk.form.load import get_attachments
 
 
 class MaxFileSizeReachedError(frappe.ValidationError):
@@ -898,3 +899,38 @@ def get_files_in_folder(folder):
 		{ 'folder': folder },
 		['name', 'file_name', 'file_url', 'is_folder', 'modified']
 	)
+
+@frappe.whitelist()
+def download_zip_files(filters):
+	"""Download selected files as zip.
+
+	Args:
+		filters (string): Stringified JSON objects doctype and docnames
+	"""
+	if isinstance(filters, string_types):
+		filters = json.loads(filters)
+
+	doctype = filters.get('doctype')
+	docnames = filters.get('docnames')
+
+	output_filename = "{0}.zip".format(doctype)
+	output_path = frappe.get_site_path('private', 'files', output_filename)
+	if not frappe.db.exists("File", output_filename):
+		input_files = []
+		for docname in docnames:
+			attachments = get_attachments(doctype,docname['name'])
+			for d in attachments:
+				doc = frappe.get_doc("File", d.name)
+				input_files.append(doc.get_full_path())
+
+		#Creates a zip file containing all attachments
+		with zipfile.ZipFile(output_path, 'w') as output_zip:
+			for input_file in input_files:
+				output_zip.write(input_file, arcname=os.path.basename(input_file))
+
+	with open(output_path, 'rb') as fileobj:
+		filedata = fileobj.read()
+
+	frappe.local.response.filename = output_filename
+	frappe.local.response.filecontent = filedata
+	frappe.local.response.type = "download"
