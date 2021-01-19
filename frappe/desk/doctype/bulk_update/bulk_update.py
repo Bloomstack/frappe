@@ -29,6 +29,8 @@ def update(doctype, field, value, condition='', limit=500):
 	data[field] = value
 	return submit_cancel_or_update_docs(doctype, docnames, 'update', data)
 
+#try except for doc.action and append the message (var error_message) and return it to bulkoperations.js and print there.
+
 @frappe.whitelist()
 def submit_cancel_or_update_docs(doctype, docnames, action='submit', data=None):
 	docnames = frappe.parse_json(docnames)
@@ -36,31 +38,31 @@ def submit_cancel_or_update_docs(doctype, docnames, action='submit', data=None):
 	if data:
 		data = frappe.parse_json(data)
 
-	failed = []
-
+	failed={}
 	for i, d in enumerate(docnames, 1):
 		doc = frappe.get_doc(doctype, d)
 		try:
 			message = ''
-			if action == 'submit' and doc.docstatus==0:
+			if action == 'submit':
 				doc.submit()
 				message = _('Submiting {0}').format(doctype)
-			elif action == 'cancel' and doc.docstatus==1:
+
+			elif action == 'cancel':
 				doc.cancel()
 				message = _('Cancelling {0}').format(doctype)
-			elif action == 'update' and doc.docstatus < 2:
+
+			elif action == 'update':
 				doc.update(data)
-				doc.save()
+				doc.save() 
 				message = _('Updating {0}').format(doctype)
-			else:
-				failed.append(d)
+
 			frappe.db.commit()
 			show_progress(docnames, message, i, d)
 
-		except Exception:
-			failed.append(d)
+		except Exception as exc:
+			failed[d] = exc.args[0] 
 			frappe.db.rollback()
-
+			
 	return failed
 
 def show_progress(docnames, message, i, description):

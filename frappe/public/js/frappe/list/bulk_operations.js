@@ -130,8 +130,13 @@ export default class BulkOperations {
 				let failed = r.message;
 				if (!failed) failed = [];
 
-				if (failed.length && !r._server_messages) {
-					frappe.throw(__('Cannot {0} {1}', [action, failed.map(f => f.bold()).join(', ')]));
+				if (Object.keys(failed).length && !r._server_messages) {
+					for(var key in failed) {
+						frappe.msgprint({
+							message: __("{0} {1}: {2}",[this.doctype, key, failed[key]]), 
+							indicator: 'red'
+						});
+					}	
 				}
 				if (failed.length < docnames.length) {
 					frappe.utils.play_sound(action);
@@ -182,7 +187,7 @@ export default class BulkOperations {
 						}
 					}
 				}).then(r => {
-					let failed = r.message || [];
+					let failed = Object.keys(r.message) || [];
 					if (failed.length && r._server_messages) {
 						dialog.enable_primary_action();
 						dialog.hide();
