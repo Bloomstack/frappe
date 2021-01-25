@@ -696,7 +696,7 @@ class Document(BaseDocument):
 				self._action = "cancel"
 				self.check_permission("cancel")
 			else:
-				raise frappe.DocstatusTransitionError(_("Cannot change Docstatus from Submitted to Draft."))
+				raise frappe.DocstatusTransitionError(_("Cannot change Document Status from Submitted to Draft."))
 
 		elif docstatus==2:
 			raise frappe.ValidationError(_("Cancelled Document cannot be edited."))
