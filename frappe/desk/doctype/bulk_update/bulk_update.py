@@ -29,7 +29,6 @@ def update(doctype, field, value, condition='', limit=500):
 	data[field] = value
 	return submit_cancel_or_update_docs(doctype, docnames, 'update', data)
 
-#try except for doc.action and append the message (var error_message) and return it to bulkoperations.js and print there.
 
 @frappe.whitelist()
 def submit_cancel_or_update_docs(doctype, docnames, action='submit', data=None):
