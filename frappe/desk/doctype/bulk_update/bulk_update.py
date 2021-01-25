@@ -62,7 +62,6 @@ def submit_cancel_or_update_docs(doctype, docnames, action='submit', data=None):
 		except Exception as exc:
 			failed[d] = exc.args[0] 
 			frappe.db.rollback()
-			
 	return failed
 
 def show_progress(docnames, message, i, description):
