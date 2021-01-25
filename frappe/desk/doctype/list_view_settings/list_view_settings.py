@@ -45,7 +45,7 @@ def set_listview_fields(doctype, listview_fields, removed_listview_fields):
 		set_property(doctype, meta.get_field(field.get("fieldname")), "in_list_view", "1")
 
 	for field in frappe.parse_json(removed_listview_fields):
-		set_property(doctype, meta.get_field(field), "in_list_view", "0")
+		set_property(doctype, meta.get_field(field.get("fieldname")), "in_list_view", "0")
 
 def set_listview_filters(listview_filters, removed_listview_filters):
 
