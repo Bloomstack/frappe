@@ -53,7 +53,7 @@ def submit_cancel_or_update_docs(doctype, docnames, action='submit', data=None):
 
 			elif action == 'update':
 				doc.update(data)
-				doc.save() 
+				doc.save()
 				message = _('Updating {0}').format(doctype)
 
 			frappe.db.commit()
