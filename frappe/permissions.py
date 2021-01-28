@@ -474,9 +474,10 @@ def add_permission(doctype, role, permlevel=0):
 	from frappe.core.doctype.doctype.doctype import validate_permissions_for_doctype
 	setup_custom_perms(doctype)
 
-	if frappe.db.get_value('Custom DocPerm', dict(parent=doctype, role=role,
-		permlevel=permlevel, if_owner=0)):
-		return
+	if frappe.db.get_value('Custom DocPerm', dict(parent=doctype, role=role, permlevel=permlevel, if_owner=0)) and \
+		not (frappe.flags.in_test and frappe.flags.in_install and frappe.flags.in_migrate):
+			frappe.msgprint(_("Permission Rule already exists for {0}.").format(frappe.bold(role)))
+			return
 
 	custom_docperm = frappe.get_doc({
 		"doctype":"Custom DocPerm",
