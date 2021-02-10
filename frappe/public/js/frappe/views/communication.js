@@ -7,7 +7,16 @@ frappe.standard_replies = {};
 frappe.views.CommunicationComposer = Class.extend({
 	init: function(opts) {
 		$.extend(this, opts);
-		this.make();
+		let me = this;
+		frappe.call({
+		  method: 'frappe.core.doctype.system_settings.system_settings.get_system_settings',
+		  callback: function(res) {
+			if(res && res.message) {
+			  me.system_settings = res.message;
+			  me.make();
+			}
+		  }
+		});
 	},
 	make: function() {
 		var me = this;
@@ -130,9 +139,9 @@ frappe.views.CommunicationComposer = Class.extend({
 		this.dialog.set_value("recipients", this.recipients || '');
 		this.dialog.set_value("cc", this.cc || '');
 		this.dialog.set_value("bcc", this.bcc || '');
-		this.dialog.set_value("attach_document_print", this.attach_document_print || false);
-		this.dialog.set_value("send_me_a_copy", this.send_me_a_copy || false);
-		this.dialog.set_value("send_read_receipt", this.send_read_receipt || false);
+		this.dialog.set_value("attach_document_print", this.attach_document_print || this.system_settings.attach_document_print || false);
+		this.dialog.set_value("send_me_a_copy", this.send_me_a_copy || this.system_settings.send_me_a_copy || false);
+		this.dialog.set_value("send_read_receipt", this.send_read_receipt || this.system_settings.send_read_receipt || false);
 
 		if(this.dialog.fields_dict.sender) {
 			this.dialog.fields_dict.sender.set_value(this.sender || '');
@@ -715,4 +724,3 @@ frappe.views.CommunicationComposer = Class.extend({
 		return text.replace(/\n{3,}/g, '\n\n');
 	}
 });
-

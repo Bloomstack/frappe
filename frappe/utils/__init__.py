@@ -71,8 +71,12 @@ def validate_phone_number(phone_number, throw=False):
 	match = re.match(r"([0-9\ \+\_\-\,\.\*\#\(\)]){1,20}$", phone_number)
 
 	if not match and throw:
-		frappe.throw(frappe._("{0} is not a valid Phone Number").format(phone_number), frappe.InvalidPhoneNumberError)
-
+		# frappe.throw(frappe._("{0} is not a valid Phone Number").format(phone_number), frappe.InvalidPhoneNumberError)
+		frappe.msgprint(frappe._("""
+			{0} is not a valid Phone Number.
+			<br><br>
+			Allowed charater are <b>+</b>, <b>-</b>, <b>()</b>, <b>0-9</b>
+		""").format(frappe.bold(phone_number)))
 	return bool(match)
 
 def get_formatted_email(user):
@@ -123,8 +127,14 @@ def validate_email_address(email_str, throw=False):
 
 		if not _valid:
 			if throw:
-				frappe.throw(frappe._("{0} is not a valid Email Address").format(e),
-					frappe.InvalidEmailAddressError)
+				# frappe.throw(frappe._("{0} is not a valid Email Address").format(e),
+				# 	frappe.InvalidEmailAddressError)
+				frappe.msgprint(frappe._("""
+					{0} is not a valid Email Address.
+					<br><br>
+					Should be of the format
+					johndoe@domain.com / johndoe@example.domain.com
+				""").format(e))
 			return None
 		else:
 			return matched

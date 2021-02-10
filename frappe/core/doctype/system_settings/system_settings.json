@@ -59,7 +59,11 @@
   "desk_include_js",
   "chat",
   "enable_chat",
-  "use_socketio_to_upload_file"
+  "use_socketio_to_upload_file",
+  "email_options_section",
+  "send_me_a_copy",
+  "send_read_receipt",
+  "attach_document_print"
  ],
  "fields": [
   {
@@ -410,11 +414,35 @@
    "fieldname": "desk_include_js",
    "fieldtype": "Code",
    "label": "Desk include JS"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "email_options_section",
+   "fieldtype": "Section Break",
+   "label": "Communication composer settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_me_a_copy",
+   "fieldtype": "Check",
+   "label": "Send me a copy"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_read_receipt",
+   "fieldtype": "Check",
+   "label": " Send Read Receipt"
+  },
+  {
+   "default": "0",
+   "fieldname": "attach_document_print",
+   "fieldtype": "Check",
+   "label": "Attach Document Print"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2020-10-23 07:06:28.933476",
+ "modified": "2021-02-05 08:48:32.183564",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

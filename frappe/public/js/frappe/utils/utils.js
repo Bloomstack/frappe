@@ -795,6 +795,101 @@ Object.assign(frappe.utils, {
 		});
 
 		return $el;
+	},
+	shorten_number: function (number, country, min_length=4, max_no_of_decimals=2) {
+		/* returns the number as an abbreviated string
+		 * PARAMS
+		 *  number - number to be shortened
+		 *  country - country that determines the numnber system to be used
+		 *  min_length - length below which the number will not be shortened
+		 *	max_no_of_decimals - max number of decimals of the shortened number
+		*/
+
+		// return number if total digits is lesser than min_length
+		const len = String(number).match(/\d/g).length;
+		if (len < min_length) return number.toString();
+
+		const number_system = this.get_number_system(country);
+		let x = Math.abs(Math.round(number));
+		for (const map of number_system) {
+			if (x >= map.divisor) {
+				let result = number/map.divisor;
+				const no_of_decimals = this.get_number_of_decimals(result);
+				/*
+					If no_of_decimals is greater than max_no_of_decimals,
+					round the number to max_no_of_decimals
+				*/
+				result = no_of_decimals > max_no_of_decimals
+					? result.toFixed(max_no_of_decimals)
+					: result;
+				return result + ' ' + map.symbol;
+			}
+		}
+
+		return number.toFixed(max_no_of_decimals);
+	},
+
+	get_number_system: function (country) {
+		let number_system_map = {
+			'India':
+				[{
+					divisor: 1.0e+7,
+					symbol: 'Cr'
+				},
+				{
+					divisor: 1.0e+5,
+					symbol: 'Lakh'
+				}],
+			'':
+				[{
+					divisor: 1.0e+12,
+					symbol: 'T'
+				},
+				{
+					divisor: 1.0e+9,
+					symbol: 'B'
+				},
+				{
+					divisor: 1.0e+6,
+					symbol: 'M'
+				},
+				{
+					divisor: 1.0e+3,
+					symbol: 'K',
+				}]
+		};
+
+		if (!Object.keys(number_system_map).includes(country)) country = '';
+
+		return number_system_map[country];
+	},
+
+	get_number_of_decimals: function (number) {
+		if (Math.floor(number) === number) return 0;
+		return number.toString().split(".")[1].length || 0;
+	},
+
+	build_summary_item(summary) {
+		if (summary.type == "separator") {
+			return $(`<div class="summary-separator">
+				<div class="summary-value ${summary.color ? summary.color.toLowerCase() : 'text-muted'}">${summary.value}</div>
+			</div>`);
+		}
+		let df = { fieldtype: summary.datatype };
+		let doc = null;
+		if (summary.datatype == "Currency") {
+			df.options = "currency";
+			doc = { currency: summary.currency };
+		}
+
+		let value = frappe.format(summary.value, df, { only_value: true }, doc);
+		let color = summary.indicator ? summary.indicator.toLowerCase()
+			: summary.color ? summary.color.toLowerCase() : '';
+
+		return $(`<div class="summary-item">
+			<span class="summary-label">${summary.label}</span>
+			<div class="summary-value ${color}">${value}</div>
+		</div>`);
 	}
 });
 
