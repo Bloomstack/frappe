@@ -550,7 +550,11 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 		}
 	},
 	set_fetch_values: function (df, docname, fetch_values) {
-		let field_list = this.frm.fetch_dict[df.fieldname] && this.frm.fetch_dict[df.fieldname].fields;
+		let field_list = [];
+
+		if (this.frm && this.frm.fetch_dict && this.frm.fetch_dict[df.fieldname] && this.frm.fetch_dict[df.fieldname].fields) {
+			field_list = this.frm.fetch_dict[df.fieldname].fields;
+		}
 		for (let i in field_list) {
 			frappe.model.set_value(df.parent, docname, field_list[i], fetch_values ? fetch_values[i] : fetch_values, df.fieldtype);
 		}
