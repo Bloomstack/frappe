@@ -2,6 +2,7 @@
 // MIT License. See license.txt
 
 import deep_equal from "fast-deep-equal";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 frappe.provide('frappe.utils');
 
 Object.assign(frappe.utils, {
@@ -615,6 +616,15 @@ Object.assign(frappe.utils, {
 		});
 
 		return email_list;
+	},
+	format_phone: function(value) {
+		// Add + to avoid libphonenumber-js from returning invalid
+		if (value[0] != "+") {
+			value = "+" + value;
+		}
+
+		let formatted = parsePhoneNumberFromString(value);
+		return formatted ? formatted.formatInternational() : formatted;
 	},
 	supportsES6: function() {
 		try {
