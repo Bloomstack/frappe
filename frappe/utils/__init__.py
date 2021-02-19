@@ -63,7 +63,7 @@ def get_email_address(user=None):
 	return frappe.db.get_value("User", user, "email")
 
 def validate_phone_number(phone_number, throw=False):
-	"""Returns True if valid phone number"""
+	"""Returns True if valid phone number."""
 	if not phone_number:
 		return False
 
