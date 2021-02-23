@@ -303,6 +303,12 @@ frappe.ui.form.Timeline = class Timeline {
 				return false;
 			});
 
+		let el = $timeline_item.find(".timeline-item-content-html");
+
+		if (el && el.length && el[0]) {
+			let shadow = el[0].attachShadow({mode: 'open'});
+			shadow.innerHTML = c.content_html;
+		}
 
 		if(c.communication_type=="Communication" && c.communication_medium==="Email") {
 			this.last_type = c.communication_medium;
