@@ -108,8 +108,15 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 			if(v && v.substr(0,1)=='0') {
 				v1 += '0'; v = v.substr(1);
 			}
-			v1 += cint(v) + '';
-			return v1;
+			v1 += v + '';
+
+			let formatted = frappe.utils.format_phone(v1, this.frm);
+
+			if (!formatted) {
+				frappe.throw(__("Invalid {0}: {1}", [__(this.df.label), v]));
+			}
+
+			return formatted;
 		} else if(this.df.options == 'Email') {
 			if(v+''=='') {
 				return '';

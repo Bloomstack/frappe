@@ -14,6 +14,8 @@
   "email_id",
   "user",
   "address",
+  "country",
+  "country_code",
   "sync_with_google_contacts",
   "cb00",
   "status",
@@ -240,12 +242,26 @@
    "fieldname": "company_name",
    "fieldtype": "Data",
    "label": "Company Name"
+  },
+  {
+   "fetch_from": "address.country",
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fetch_from": "country.code",
+   "fieldname": "country_code",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Country Code"
   }
  ],
  "icon": "fa fa-user",
  "idx": 1,
  "image_field": "image",
- "modified": "2019-10-10 22:04:41.070479",
+ "modified": "2021-02-23 06:40:54.152210",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Contact",
