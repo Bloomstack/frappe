@@ -14,6 +14,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Number",
+   "options": "Phone",
    "reqd": 1
   },
   {
@@ -34,7 +35,7 @@
   }
  ],
  "istable": 1,
- "modified": "2019-09-24 17:47:50.375326",
+ "modified": "2021-02-26 02:43:36.430023",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Contact Phone",
