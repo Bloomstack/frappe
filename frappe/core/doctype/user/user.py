@@ -274,8 +274,10 @@ class User(Document):
 		"""send mail with login details"""
 		from frappe.utils.user import get_user_fullname
 		from frappe.utils import get_url
+		from frappe.email.doctype.email_template.email_template import get_email_template
 
 		full_name = get_user_fullname(frappe.session['user'])
+		message = None
 		if full_name == "Guest":
 			full_name = "Administrator"
 
@@ -291,7 +293,14 @@ class User(Document):
 
 		sender = frappe.session.user not in STANDARD_USERS and get_formatted_email(frappe.session.user) or None
 
-		frappe.sendmail(recipients=self.email, sender=sender, subject=subject,
+		welcome_email_template = frappe.db.get_single_value("System Settings", "welcome_email_template")
+		if welcome_email_template:
+			rendered_template = get_email_template(welcome_email_template, args)
+			template = None
+			subject = rendered_template.get("subject")
+			message = rendered_template.get("message")
+
+		frappe.sendmail(recipients=self.email, sender=sender, subject=subject, message=message,
 			template=template, args=args, header=[subject, "green"],
 			delayed=(not now) if now!=None else self.flags.delay_emails, retry=3)
 
