@@ -8,6 +8,7 @@ import openpyxl
 import xlrd
 import re
 from openpyxl.styles import Font
+from openpyxl.styles.borders import Border, Side
 from openpyxl import load_workbook
 from six import BytesIO, string_types
 
@@ -16,12 +17,14 @@ ILLEGAL_CHARACTERS_RE = re.compile(r'[\000-\010]|[\013-\014]|[\016-\037]')
 def make_xlsx(data, sheet_name, wb=None):
 
 	if wb is None:
-		wb = openpyxl.Workbook(write_only=True)
+		wb = openpyxl.Workbook()
 
 	ws = wb.create_sheet(sheet_name, 0)
 
-	row1 = ws.row_dimensions[1]
-	row1.font = Font(name='Calibri',bold=True)
+	thin_border = Border(left=Side(style='thin',  color="FF000000"),
+                     right=Side(style='thin',  color="FF000000"),
+                     top=Side(style='thin',  color="FF000000"),
+                     bottom=Side(style='thin', color = "FF000000"))
 
 	for row in data:
 		clean_row = []
@@ -38,6 +41,13 @@ def make_xlsx(data, sheet_name, wb=None):
 			clean_row.append(value)
 
 		ws.append(clean_row)
+
+	#changing font and borders for the output cells
+	for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1):
+		for cell in row:
+			cell.border = thin_border
+			if cell.row == 1:
+				cell.font = Font(bold=True) #changing header row to bold
 
 	xlsx_file = BytesIO()
 	wb.save(xlsx_file)
