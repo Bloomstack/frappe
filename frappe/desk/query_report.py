@@ -327,7 +327,7 @@ def export_query():
 		columns = get_columns_dict(data.columns)
 
 		from frappe.utils.xlsxutils import make_xlsx
-		xlsx_data = build_xlsx_data(columns, data, visible_idx, include_indentation)
+		xlsx_data = build_xlsx_data(columns, data, visible_idx, include_indentation, filters, report_name)
 		xlsx_file = make_xlsx(xlsx_data, "Query Report")
 
 		frappe.response['filename'] = report_name + '.xlsx'
@@ -335,8 +335,15 @@ def export_query():
 		frappe.response['type'] = 'binary'
 
 
-def build_xlsx_data(columns, data, visible_idx, include_indentation):
+def build_xlsx_data(columns, data, visible_idx, include_indentation, filters=None, report_name=None):
 	result = [[]]
+
+	# add headers from the filters as list items
+	headers = [
+		["Report: {0}".format(report_name)],
+		["Company: {0}".format(filters.get('company', None))],
+		["Period: {0} - {1}".format(filters.get('from_date', ""), filters.get('to_date',""))]
+		]
 
 	# add column headings
 	for idx in range(len(data.columns)):
@@ -363,6 +370,8 @@ def build_xlsx_data(columns, data, visible_idx, include_indentation):
 
 			result.append(row_data)
 
+	#add headers to the final result
+	result = headers + result
 	return result
 
 def add_total_row(result, columns, meta = None):

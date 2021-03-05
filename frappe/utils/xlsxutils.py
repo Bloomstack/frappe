@@ -43,11 +43,22 @@ def make_xlsx(data, sheet_name, wb=None):
 		ws.append(clean_row)
 
 	#changing font and borders for the output cells
+	header_flag = True
 	for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1):
+		no_of_values = sum([1 if cell.value!=None else 0 for cell in row])
 		for cell in row:
-			cell.border = thin_border
-			if cell.row == 1:
-				cell.font = Font(bold=True) #changing header row to bold
+
+			#change header to bold if there is only 1 value in the whole row - usually header items or of the header row
+			if (no_of_values == 1) or (no_of_values > 1 and header_flag):
+				cell.font = Font(bold=True)
+
+			#add borders to all cells in the table
+			if no_of_values > 1 and cell.value != None:
+				cell.border = thin_border
+
+		#once we've iterated over the header row, change flag
+		if no_of_values > 1:
+			header_flag = False
 
 	xlsx_file = BytesIO()
 	wb.save(xlsx_file)
