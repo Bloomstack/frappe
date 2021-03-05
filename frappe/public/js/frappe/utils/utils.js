@@ -622,17 +622,15 @@ Object.assign(frappe.utils, {
 		// Add + to avoid libphonenumber-js from returning invalid
 		let country_code = frappe.sys_defaults.country_code;
 
-		if (frappe.meta.has_field(frm.doc.doctype, "country_code")) {
+		if (frm && frm.doc && frm.doc.hasOwnProperty("country_code")) {
 			country_code = frm.doc.country_code;
 		}
-
-		console.log(country_code)
 
 		if (!country_code && value[0] != "+") {
 			value = "+" + value;
 		}
 
-		let formatted = parsePhoneNumberFromString(value, country_code.toUpperCase());
+		let formatted = parsePhoneNumberFromString(value, country_code && country_code.toUpperCase());
 		return formatted ? formatted.formatInternational() : formatted;
 	},
 	supportsES6: function() {

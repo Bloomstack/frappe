@@ -15,6 +15,7 @@
   "county",
   "state",
   "country",
+  "country_code",
   "pincode",
   "column_break0",
   "email_id",
@@ -158,11 +159,18 @@
    "fieldname": "ignore_owner_links",
    "fieldtype": "Check",
    "label": "Ignore Owner Links"
+  },
+  {
+   "fetch_from": "country.code",
+   "fieldname": "country_code",
+   "fieldtype": "Data",
+   "label": "Country Code",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
- "modified": "2020-12-02 20:42:36.303850",
+ "modified": "2021-03-05 01:22:57.359659",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
