@@ -626,8 +626,6 @@ Object.assign(frappe.utils, {
 			country_code = frm.doc.country_code;
 		}
 
-		console.log(country_code)
-
 		if (!country_code && value[0] != "+") {
 			value = "+" + value;
 		}
