@@ -343,7 +343,7 @@ def build_xlsx_data(columns, data, visible_idx, include_indentation, filters=Non
 		["Report: {0}".format(report_name)],
 		["Company: {0}".format(filters.get('company', None))],
 		["Period: {0} - {1}".format(filters.get('from_date', ""), filters.get('to_date',""))]
-		]
+	]
 
 	# add column headings
 	for idx in range(len(data.columns)):
