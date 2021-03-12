@@ -28,8 +28,17 @@ frappe.ui.form.on('Prepared Report', {
 		wrapper.append(filter_table);
 	},
 
-	refresh: function(frm) {
+	onload_post_render(frm) {
 		frm.disable_save();
+		frm.trigger('update_primary_action');
+
+	},
+	
+	refresh : function(frm) {
+		frm.trigger('update_primary_action');
+	},
+
+	update_primary_action: function(frm) {
 		if (frm.doc.status == 'Completed') {
 			frm.page.set_primary_action(__("Show Report"), () => {
 				frappe.set_route(
