@@ -1,5 +1,4 @@
 {
- "actions": [],
  "allow_rename": 1,
  "autoname": "field:dashboard_name",
  "creation": "2019-01-10 12:54:40.938705",
@@ -8,12 +7,14 @@
  "engine": "InnoDB",
  "field_order": [
   "dashboard_name",
+  "module",
   "is_default",
   "is_standard",
-  "module",
+  "number_cards_section",
+  "cards",
+  "charts_section",
   "charts",
-  "chart_options",
-  "cards"
+  "chart_options"
  ],
  "fields": [
   {
@@ -54,20 +55,27 @@
    "default": "0",
    "fieldname": "is_standard",
    "fieldtype": "Check",
-   "label": "Is Standard",
-   "read_only_depends_on": "eval: !frappe.boot.developer_mode"
+   "label": "Is Standard"
   },
   {
    "depends_on": "eval: doc.is_standard",
    "fieldname": "module",
    "fieldtype": "Link",
    "label": "Module",
-   "mandatory_depends_on": "eval: doc.is_standard",
    "options": "Module Def"
+  },
+  {
+   "fieldname": "number_cards_section",
+   "fieldtype": "Section Break",
+   "label": "Number Cards"
+  },
+  {
+   "fieldname": "charts_section",
+   "fieldtype": "Section Break",
+   "label": "Charts"
   }
  ],
- "links": [],
- "modified": "2020-07-23 11:05:41.890459",
+ "modified": "2021-03-11 21:52:27.492712",
  "modified_by": "Administrator",
  "module": "Desk",
  "name": "Dashboard",

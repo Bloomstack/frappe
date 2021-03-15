@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.utils import cint
 from frappe.model.naming import append_number_if_name_exists
 from frappe.modules.export_file import export_to_files
+from frappe.utils.safe_exec import safe_exec
 
 class NumberCard(Document):
 	def autoname(self):
@@ -58,6 +59,18 @@ def has_permission(doc, ptype, user):
 @frappe.whitelist()
 def get_result(doc, filters, to_date=None):
 	doc = frappe.parse_json(doc)
+
+	# For Servcer Script Enabled Number Cards
+	if doc.type == "Script":
+		doc = {
+			"filters": frappe.parse_json(filters),
+			"to_date":to_date,
+			"data": []
+		}
+
+		safe_exec(doc.script, None, doc)
+		return doc.get("data")[0]
+
 	fields = []
 	sql_function_map = {
 		'Count': 'count',

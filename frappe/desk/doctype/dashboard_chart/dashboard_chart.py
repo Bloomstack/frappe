@@ -15,6 +15,7 @@ from frappe.model.naming import append_number_if_name_exists
 from frappe.boot import get_allowed_reports
 from frappe.model.document import Document
 from frappe.modules.export_file import export_to_files
+from frappe.utils.safe_exec import safe_exec
 
 
 def get_permission_query_conditions(user):
@@ -104,11 +105,10 @@ def get(chart_name = None, chart = None, no_cache = None, filters = None, from_d
 
 	if chart.chart_type == 'Group By':
 		chart_config = get_group_by_chart_config(chart, filters)
+	elif chart.type == 'Heatmap':
+		chart_config = get_heatmap_chart_config(chart, filters, heatmap_year)
 	else:
-		if chart.type == 'Heatmap':
-			chart_config = get_heatmap_chart_config(chart, filters, heatmap_year)
-		else:
-			chart_config =  get_chart_config(chart, filters, timespan, timegrain, from_date, to_date)
+		chart_config =  get_chart_config(chart, filters, timespan, timegrain, from_date, to_date)
 
 	return chart_config
 
@@ -171,18 +171,34 @@ def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
 	filters.append([doctype, datefield, '>=', from_date, False])
 	filters.append([doctype, datefield, '<=', to_date, False])
 
-	data = frappe.db.get_list(
-		doctype,
-		fields = [
-			'{} as _unit'.format(datefield),
-			'{aggregate_function}({value_field})'.format(aggregate_function=aggregate_function, value_field=value_field),
-		],
-		filters = filters,
-		group_by = '_unit',
-		order_by = '_unit asc',
-		as_list = True,
-		ignore_ifnull = True
-	)
+	if chart.chart_type == "Script" and chart.script:
+		doc = {
+			"chart": chart,
+			"aggregate_function": aggregate_function,
+			"value_field": value_field,
+			"filters": filters,
+			"datefield": datefield,
+			"timegrain": timegrain,
+			"from_date": from_date,
+			"to_date": to_date,
+			"data": []
+		}
+		safe_exec(chart.script, None, doc)
+
+		return doc.get("data")
+	else:
+		data = frappe.db.get_list(
+			doctype,
+			fields = [
+				'{} as _unit'.format(datefield),
+				'{aggregate_function}({value_field})'.format(aggregate_function=aggregate_function, value_field=value_field),
+			],
+			filters = filters,
+			group_by = '_unit',
+			order_by = '_unit asc',
+			as_list = True,
+			ignore_ifnull = True
+		)
 
 	result = get_result(data, timegrain, from_date, to_date)
 
@@ -277,6 +293,7 @@ def get_aggregate_function(chart_type):
 		"Sum": "SUM",
 		"Count": "COUNT",
 		"Average": "AVG",
+		"Script": None
 	}[chart_type]
 
 
@@ -322,6 +339,9 @@ class DashboardChart(Document):
 	def check_required_field(self):
 		if not self.document_type:
 				frappe.throw(_("Document type is required to create a dashboard chart"))
+
+		if self.chart_type == "Script":
+			return
 
 		if self.chart_type == 'Group By':
 			if not self.group_by_based_on:

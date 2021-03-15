@@ -91,7 +91,22 @@ frappe.ui.form.on('Dashboard Chart', {
 					}
 				}
 			});
-		} else {
+		} else if (frm.doc.chart_type === "Script") {
+			let comment = ```
+				# Output Format
+				# data = {
+				# 	'labels': [ X-axis Labels ],
+				# 	'datasets': [
+				# 		{
+				# 			'name': 'Dashboard Name',
+				# 			'values': [ Chart Values ]
+				# 		}
+				# 	]
+				# }
+			```
+			frm.set_value("script", comment);
+		}
+		else {
 			frm.set_value('document_type', '');
 		}
 	},

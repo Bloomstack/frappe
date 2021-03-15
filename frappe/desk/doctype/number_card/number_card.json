@@ -18,6 +18,8 @@
   "report_field",
   "report_function",
   "is_public",
+  "script_section",
+  "script",
   "custom_configuration_section",
   "filters_config",
   "stats_section",
@@ -139,7 +141,7 @@
    "fieldname": "type",
    "fieldtype": "Select",
    "label": "Type",
-   "options": "Document Type\nReport\nCustom"
+   "options": "Document Type\nReport\nScript\nCustom"
   },
   {
    "depends_on": "eval: doc.type == 'Report'",
@@ -178,9 +180,20 @@
    "fieldtype": "Select",
    "label": "Function",
    "options": "Sum\nAverage\nMinimum\nMaximum"
+  },
+  {
+   "depends_on": "eval: doc.type == 'Script'",
+   "fieldname": "script_section",
+   "fieldtype": "Section Break",
+   "label": "Script"
+  },
+  {
+   "fieldname": "script",
+   "fieldtype": "Code",
+   "label": "Script"
   }
  ],
- "modified": "2020-12-31 00:50:27.675115",
+ "modified": "2021-03-17 02:49:08.024214",
  "modified_by": "Administrator",
  "module": "Desk",
  "name": "Number Card",
