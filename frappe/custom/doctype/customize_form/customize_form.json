@@ -11,10 +11,6 @@
   "label",
   "default_print_format",
   "max_attachments",
-  "title_field",
-  "image_field",
-  "search_fields",
-  "column_break_5",
   "allow_copy",
   "istable",
   "editable_grid",
@@ -33,6 +29,11 @@
   "sort_field",
   "column_break_10",
   "sort_order",
+  "communication_composer_section",
+  "send_me_a_copy",
+  "send_read_receipt",
+  "column_break_29",
+  "attach_document_print",
   "fields_section_break",
   "fields"
  ],
@@ -185,13 +186,42 @@
    "fieldname": "show_title_field_in_link",
    "fieldtype": "Check",
    "label": "Show Title in Link and Table MultiSelect Field"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "doc_type",
+   "fieldname": "communication_composer_section",
+   "fieldtype": "Section Break",
+   "label": "Communication Composer"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_me_a_copy",
+   "fieldtype": "Check",
+   "label": "Send me a copy"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_read_receipt",
+   "fieldtype": "Check",
+   "label": "Send Read Receipt"
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "attach_document_print",
+   "fieldtype": "Check",
+   "label": "Attach Document Print"
   }
  ],
  "hide_toolbar": 1,
  "icon": "fa fa-glass",
  "idx": 1,
  "issingle": 1,
- "modified": "2020-12-23 23:27:06.760313",
+ "modified": "2021-03-16 02:33:12.086754",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form",

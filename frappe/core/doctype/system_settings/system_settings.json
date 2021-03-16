@@ -60,11 +60,7 @@
   "desk_include_js",
   "chat",
   "enable_chat",
-  "use_socketio_to_upload_file",
-  "email_options_section",
-  "send_me_a_copy",
-  "send_read_receipt",
-  "attach_document_print"
+  "use_socketio_to_upload_file"
  ],
  "fields": [
   {
@@ -417,30 +413,6 @@
    "label": "Desk include JS"
   },
   {
-   "collapsible": 1,
-   "fieldname": "email_options_section",
-   "fieldtype": "Section Break",
-   "label": "Communication composer settings"
-  },
-  {
-   "default": "0",
-   "fieldname": "send_me_a_copy",
-   "fieldtype": "Check",
-   "label": "Send me a copy"
-  },
-  {
-   "default": "0",
-   "fieldname": "send_read_receipt",
-   "fieldtype": "Check",
-   "label": " Send Read Receipt"
-  },
-  {
-   "default": "0",
-   "fieldname": "attach_document_print",
-   "fieldtype": "Check",
-   "label": "Attach Document Print"
-  },
-  {
    "description": "Select the Email Template to be sent on User creation.",
    "fieldname": "welcome_email_template",
    "fieldtype": "Link",
@@ -450,7 +422,7 @@
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2021-03-04 07:08:19.386698",
+ "modified": "2021-03-16 02:40:26.846701",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

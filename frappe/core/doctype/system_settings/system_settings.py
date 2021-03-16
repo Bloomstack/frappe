@@ -78,7 +78,3 @@ def load():
 		"timezones": get_all_timezones(),
 		"defaults": defaults
 	}
-
-@frappe.whitelist()
-def get_system_settings():
-    return frappe.get_cached_doc("System Settings")
