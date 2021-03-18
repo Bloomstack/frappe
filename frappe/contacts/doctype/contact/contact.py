@@ -17,8 +17,8 @@ import functools
 class Contact(Document):
 	def autoname(self):
 		# concat first and last name
-		self.name = " ".join(filter(None,
-			[cstr(self.get(f)).strip() for f in ["first_name", "last_name"]]))
+		# self.name = " ".join(filter(None,
+		# 	[cstr(self.get(f)).strip() for f in ["first_name", "last_name"]]))
 
 		if frappe.db.exists("Contact", self.name):
 			self.name = append_number_if_name_exists('Contact', self.name)
@@ -121,6 +121,17 @@ class Contact(Document):
 			if d.get(field_name) == 1:
 				setattr(self, fieldname, d.phone)
 				break
+
+	def before_save(self):
+		self.title = f'{self.first_name} {self.last_name or ""}'
+
+		if frappe.db.exists("Contact", self.title):
+			self.title = append_number_if_name_exists('Contact', self.title)
+
+		 # concat party name if reqd
+		for link in self.links:
+			self.title = self.title + '-' + link.link_name.strip()
+			break
 
 def get_default_contact(doctype, name):
 	'''Returns default contact for the given doctype, name'''
