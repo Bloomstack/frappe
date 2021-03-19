@@ -125,7 +125,7 @@ class Contact(Document):
 	def before_save(self):
 		self.title = "{0} {1}".format(self.first_name, self.last_name)
 
-		if frappe.db.exists("Contact", {"title":self.title}):
+		if frappe.db.exists("Contact", {"title": self.title}):
 			self.title = append_number_if_name_exists('Contact', self.title)
 
 		 # concat party name if reqd
