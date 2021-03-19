@@ -11,7 +11,7 @@ from six import iteritems
 from past.builtins import cmp
 from frappe.model.naming import append_number_if_name_exists
 from frappe.contacts.address_and_contact import set_link_title
-from frappe.model.naming   import make_autoname
+from frappe.model.naming import make_autoname
 
 import functools
 
