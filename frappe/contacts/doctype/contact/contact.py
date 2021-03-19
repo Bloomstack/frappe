@@ -18,7 +18,7 @@ import functools
 class Contact(Document):
 	def autoname(self):
 		# concat first and last name
-		self.name= make_autoname("Contact-.####")
+		self.name = make_autoname("Contact-.####")
 
 		if frappe.db.exists("Contact", self.name):
 			self.name = append_number_if_name_exists('Contact', self.name)
