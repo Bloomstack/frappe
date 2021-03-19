@@ -11,7 +11,7 @@ from six import iteritems
 from past.builtins import cmp
 from frappe.model.naming import append_number_if_name_exists
 from frappe.contacts.address_and_contact import set_link_title
-from frappe.model.naming   import make_autoname
+from frappe.model.naming import make_autoname
 
 import functools
 
@@ -125,8 +125,8 @@ class Contact(Document):
 	def before_save(self):
 		self.title = "{0} {1}".format(self.first_name, self.last_name)
 
-		if frappe.db.exists("Contact",{"title": self.title}):
-			self.title = append_number_if_name_exists('Contact', self.title)
+		if frappe.db.exists("Contact", {"title": self.title}):
+    			self.title = append_number_if_name_exists('Contact', self.title)
 
 		 # concat party name if reqd
 		for link in self.links:
