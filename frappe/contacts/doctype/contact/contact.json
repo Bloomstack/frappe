@@ -252,7 +252,7 @@
  "icon": "fa fa-user",
  "idx": 1,
  "image_field": "image",
- "modified": "2021-03-18 15:44:20.711966",
+ "modified": "2021-03-19 00:16:58.788860",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Contact",
@@ -382,6 +382,7 @@
    "role": "All"
   }
  ],
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "ASC",
  "title_field": "title"
