@@ -32,7 +32,10 @@ doctype_properties = {
 	'track_views': 'Check',
 	'allow_auto_repeat': 'Check',
 	'allow_import': 'Check',
-	'show_title_field_in_link': 'Check'
+	'show_title_field_in_link': 'Check',
+	'send_me_a_copy': 'Check',
+	'send_read_receipt': 'Check',
+	'attach_document_print': 'Check'
 }
 
 docfield_properties = {

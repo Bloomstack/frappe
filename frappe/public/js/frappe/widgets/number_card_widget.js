@@ -130,6 +130,14 @@ export default class NumberCardWidget extends Widget {
 					filters: this.filters,
 				},
 				get_number: res => this.get_number_for_doctype_card(res),
+			},
+			'Script': {
+				method: 'frappe.desk.doctype.number_card.number_card.get_result',
+				args: {
+					doc: this.card_doc,
+					filters: this.filters,
+				},
+				get_number: res => this.get_number_for_doctype_card(res),
 			}
 		};
 		return settings_map[type];
