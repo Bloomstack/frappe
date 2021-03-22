@@ -11,15 +11,11 @@ from six import iteritems
 from past.builtins import cmp
 from frappe.model.naming import append_number_if_name_exists
 from frappe.contacts.address_and_contact import set_link_title
-from frappe.model.naming import make_autoname
 
 import functools
 
 class Contact(Document):
 	def autoname(self):
-		# concat first and last name
-		self.name = make_autoname("Contact-.####")
-
 		if frappe.db.exists("Contact", self.name):
 			self.name = append_number_if_name_exists('Contact', self.name)
 
@@ -32,6 +28,7 @@ class Contact(Document):
 		self.set_primary_email()
 		self.set_primary("phone")
 		self.set_primary("mobile_no")
+		self.before_save()
 
 		self.set_user()
 
@@ -126,7 +123,7 @@ class Contact(Document):
 		self.title = "{0} {1}".format(self.first_name, self.last_name)
 
 		if frappe.db.exists("Contact", {"title": self.title}):
-    			self.title = append_number_if_name_exists('Contact', self.title)
+				self.title = append_number_if_name_exists('Contact', self.title)
 
 		 # concat party name if reqd
 		for link in self.links:
