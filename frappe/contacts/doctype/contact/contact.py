@@ -123,7 +123,7 @@ class Contact(Document):
 		self.title = "{0} {1}".format(self.first_name, self.last_name)
 
 		if frappe.db.exists("Contact", {"title": self.title}):
-				self.title = append_number_if_name_exists('Contact', self.title)
+			self.title = append_number_if_name_exists('Contact', self.title)
 
 		 # concat party name if reqd
 		for link in self.links:
