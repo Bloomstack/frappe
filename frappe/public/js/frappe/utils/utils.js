@@ -618,14 +618,14 @@ Object.assign(frappe.utils, {
 
 		return email_list;
 	},
-	format_phone: function(value, frm) {
-		// Add + to avoid libphonenumber-js from returning invalid
+	format_phone: function(value, doc) {
 		let country_code = frappe.boot.default_country.code;
 
-		if (frappe.meta.has_field(frm.doc.doctype, "country_code")) {
-			country_code = frm.doc.country_code;
+		if (frappe.meta.has_field(doc.doctype, "country_code")) {
+			country_code = doc.country_code;
 		}
 
+		// Add + to avoid libphonenumber-js from returning invalid
 		if (!country_code && value[0] != "+") {
 			value = "+" + value;
 		}

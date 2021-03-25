@@ -280,8 +280,12 @@ def get_default_country():
 	if not (frappe.db.exists("DocType", "System Settings") and frappe.db.exists("DocType", "Country")):
 		return {}
 
-	country = frappe.get_cached_value("System Settings", "System Settings", "country")
+	country = frappe.get_value("System Settings", "System Settings", "country")
 	if not country:
 		return {}
 
-	return frappe.get_cached_doc("Country", country)
+	country = frappe.get_doc("Country", country)
+	return {
+		"country": country.name,
+		"code": country.code
+	}

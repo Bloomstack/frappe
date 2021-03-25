@@ -19,6 +19,7 @@ from frappe.modules.utils import export_module_json, get_doc_module
 from frappe.utils import cstr
 from frappe.website.utils import get_comment_list
 from frappe.website.website_generator import WebsiteGenerator
+from frappe.boot import get_default_country
 
 
 class WebForm(WebsiteGenerator):
@@ -175,6 +176,7 @@ def get_context(context):
 
 		context.show_in_grid = self.show_in_grid
 		self.load_translations(context)
+		context.default_country = frappe.as_json(get_default_country())
 
 	def load_translations(self, context):
 		translated_messages = frappe.translate.get_dict('doctype', self.doc_type)

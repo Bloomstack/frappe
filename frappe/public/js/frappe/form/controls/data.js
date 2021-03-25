@@ -110,7 +110,7 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 			}
 			v1 += v + '';
 
-			let formatted = frappe.utils.format_phone(v1, this.frm);
+			let formatted = frappe.utils.format_phone(v1, this.frm ? this.frm.doc : this.doc);
 
 			if (!formatted) {
 				frappe.throw(__("Invalid {0}: {1}", [__(this.df.label), v]));
