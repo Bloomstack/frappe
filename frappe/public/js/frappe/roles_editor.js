@@ -8,7 +8,8 @@ frappe.RoleEditor = Class.extend({
 		frappe.call({
 			method: 'frappe.core.doctype.user.user.get_all_roles',
 			callback: function(r) {
-				me.roles = r.message;
+				me.roles = r.message.roles;
+				me.mobile_app_roles = r.message.mobile_app_roles;
 				me.show_roles();
 
 				// refresh call could've already happened
@@ -22,8 +23,9 @@ frappe.RoleEditor = Class.extend({
 	show_roles: function() {
 		var me = this;
 		$(this.wrapper).empty();
+		let roles_section = $('<div class="roles-section row"></div>').appendTo($(this.wrapper));
 		if(me.frm.doctype != 'User') {
-			var role_toolbar = $('<p><button class="btn btn-default btn-add btn-sm" style="margin-right: 5px;"></button>\
+			let role_toolbar = $('<p><button class="btn btn-default btn-add btn-sm" style="margin-right: 5px;"></button>\
 				<button class="btn btn-sm btn-default btn-remove"></button></p>').appendTo($(this.wrapper));
 
 			role_toolbar.find(".btn-add")
@@ -48,12 +50,25 @@ frappe.RoleEditor = Class.extend({
 		}
 
 		$.each(this.roles, function(i, role) {
-			$(me.wrapper).append(repl('<div class="user-role" \
+			$(roles_section).append(repl('<div class="user-role col-md-6" \
 				data-user-role="%(role_value)s">\
 				<input type="checkbox" style="margin-top:0px;" class="box"> \
 				<a href="#" class="grey role">%(role_display)s</a>\
 			</div>', {role_value: role,role_display:__(role)}));
 		});
+
+		if(me.mobile_app_roles.length > 0) {
+			let  mobile_roles_section = $('<div class="mobile-roles-section row"><h6 class="form-section-heading uppercase" \
+			style="margin-top: 20px; margin-bottom: 0px">Mobile Application Access</h6></div>').appendTo($(this.wrapper));
+
+			$.each(this.mobile_app_roles, function(i, role) {
+				$(mobile_roles_section).append(repl('<div class="user-role col-md-6" \
+					data-user-role="%(role_value)s">\
+					<input type="checkbox" style="margin-top:0px;" class="box"> \
+					<a href="#" class="grey role">%(role_display)s</a>\
+				</div>', {role_value: role,role_display:__(role)}));
+			});
+		}
 
 		$(this.wrapper).find('input[type="checkbox"]').change(function() {
 			me.set_roles_in_table();
