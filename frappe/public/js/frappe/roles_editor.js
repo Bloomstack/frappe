@@ -22,7 +22,7 @@ frappe.RoleEditor = Class.extend({
 	show_roles: function() {
 		var me = this;
 		$(this.wrapper).empty();
-		var role_toolbar = $('<p><button class="btn btn-default btn-add btn-sm" style="margin-right: 5px;"></button>\
+		let role_toolbar = $('<p><button class="btn btn-default btn-add btn-sm" style="margin-right: 5px;"></button>\
 			<button class="btn btn-sm btn-default btn-remove"></button></p>').appendTo($(this.wrapper));
 
 		role_toolbar.find(".btn-add")
