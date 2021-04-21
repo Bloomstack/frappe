@@ -64,7 +64,6 @@ def get_result(doc, filters, to_date=None):
 	if number_card.type == "Script" and number_card.script:
 		doc = {
 			"number_card": number_card,
-			"filters": frappe.parse_json(filters),
 			"to_date":to_date,
 			"data": []
 		}
