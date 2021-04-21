@@ -22,30 +22,29 @@ frappe.RoleEditor = Class.extend({
 	show_roles: function() {
 		var me = this;
 		$(this.wrapper).empty();
-		if(me.frm.doctype != 'User') {
-			var role_toolbar = $('<p><button class="btn btn-default btn-add btn-sm" style="margin-right: 5px;"></button>\
-				<button class="btn btn-sm btn-default btn-remove"></button></p>').appendTo($(this.wrapper));
+		let role_toolbar = $('<p><button class="btn btn-default btn-add btn-sm" style="margin-right: 5px;"></button>\
+			<button class="btn btn-sm btn-default btn-remove"></button></p>').appendTo($(this.wrapper));
 
-			role_toolbar.find(".btn-add")
-				.html(__('Add all roles'))
-				.on("click", function() {
-					$(me.wrapper).find('input[type="checkbox"]').each(function(i, check) {
-						if (!$(check).is(":checked")) {
-							check.checked = true;
-						}
-					});
+		role_toolbar.find(".btn-add")
+			.html(__('Add all roles'))
+			.on("click", function() {
+				$(me.wrapper).find('input[type="checkbox"]').each(function(i, check) {
+					if (!$(check).is(":checked")) {
+						check.checked = true;
+					}
 				});
+			});
 
-			role_toolbar.find(".btn-remove")
-				.html(__('Clear all roles'))
-				.on("click", function() {
-					$(me.wrapper).find('input[type="checkbox"]').each(function(i, check) {
-						if($(check).is(":checked")) {
-							check.checked = false;
-						}
-					});
+		role_toolbar.find(".btn-remove")
+			.html(__('Clear all roles'))
+			.on("click", function() {
+				$(me.wrapper).find('input[type="checkbox"]').each(function(i, check) {
+					if($(check).is(":checked")) {
+						check.checked = false;
+					}
 				});
-		}
+			});
+
 
 		$.each(this.roles, function(i, role) {
 			$(me.wrapper).append(repl('<div class="user-role" \
