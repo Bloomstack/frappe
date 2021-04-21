@@ -291,6 +291,7 @@
 		"public/js/frappe/list/list_view_permission_restrictions.html",
 
 		"public/js/frappe/views/gantt/gantt_view.js",
+		"public/js/frappe/views/tree/tree_view.js",
 		"public/js/frappe/views/calendar/calendar.js",
 		"public/js/frappe/views/dashboard/dashboard_view.js",
 		"public/js/frappe/views/image/image_view.js",

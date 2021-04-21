@@ -63,6 +63,7 @@ frappe.views.ListSidebar = class ListSidebar {
 
 		if (frappe.treeview_settings[this.doctype] || frappe.get_meta(this.doctype).is_tree) {
 			this.sidebar.find(".tree-link").removeClass("hide");
+			this.sidebar.find(".tree-list-link").removeClass("hide");
 		}
 
 		this.current_view = 'List';
