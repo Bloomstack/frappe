@@ -212,7 +212,6 @@ def build_for_autosuggest(res, doctype):
 		else:
 			out = {
 				"value": r[0],
-				# "label": r[1],
 				"description": ", ".join(unique(cstr(d) for d in r[2:] if d))
 			}
 
