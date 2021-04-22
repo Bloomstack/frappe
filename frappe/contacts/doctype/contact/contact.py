@@ -6,6 +6,7 @@ import frappe
 from frappe.utils import cstr, has_gravatar, cint
 from frappe import _
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 from frappe.core.doctype.dynamic_link.dynamic_link import deduplicate_dynamic_links
 from six import iteritems
 from past.builtins import cmp
@@ -110,8 +111,29 @@ class Contact(Document):
 				setattr(self, fieldname, d.phone)
 				break
 
+	def autoname(self):
+		if not self.first_name:
+			if self.links:
+				self.first_name = self.links[0].link_name
+
+		if (self.first_name and self.last_name):
+			self.name = (cstr(self.first_name).strip() + " " + cstr(_(self.middle_name)).strip() +" " + cstr(_(self.last_name)).strip())
+			if frappe.db.exists("Contact", self.name):
+				self.name = make_autoname(cstr(self.first_name).strip() + "-" + cstr(_(self.middle_name)).strip() + "-" +cstr(self.last_name).strip()+ "-.#")
+		
+		elif (self.first_name):
+			self.name = (cstr(self.first_name).strip())
+			if frappe.db.exists("Contact", self.name):
+				self.name = make_autoname(cstr(self.first_name).strip()+ "-.#")
+				
+		else:
+			throw(_("First Name is mandatory."))
+
 	def set_title(self):
-		self.title = "{0} {1}".format(self.first_name, self.last_name)
+		if not self.last_name:
+			self.title = "{0}".format(self.first_name)
+		else:
+			self.title = "{0} {1}".format(self.first_name, self.last_name)
 
 		if frappe.db.exists("Contact", {"title": self.title}):
 			self.title = append_number_if_name_exists('Contact', self.title)
