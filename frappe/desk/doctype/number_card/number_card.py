@@ -120,7 +120,6 @@ def get_percentage_difference(doc, filters, result):
 def calculate_previous_result(doc, filters):
 	from frappe.utils import add_to_date
 
-	print(doc, filters)
 	current_date = frappe.utils.now()
 	if doc.stats_time_interval == 'Daily':
 		previous_date = add_to_date(current_date, days=-1)
