@@ -10,11 +10,6 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 		this.view = 'Tree';
 	}
 
-	render_skeleton() {
-		const $row = this.get_list_row_html_skeleton('<div><input type="checkbox" /></div>');
-		this.$result.append($row);
-	}
-
 	get_filters_for_args() {
 		// filters might have a fifth param called hidden,
 		// we don't want to pass that server side
@@ -51,17 +46,19 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 	setup_tree_dropdown() {
 		this.$result.on('click', '.btn-collapsible', (e) => {
 			e.stopPropagation();
-			let el = e.currentTarget;
-			let $el = $(el);
-			$el.find(".octicon").removeClass("octicon-chevron-right").addClass("octicon-chevron-down");
 
+			let el = e.currentTarget;
 			let target = unescape(el.getAttribute("data-name"));
+			let $el = $(el);
+
+			$el.find(".fa").removeClass("fa-folder").addClass("fa-folder-open active");
 			this.render_nodes(target, $el);
 		});
 	}
 
 	setup_create_new_task() {
 		let me = this;
+
 		this.$result.on('click', '.create-new', (e) => {
 			let doctype = unescape(e.currentTarget.getAttribute("data-doctype"));
 			let name = unescape(e.currentTarget.getAttribute("data-name"));
@@ -82,30 +79,31 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 
 	render_nodes(target, $el) {
 		let $row = this.$result.find(`.list-container[data-name="${target}"]`);
-		if (!$row || (!$row.length)) return;
-
-		if (!$el) {
-			$el = $row.find(".octicon").removeClass("octicon-chevron-right").addClass("octicon-chevron-down");
-		}
+		if (!$row || !$row.length) return;
 
 		let list = $row.find(`.list-nested-row-container`);
+		let level = parseInt($row[0].getAttribute("data-level")) + 1;
+
 		let $list = $(list);
 
-		let level = parseInt($row[0].getAttribute("data-level")) + 1;
-		let $nested_result = $(`<div class="nested-result">`);
-
+		$row.toggleClass("opened");
 		$list.toggleClass("hide");
+
+		console.log($list);
 
 		if ($list[0].classList.contains("hide")) {
 			$list.find(`.nested-result`).remove();
-			$el.find(".octicon").removeClass("octicon-chevron-down").addClass("octicon-chevron-right");
+			$el.find(".fa").removeClass("fa-folder-open").addClass("fa-folder");
+			return;
 		}
-
-		list.append($nested_result);
 
 		frappe.call(this.get_call_args_for_nodes([[this.doctype, this.meta.nsm_parent_field, "=", target]])).then(r => {
 			// render
 			let data = this.prepare_nested_data(r);
+			let $nested_result = $(`<div class="nested-result">`);
+
+			list.append($nested_result);
+
 			$nested_result.append(
 				data.map((doc, i) => {
 					doc._idx = i;
@@ -152,36 +150,17 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 	}
 
 	get_list_row_html(doc) {
-		return this.get_list_row_html_skeleton(this.get_left_html(doc), this.get_right_html(doc), doc);
+		return this.get_list_row_html_skeleton(this.get_left_html(doc), this.get_right_html(doc), doc, 0);
 	}
 
 	get_nested_list_row_html(doc, level) {
-		return this.get_nested_list_row_html_skeleton(this.get_left_html(doc, level), this.get_right_html(doc), doc, level);
+		return this.get_list_row_html_skeleton(this.get_left_html(doc, level), this.get_right_html(doc), doc, level);
 	}
 
 	get_list_row_html_skeleton(left = '', right = '', doc = {}, level = 0) {
 		return `
 			<div class="list-container" data-doctype="${escape(this.doctype)}" data-name="${escape(doc.name)}" data-level="${level}">
 				<div class="list-row-container collapsed" tabindex="1">
-					<div class="level list-row small">
-						<div class="level-left ellipsis">
-							${left}
-						</div>
-						<div class="level-right text-muted ellipsis">
-							${right}
-						</div>
-					</div>
-				</div>
-				<div class="list-nested-row-container hide">
-				</div>
-			</div>
-		`;
-	}
-
-	get_nested_list_row_html_skeleton(left = '', right = '', doc = {}, level = 1) {
-		return `
-			<div class="list-container" data-doctype="Task" data-name="${escape(doc.name)}" data-level="${level}">
-				<div class="list-row-container" tabindex="1">
 					<div class="level list-row small">
 						<div class="level-left ellipsis">
 							${left}
@@ -314,19 +293,11 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 
 		const seen = JSON.parse(doc._seen || '[]').includes(user) ? '' : 'bold';
 
-		const subject_link = this.get_subject_link(doc, subject, escaped_subject);
-
-		let html = doc.is_group ? `<a class="btn btn-collapsible btn-xs w-20"
-			data-doctype="${escape(this.doctype)}" data-name="${escape(doc.name)}">
-				<i class="octicon octicon-chevron-right" />
-			</a>` : ``;
-
-
 		let subject_html = `
 			<input class="level-item list-row-checkbox hidden-xs" type="checkbox" data-name="${escape(doc.name)}">
 			<span class="level-item">
 				<i class="octicon octicon-heart like-action ${heart_class}"
-					data-name="${doc.name}" data-doctype="${doc.doctype}"
+					data-name="${doc.name}" data-doctype="${this.doctype}"
 					data-liked-by="${encodeURI(doc._liked_by) || '[]'}">
 				</i>
 				<span class="likes-count">
@@ -334,10 +305,8 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 				</span>
 			</span>
 			<span class="level-item ${seen} ellipsis" title="${escaped_subject}" style="padding-left: ${20*level}px;">
-				<span class="level-item">
-					${html}
-				</span>
-				${subject_link}
+				${this.get_node_icon(doc)}
+				${this.get_subject_link(doc, subject, escaped_subject)}
 			</span>
 		`;
 
@@ -350,9 +319,18 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 		</a>`;
 	}
 
-	get_meta_html(doc) {
-		let html = this.get_add_child_button(doc);
+	get_node_icon(doc) {
+		let icon = doc.is_group ? 'fa fa-fw fa-folder node-parent' : 'octicon octicon-primitive-dot node-leaf';
+		let collapsible = doc.is_group ? 'btn-collapsible' : 'text-extra-muted';
 
+		return `
+			<a class="btn btn-xs ${collapsible} tree-node text-muted" data-doctype="${escape(this.doctype)}" data-name="${escape(doc.name)}" style="width:28px">
+				<i class="${icon}" />
+			</a>
+		`
+	}
+
+	get_meta_html(doc) {
 		const modified = comment_when(doc.modified, true);
 
 		const last_assignee = JSON.parse(doc._assign || '[]').slice(-1)[0];
@@ -369,7 +347,8 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 				${doc._comment_count > 99 ? "99+" : doc._comment_count}
 			</span>`;
 
-		html += `
+		return `
+			${this.get_add_child_button(doc)}
 			<div class="level-item hidden-xs list-row-activity">
 				${modified}
 				${assigned_to}
@@ -389,12 +368,12 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 		}
 
 		return `
-				<div class="level-item hidden-xs">
-					<button class="btn create-new btn-default btn-xs"
-						data-doctype="${this.doctype}" data-name="${escape(doc.name)}">
-						${__("Add Child")}
-					</button>
-				</div>
-			`;
+			<div class="level-item hidden-xs">
+				<button class="btn create-new btn-default btn-xs"
+					data-doctype="${this.doctype}" data-name="${escape(doc.name)}">
+					${__("Add Child")}
+				</button>
+			</div>
+		`;
 	}
 };
