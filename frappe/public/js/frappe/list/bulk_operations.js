@@ -139,10 +139,9 @@ export default class BulkOperations {
 					}	
 				}
 				if (!failed.length) {
-					frappe.msgprint({
-						title: __('Success'),
-						message: __('Submitted Successfully'),
-						indicator: 'green'
+					frappe.show_alert({
+						message: __("Submitted Successfully"),
+						indicator: "green"
 					});
 					frappe.utils.play_sound(action);
 					if (done) done();
