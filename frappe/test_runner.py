@@ -371,12 +371,21 @@ def make_test_objects(doctype, test_records=None, verbose=None, reset=False):
 		# submit if docstatus is set to 1 for test record
 		docstatus = d.docstatus
 
-		d.docstatus = 0
-		d.run_method("before_test_insert")
-		d.insert()
+		try:
+			d.run_method("before_test_insert")
+			d.insert()
 
-		if docstatus == 1:
-			d.submit()
+			if docstatus == 1:
+				d.submit()
+
+		except frappe.NameError:
+			revert_naming(d)
+
+		except Exception as e:
+			if d.flags.ignore_these_exceptions_in_test and e.__class__ in d.flags.ignore_these_exceptions_in_test:
+				revert_naming(d)
+			else:
+				raise
 
 		records.append(d.name)
 
