@@ -111,7 +111,7 @@ class Contact(Document):
 				break
 
 	def set_title(self):
-		self.title = "{0} {1}".format(self.first_name, self.last_name)
+		self.title = "{0} {1}".format(self.first_name or "", self.last_name or "")
 
 def get_default_contact(doctype, name):
 	'''Returns default contact for the given doctype, name'''
