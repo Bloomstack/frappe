@@ -510,6 +510,15 @@ def run_tests(context, app=None, module=None, doctype=None, test=(),
 	if os.environ.get('CI'):
 		sys.exit(ret)
 
+@click.command('run-parallel-tests')
+@click.option('--app', help="For App", default='frappe')
+@click.option('--build-id', help="For App")
+@pass_context
+def run_parallel_tests(context, app, build_id):
+	from frappe.test_runner import ParallelTestRunner
+	site = get_site(context)
+	ParallelTestRunner(app, site=site, build_id=build_id)
+
 @click.command('run-ui-tests')
 @click.argument('app')
 @click.option('--headless', is_flag=True, help="Run UI Test in headless mode")
@@ -792,5 +801,6 @@ commands = [
 	add_to_email_queue,
 	setup_global_help,
 	setup_help,
-	rebuild_global_search
+	rebuild_global_search,
+	run_parallel_tests
 ]
