@@ -1,6 +1,8 @@
-name: Server
+name: Server PostgreSQL tests
 
-on: [pull_request, workflow_dispatch]
+on:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -8,8 +10,10 @@ jobs:
 
     strategy:
       fail-fast: false
+      matrix:
+       containers: [1, 2]
 
-    name: Python Unit Tests (Postgres)
+    name: Server PostgreSQL
 
     services:
       postgres:
@@ -90,4 +94,4 @@ jobs:
           TYPE: server
 
       - name: Run Tests
-        run: cd ~/frappe-bench/ && bench --site test_site run-tests
+        run: cd ~/frappe-bench/ && bench --site test_site run-parallel-tests --ci-build-id $GITHUB_RUN_NUMBER
