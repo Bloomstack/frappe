@@ -1,6 +1,8 @@
-name: UI
+name: UI tests
 
-on: [pull_request, workflow_dispatch]
+on:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -8,8 +10,10 @@ jobs:
 
     strategy:
       fail-fast: false
+      matrix:
+       containers: [1, 2]
 
-    name: UI Tests (Cypress)
+    name: UI Mariadb
 
     services:
       mysql:
@@ -31,7 +35,7 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: '12'
           check-latest: true
 
       - name: Add to Hosts
@@ -86,16 +90,17 @@ jobs:
         env:
           BEFORE: ${{ env.GITHUB_EVENT_PATH.before }}
           AFTER: ${{ env.GITHUB_EVENT_PATH.after }}
-          TYPE: ui
+          TYPE: 'ui'
 
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
         env:
-          DB: mariadb
-          TYPE: ui
+          DB: 'mariadb'
+          TYPE: 'ui'
 
-      - name: Site Setup
+      - name: Run Set-Up
+        if: matrix.TYPE == 'ui'
         run: cd ~/frappe-bench/ && bench --site test_site execute frappe.utils.install.complete_setup_wizard
 
-      - name: UI Tests
-        run: cd ~/frappe-bench/ && bench --site test_site run-ui-tests frappe --headless
+      - name: Run Tests
+        run: cd ~/frappe-bench/ && bench --site test_site run-ui-tests frappe --headless --parallel --ci-build-id $GITHUB_RUN_NUMBER
