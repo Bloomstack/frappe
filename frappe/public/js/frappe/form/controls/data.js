@@ -4,16 +4,57 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	make_input: function() {
 		if(this.$input) return;
 
-		this.$input = $("<"+ this.html_element +">")
-			.attr("type", this.input_type)
-			.attr("autocomplete", "off")
-			.addClass("input-with-feedback form-control")
-			.prependTo(this.input_area);
+		if(this.df.options == 'URL') {
+			var me = this;
+			$('<div class="link-field ui-front" style="position: relative; line-height: 1;">\
+			<input type="text" class="input-with-feedback form-control">\
+			<span class="link-btn">\
+				<a class="btn-open no-decoration" title="' + __("Open Link") + '" target="_blank">\
+					<i class="octicon octicon-arrow-right"></i></a>\
+			</span>\
+		</div>').prependTo(this.input_area);
+		this.$input_area = $(this.input_area);
+		this.$input = this.$input_area.find('input');
+		this.$link = this.$input_area.find('.link-btn');
+		this.$link_open = this.$link.find('.btn-open');
+		this.set_input_attributes();
+		this.$input.on("focus", function(e) {
+			setTimeout(function() {
+				debugger
+				if(me.$input.val() && me.df.options) {
+					e.preventDefault()
+					let name = me.get_input_value();
+					me.$link.toggle(true);
+					if(name.match('https://') || (name.match('http://') || (name.match('ftp://')))){
+						me.$link_open.attr('href', name);
+					}
+					else {
+						me.$link_open.attr('href', "https://"+name)
+					}
+				}
+
+				if(!me.$input.val()) {
+					me.reset_value();
+					me.$input.val("").trigger("input");
+				}
+			}, 500);
+		});
+		}
+		else {
+			this.$input = $("<"+ this.html_element +">")
+				.attr("type", this.input_type)
+				.attr("autocomplete", "off")
+				.addClass("input-with-feedback form-control")
+				.prependTo(this.input_area);
+		}
+
 
 		if (in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image'],
 			this.df.fieldtype)) {
 			this.$input.attr("maxlength", this.df.length || 140);
 		}
+
+
 
 		this.set_input_attributes();
 		this.input = this.$input.get(0);
@@ -24,6 +65,9 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 
 		// somehow this event does not bubble up to document
 		// after v7, if you can debug, remove this
+	},
+	get_input_value: function () {
+		return (this.$input && this.data_value && this.$input.val()) ? this.data_value : "";
 	},
 	setup_autoname_check: function() {
 		if (!this.df.parent) return;
@@ -117,6 +161,14 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 			}
 
 			return formatted;
+		} else if(this.df.options == 'URL') {
+			if(v+''=='') {
+				return '';
+			}
+			if(!validate_url(v)) {
+				frappe.throw(__("Invalid URL"));
+			}
+			return v;
 		} else if(this.df.options == 'Email') {
 			if(v+''=='') {
 				return '';
