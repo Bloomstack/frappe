@@ -37,10 +37,13 @@ def get_test_doclist(doctype, name=None):
 
 		return doclist
 
-	else:
-		all_doclists = []
-		for fname in filter(lambda n: n.endswith(".json"), os.listdir(doctype_path)):
-			with open(os.path.join(doctype_path, scrub(fname)), 'r') as txtfile:
-				all_doclists.append(peval_doclist(txtfile.read()))
+def update_system_settings(args):
+	doc = frappe.get_doc('System Settings')
+	doc.update(args)
+	doc.flags.ignore_mandatory = 1
+	doc.save()
 
-		return all_doclists
+def get_system_setting(key):
+	return frappe.db.get_single_value("System Settings", key)
+
+global_test_dependencies = ['User']
