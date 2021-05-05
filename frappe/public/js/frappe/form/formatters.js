@@ -23,9 +23,11 @@ frappe.form.formatters = {
 	},
 	Float: function(value, docfield, options, doc) {
 		// don't allow 0 precision for Floats, hence or'ing with null
-		var precision = docfield.precision
+		let precision = docfield.precision
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_float_precision)
 			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision)
 			|| null;
+
 		if (docfield.options && docfield.options.trim()) {
 			// options points to a currency field, but expects precision of float!
 			docfield.precision = precision;
@@ -34,7 +36,7 @@ frappe.form.formatters = {
 		} else {
 			// show 1.000000 as 1
 			if (!(options || {}).always_show_decimals && !is_null(value)) {
-				var temp = cstr(value).split(".");
+				let temp = cstr(value).split(".");
 				if (temp[1]==undefined || cint(temp[1])===0) {
 					precision = 0;
 				}
@@ -60,8 +62,11 @@ frappe.form.formatters = {
 		</span>`;
 	},
 	Currency: function (value, docfield, options, doc) {
-		var currency  = frappe.meta.get_field_currency(docfield, doc);
-		var precision = docfield.precision || cint(frappe.boot.sysdefaults.currency_precision) || 2;
+		let currency  = frappe.meta.get_field_currency(docfield, doc);
+		let precision = docfield.precision
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_currency_precision)
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.currency_precision)
+			|| 2;
 
 		// If you change anything below, it's going to hurt a company in UAE, a bit.
 		if (precision > 2) {

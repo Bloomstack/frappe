@@ -13,10 +13,12 @@
   "setup_complete",
   "date_and_number_format",
   "date_format",
-  "column_break_7",
-  "number_format",
   "float_precision",
   "currency_precision",
+  "column_break_7",
+  "number_format",
+  "display_float_precision",
+  "display_currency_precision",
   "sec_backup_limit",
   "backup_limit",
   "background_workers",
@@ -65,7 +67,8 @@
  "fields": [
   {
    "fieldname": "localization",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Localization"
   },
   {
    "fieldname": "country",
@@ -418,11 +421,23 @@
    "fieldtype": "Link",
    "label": "Welcome Email Template",
    "options": "Email Template"
+  },
+  {
+   "fieldname": "display_float_precision",
+   "fieldtype": "Select",
+   "label": "Display Float Precision",
+   "options": "\n2\n3\n4\n5\n6\n7\n8\n9"
+  },
+  {
+   "fieldname": "display_currency_precision",
+   "fieldtype": "Select",
+   "label": "Display Currency Precision",
+   "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2021-03-16 02:40:26.846701",
+ "modified": "2021-05-04 02:08:07.884664",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",
