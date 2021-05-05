@@ -128,6 +128,46 @@ def get_page_info_from_doctypes(path=None):
 
 	return routes
 
+def get_page_info_from_web_page_with_dynamic_routes(path):
+	'''
+	Query Web Page with dynamic_route = 1 and evaluate if any of the routes match
+	'''
+	rules, page_info = [], {}
+
+	# build rules from all web page with `dynamic_route = 1`
+	for d in frappe.get_all('Web Page', fields = ['name', 'route', 'modified'],
+		filters = dict(published = 1, dynamic_route=1)):
+		rules.append(Rule('/' + d.route, endpoint = d.name))
+		d.doctype = 'Web Page'
+		page_info[d.name] = d
+
+	end_point = evaluate_dynamic_routes(rules, path)
+	if end_point:
+		return page_info[end_point]
+
+def evaluate_dynamic_routes(rules, path):
+	'''
+	Use Werkzeug routing to evaluate dynamic routes like /project/<name>
+	https://werkzeug.palletsprojects.com/en/1.0.x/routing/
+	'''
+	route_map = Map(rules)
+	endpoint = None
+
+	if frappe.local.request:
+		urls = route_map.bind_to_environ(frappe.local.request.environ or dict())
+		try:
+			endpoint, args = urls.match("/" + path)
+			path = endpoint
+			if args:
+				# don't cache when there's a query string!
+				frappe.local.no_cache = 1
+				frappe.local.form_dict.update(args)
+
+		except NotFound:
+			pass
+
+	return endpoint
+
 def get_pages(app=None):
 	'''Get all pages. Called for docs / sitemap'''
 

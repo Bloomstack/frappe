@@ -188,32 +188,37 @@ class TestDocument(unittest.TestCase):
 		self.assertTrue(xss not in d.subject)
 		self.assertTrue(escaped_xss in d.subject)
 
-	def test_link_count(self):
-		from frappe.model.utils.link_count import update_link_count
+	def test_naming_series(self):
+		data = ["TEST-", "TEST/17-18/.test_data./.####", "TEST.YYYY.MM.####"]
 
-		update_link_count()
+		for series in data:
+			name = make_autoname(series)
+			prefix = series
 
-		doctype, name = 'User', 'test@example.com'
+			if ".#" in series:
+				prefix = series.rsplit('.',1)[0]
 
-		d = self.test_insert()
-		d.append('event_participants', {"reference_doctype": doctype, "reference_docname": name})
+			prefix = parse_naming_series(prefix)
+			old_current = frappe.db.get_value('Series', prefix, "current", order_by="name")
 
-		d.save()
+			revert_series_if_last(series, name)
+			new_current = cint(frappe.db.get_value('Series', prefix, "current", order_by="name"))
 
-		link_count = frappe.cache().get_value('_link_count') or {}
-		old_count = link_count.get((doctype, name)) or 0
+			self.assertEqual(cint(old_current) - 1, new_current)
 
-		frappe.db.commit()
+	def test_non_negative_check(self):
+		frappe.delete_doc_if_exists("Currency", "Frappe Coin", 1)
 
-		link_count = frappe.cache().get_value('_link_count') or {}
-		new_count = link_count.get((doctype, name)) or 0
+		d = frappe.get_doc({
+			'doctype': 'Currency',
+			'currency_name': 'Frappe Coin',
+			'smallest_currency_fraction_value': -1
+		})
 
-		self.assertEqual(old_count + 1, new_count)
+		self.assertRaises(frappe.NonNegativeError, d.insert)
 
-		before_update = frappe.db.get_value(doctype, name, 'idx')
+		d.set('smallest_currency_fraction_value', 1)
+		d.insert()
+		self.assertEqual(frappe.db.get_value("Currency", d.name), d.name)
 
-		update_link_count()
-
-		after_update = frappe.db.get_value(doctype, name, 'idx')
-
-		self.assertEqual(before_update + new_count, after_update)
+		frappe.delete_doc_if_exists("Currency", "Frappe Coin", 1)
