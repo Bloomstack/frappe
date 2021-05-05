@@ -45,7 +45,7 @@ window.validate_email = function(txt) {
 };
 
 window.validate_url = function(txt) {
-	return frappe.utils.validate_type(txt, "URL");
+	return frappe.utils.validate_type(txt, "url");
 };
 
 window.nth = function(number) {

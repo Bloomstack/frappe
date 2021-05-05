@@ -3,29 +3,34 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	input_type: "text",
 	make_input: function() {
 		if(this.$input) return;
+		this.$input = $("<"+ this.html_element +">")
+		.attr("type", this.input_type)
+		.attr("autocomplete", "off")
+		.addClass("input-with-feedback form-control")
+		.prependTo(this.input_area);
 
-		if(this.df.options == 'URL') {
+		if (in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image'],
+		this.df.fieldtype)) {
+			this.$input.attr("maxlength", this.df.length || 140);
+		}
+
+		if(this.df.options == 'url') {
+			$(this.input_area).css('position','relative');
+			$('<span class="link-btn"> <a class="btn-open no-decoration" title="' + __("Open Link") + '" target="_blank"><i class="octicon octicon-arrow-right"></i></a></span>').appendTo(this.input_area);
+
+			this.$input_area = $(this.input_area);
+			this.$input = this.$input_area.find('input');
+			this.$link = this.$input_area.find('.link-btn');
+			this.$link_open = this.$link.find('.btn-open');
+			this.set_input_attributes();
 			var me = this;
-			$('<div class="link-field ui-front" style="position: relative; line-height: 1;">\
-			<input type="text" class="input-with-feedback form-control">\
-			<span class="link-btn">\
-				<a class="btn-open no-decoration" title="' + __("Open Link") + '" target="_blank">\
-					<i class="octicon octicon-arrow-right"></i></a>\
-			</span>\
-		</div>').prependTo(this.input_area);
-		this.$input_area = $(this.input_area);
-		this.$input = this.$input_area.find('input');
-		this.$link = this.$input_area.find('.link-btn');
-		this.$link_open = this.$link.find('.btn-open');
-		this.set_input_attributes();
-		this.$input.on("focus", function(e) {
-			setTimeout(function() {
-				debugger
-				if(me.$input.val() && me.df.options) {
-					e.preventDefault()
-					let name = me.get_input_value();
-					me.$link.toggle(true);
-					if(name.match('https://') || (name.match('http://') || (name.match('ftp://')))){
+			this.$input.on("focus", function(e) {
+				setTimeout(function() {
+					if(me.$input.val() && me.df.options) {
+						e.preventDefault()
+						let name = me.get_input_value();
+						me.$link.toggle(true);
+						if(name.match('https://') || (name.match('http://') || (name.match('ftp://')))){
 						me.$link_open.attr('href', name);
 					}
 					else {
@@ -39,42 +44,34 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 				}
 			}, 500);
 		});
-		}
-		else {
-			this.$input = $("<"+ this.html_element +">")
-				.attr("type", this.input_type)
-				.attr("autocomplete", "off")
-				.addClass("input-with-feedback form-control")
-				.prependTo(this.input_area);
-		}
+		this.$input.on("blur", function() {
+			// if this disappears immediately, the user's click
+			// does not register, hence timeout
+			setTimeout(function() {
+				me.$link.toggle(false);
+			}, 500);
+		});
+	}
 
+	this.set_input_attributes();
+	this.input = this.$input.get(0);
+	this.has_input = true;
+	this.bind_change_event();
+	this.bind_focusout();
+	this.setup_autoname_check();
 
-		if (in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image'],
-			this.df.fieldtype)) {
-			this.$input.attr("maxlength", this.df.length || 140);
-		}
-
-
-
-		this.set_input_attributes();
-		this.input = this.$input.get(0);
-		this.has_input = true;
-		this.bind_change_event();
-		this.bind_focusout();
-		this.setup_autoname_check();
-
-		// somehow this event does not bubble up to document
-		// after v7, if you can debug, remove this
-	},
-	get_input_value: function () {
-		return (this.$input && this.data_value && this.$input.val()) ? this.data_value : "";
-	},
-	setup_autoname_check: function() {
-		if (!this.df.parent) return;
-		this.meta = frappe.get_meta(this.df.parent);
-		if (this.meta && ((this.meta.autoname
-			&& this.meta.autoname.substr(0, 6)==='field:'
-			&& this.meta.autoname.substr(6) === this.df.fieldname) || this.df.fieldname==='__newname') ) {
+	// somehow this event does not bubble up to document
+	// after v7, if you can debug, remove this
+},
+get_input_value: function () {
+	return (this.$input && this.data_value && this.$input.val()) ? this.data_value : "";
+},
+setup_autoname_check: function() {
+	if (!this.df.parent) return;
+	this.meta = frappe.get_meta(this.df.parent);
+	if (this.meta && ((this.meta.autoname
+		&& this.meta.autoname.substr(0, 6)==='field:'
+		&& this.meta.autoname.substr(6) === this.df.fieldname) || this.df.fieldname==='__newname') ) {
 			this.$input.on('keyup', () => {
 				this.set_description('');
 				if (this.doc && this.doc.__islocal) {
@@ -85,12 +82,12 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 
 						// check if name exists
 						frappe.db.get_value(this.doctype, this.$input.val(),
-							'name', (val) => {
-								if (val) {
-									this.set_description(__('{0} already exists. Select another name', [val.name]));
-								}
-							},
-							this.doc.parenttype
+						'name', (val) => {
+							if (val) {
+								this.set_description(__('{0} already exists. Select another name', [val.name]));
+							}
+						},
+						this.doc.parenttype
 						);
 						this.last_check = null;
 					}, 1000);
@@ -101,9 +98,9 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	},
 	set_input_attributes: function() {
 		this.$input
-			.attr("data-fieldtype", this.df.fieldtype)
-			.attr("data-fieldname", this.df.fieldname)
-			.attr("placeholder", this.df.placeholder || "");
+		.attr("data-fieldtype", this.df.fieldtype)
+		.attr("data-fieldname", this.df.fieldname)
+		.attr("placeholder", this.df.placeholder || "");
 		if(this.doctype) {
 			this.$input.attr("data-doctype", this.doctype);
 		}
@@ -120,6 +117,13 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 		this.set_formatted_input(value);
 		this.set_disp_area(value);
 		this.set_mandatory && this.set_mandatory(value);
+	},
+	reset_value: function () {
+		if (!this.$input) {
+			return;
+		}
+		this.$input.val("");
+		this.data_value = null;
 	},
 	set_formatted_input: function(value) {
 		this.$input && this.$input.val(this.format_for_input(value));
@@ -161,7 +165,7 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 			}
 
 			return formatted;
-		} else if(this.df.options == 'URL') {
+		} else if(this.df.options == 'url') {
 			if(v+''=='') {
 				return '';
 			}
