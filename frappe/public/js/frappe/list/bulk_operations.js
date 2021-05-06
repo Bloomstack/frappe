@@ -138,7 +138,11 @@ export default class BulkOperations {
 						});
 					}	
 				}
-				if (failed.length < docnames.length) {
+				if (!failed.length) {
+					frappe.show_alert({
+						message: __("Submitted Successfully"),
+						indicator: "green"
+					});
 					frappe.utils.play_sound(action);
 					if (done) done();
 				}
