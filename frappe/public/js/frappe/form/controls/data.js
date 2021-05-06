@@ -9,34 +9,36 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 		.addClass("input-with-feedback form-control")
 		.prependTo(this.input_area);
 
-		if (in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image'],
-		this.df.fieldtype)) {
+		if (in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image'], this.df.fieldtype)) {
 			this.$input.attr("maxlength", this.df.length || 140);
 		}
-		if(this.df.options == 'url') {
-				$(this.input_area).addClass('urlfield');
-				setTimeout(() => {
-					$('<span> <a class="btn-open no-decoration" title="' + __("Open Link") + '" target="_blank"><i class="fa fa-external-link"></i></a></span>').appendTo(this.input_area);
-				}, 5000);
+
+		if (this.df.options === "Url") {
+			this.$input.addClass("form-control-url");
+			$(`<span>
+				<a class="btn-open no-decoration hide" title="${__("Open Link")}" target="_blank">
+					<i class="fa fa-external-link"></i>
+				</a>
+			</span>`).appendTo(this.input_area);
 		}
 
-	this.set_input_attributes();
-	this.input = this.$input.get(0);
-	this.has_input = true;
-	this.bind_change_event();
-	this.open_link();
-	this.bind_focusout();
-	this.setup_autoname_check();
+		this.set_input_attributes();
+		this.input = this.$input.get(0);
+		this.has_input = true;
+		this.bind_change_event();
+		this.bind_open_link_event();
+		this.bind_focusout();
+		this.setup_autoname_check();
 
-	// somehow this event does not bubble up to document
-	// after v7, if you can debug, remove this
-},
-setup_autoname_check: function() {
-	if (!this.df.parent) return;
-	this.meta = frappe.get_meta(this.df.parent);
-	if (this.meta && ((this.meta.autoname
-		&& this.meta.autoname.substr(0, 6)==='field:'
-		&& this.meta.autoname.substr(6) === this.df.fieldname) || this.df.fieldname==='__newname') ) {
+		// somehow this event does not bubble up to document
+		// after v7, if you can debug, remove this
+	},
+	setup_autoname_check: function() {
+		if (!this.df.parent) return;
+		this.meta = frappe.get_meta(this.df.parent);
+		if (this.meta && ((this.meta.autoname
+			&& this.meta.autoname.substr(0, 6)==='field:'
+			&& this.meta.autoname.substr(6) === this.df.fieldname) || this.df.fieldname==='__newname') ) {
 			this.$input.on('keyup', () => {
 				this.set_description('');
 				if (this.doc && this.doc.__islocal) {
@@ -92,18 +94,27 @@ setup_autoname_check: function() {
 	format_for_input: function(val) {
 		return val==null ? "" : val;
 	},
-	open_link: function() {
-		$('.urlfield span').on('click', function() {
-			let link = $('.urlfield input').val();
-			if(validate(link)) {
-				if(link.match('https://') || (link.match('http://') || (link.match('ftp://')))){
-						$('.urlfield a').attr('href', link);
-					}
-					else {
-						$('.urlfield a').attr('href', "https://"+link)
-					}
-			}
+	bind_open_link_event: function() {
+		let me = this;
+
+		me.$input.on('blur', function() {
+			me.show_open_link_button();
 		});
+
+		setTimeout(() => {
+			// Show open link button when loading the page
+			me.show_open_link_button();
+		}, 300);
+	},
+	show_open_link_button: function() {
+		let me = this;
+		let link = me.get_input_value();
+
+		if (link && validate_url(link)) {
+			me.$input_wrapper.find(".btn-open") && me.$input_wrapper.find(".btn-open").toggleClass("hide");
+			me.$input_wrapper.find(".btn-open") && me.$input_wrapper.find(".btn-open").attr("href",
+				link.match('https://') || link.match('http://') || link.match('ftp://') ? link : "//" + link);
+		}
 	},
 	validate: function(v) {
 		if(this.df.is_filter) {
@@ -136,7 +147,7 @@ setup_autoname_check: function() {
 			}
 
 			return formatted;
-		} else if(this.df.options == 'url') {
+		} else if(this.df.options == 'Url') {
 			if(v+''=='') {
 				return '';
 			}
