@@ -4,10 +4,10 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	make_input: function() {
 		if(this.$input) return;
 		this.$input = $("<"+ this.html_element +">")
-		.attr("type", this.input_type)
-		.attr("autocomplete", "off")
-		.addClass("input-with-feedback form-control")
-		.prependTo(this.input_area);
+			.attr("type", this.input_type)
+			.attr("autocomplete", "off")
+			.addClass("input-with-feedback form-control")
+			.prependTo(this.input_area);
 
 		if (in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image'], this.df.fieldtype)) {
 			this.$input.attr("maxlength", this.df.length || 140);
@@ -49,12 +49,12 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 
 						// check if name exists
 						frappe.db.get_value(this.doctype, this.$input.val(),
-						'name', (val) => {
-							if (val) {
-								this.set_description(__('{0} already exists. Select another name', [val.name]));
-							}
-						},
-						this.doc.parenttype
+							'name', (val) => {
+								if (val) {
+									this.set_description(__('{0} already exists. Select another name', [val.name]));
+								}
+							},
+							this.doc.parenttype
 						);
 						this.last_check = null;
 					}, 1000);
