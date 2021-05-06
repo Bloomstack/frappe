@@ -9,6 +9,7 @@ from frappe.utils import cint
 from frappe.model.naming import append_number_if_name_exists
 from frappe.modules.export_file import export_to_files
 from frappe.utils.safe_exec import safe_exec
+from six import string_types
 
 class NumberCard(Document):
 	def autoname(self):
@@ -58,7 +59,7 @@ def has_permission(doc, ptype, user):
 
 @frappe.whitelist()
 def get_result(doc, filters, to_date=None):
-	number_card = frappe._dict(frappe.parse_json(doc))
+	number_card = frappe._dict(frappe.parse_json(doc)) if isinstance(doc, string_types) else doc
 
 	# For Servcer Script Enabled Number Cards
 	if number_card.type == "Script" and number_card.script:
