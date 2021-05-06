@@ -13,8 +13,8 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 			this.$input.attr("maxlength", this.df.length || 140);
 		}
 
-		if (this.df.options === "Url") {
-			this.$input.addClass("form-control-url");
+		if (this.df.options === "URL") {
+			$(this.input_area).addClass("form-control-url");
 			$(`<span>
 				<a class="btn-open no-decoration hide" title="${__("Open Link")}" target="_blank">
 					<i class="fa fa-external-link"></i>
@@ -65,9 +65,9 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	},
 	set_input_attributes: function() {
 		this.$input
-		.attr("data-fieldtype", this.df.fieldtype)
-		.attr("data-fieldname", this.df.fieldname)
-		.attr("placeholder", this.df.placeholder || "");
+			.attr("data-fieldtype", this.df.fieldtype)
+			.attr("data-fieldname", this.df.fieldname)
+			.attr("placeholder", this.df.placeholder || "");
 		if(this.doctype) {
 			this.$input.attr("data-doctype", this.doctype);
 		}
@@ -96,7 +96,7 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	},
 	bind_open_link_event: function() {
 		let me = this;
-
+		if(me.df.options === 'URL')
 		me.$input.on('blur', function() {
 			me.show_open_link_button();
 		});
@@ -147,7 +147,7 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 			}
 
 			return formatted;
-		} else if(this.df.options == 'Url') {
+		} else if(this.df.options == 'URL') {
 			if(v+''=='') {
 				return '';
 			}
