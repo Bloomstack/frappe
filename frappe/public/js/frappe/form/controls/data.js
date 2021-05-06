@@ -13,58 +13,23 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 		this.df.fieldtype)) {
 			this.$input.attr("maxlength", this.df.length || 140);
 		}
-
 		if(this.df.options == 'url') {
-			$(this.input_area).css('position','relative');
-			$('<span class="link-btn"> <a class="btn-open no-decoration" title="' + __("Open Link") + '" target="_blank"><i class="octicon octicon-arrow-right"></i></a></span>').appendTo(this.input_area);
-
-			this.$input_area = $(this.input_area);
-			this.$input = this.$input_area.find('input');
-			this.$link = this.$input_area.find('.link-btn');
-			this.$link_open = this.$link.find('.btn-open');
-			this.set_input_attributes();
-			var me = this;
-			this.$input.on("focus", function(e) {
-				setTimeout(function() {
-					if(me.$input.val() && me.df.options) {
-						e.preventDefault()
-						let name = me.get_input_value();
-						me.$link.toggle(true);
-						if(name.match('https://') || (name.match('http://') || (name.match('ftp://')))){
-						me.$link_open.attr('href', name);
-					}
-					else {
-						me.$link_open.attr('href', "https://"+name)
-					}
-				}
-
-				if(!me.$input.val()) {
-					me.reset_value();
-					me.$input.val("").trigger("input");
-				}
-			}, 500);
-		});
-		this.$input.on("blur", function() {
-			// if this disappears immediately, the user's click
-			// does not register, hence timeout
-			setTimeout(function() {
-				me.$link.toggle(false);
-			}, 500);
-		});
-	}
+				$(this.input_area).addClass('urlfield');
+				setTimeout(() => {
+					$('<span> <a class="btn-open no-decoration" title="' + __("Open Link") + '" target="_blank"><i class="fa fa-external-link"></i></a></span>').appendTo(this.input_area);
+				}, 5000);
+		}
 
 	this.set_input_attributes();
 	this.input = this.$input.get(0);
 	this.has_input = true;
 	this.bind_change_event();
+	this.open_link();
 	this.bind_focusout();
 	this.setup_autoname_check();
 
 	// somehow this event does not bubble up to document
 	// after v7, if you can debug, remove this
-},
-get_input_value: function () {
-	return (this.$input && this.data_value && this.$input.val()) ? this.data_value : "";
 },
 setup_autoname_check: function() {
 	if (!this.df.parent) return;
@@ -118,13 +83,6 @@ setup_autoname_check: function() {
 		this.set_disp_area(value);
 		this.set_mandatory && this.set_mandatory(value);
 	},
-	reset_value: function () {
-		if (!this.$input) {
-			return;
-		}
-		this.$input.val("");
-		this.data_value = null;
-	},
 	set_formatted_input: function(value) {
 		this.$input && this.$input.val(this.format_for_input(value));
 	},
@@ -133,6 +91,19 @@ setup_autoname_check: function() {
 	},
 	format_for_input: function(val) {
 		return val==null ? "" : val;
+	},
+	open_link: function() {
+		$('.urlfield span').on('click', function() {
+			let link = $('.urlfield input').val();
+			if(validate(link)) {
+				if(link.match('https://') || (link.match('http://') || (link.match('ftp://')))){
+						$('.urlfield a').attr('href', link);
+					}
+					else {
+						$('.urlfield a').attr('href', "https://"+link)
+					}
+			}
+		});
 	},
 	validate: function(v) {
 		if(this.df.is_filter) {
@@ -200,5 +171,5 @@ setup_autoname_check: function() {
 		} else {
 			return v;
 		}
-	}
+	},
 });
