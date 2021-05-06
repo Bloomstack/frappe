@@ -8,6 +8,8 @@ from frappe.tests.test_website import set_request
 from frappe.website.render import render
 from frappe.utils import random_string
 
+test_dependencies = ['Blog Post']
+
 class TestBlogPost(unittest.TestCase):
 	def test_generator_view(self):
 		pages = frappe.get_all('Blog Post', fields=['name', 'route'],
