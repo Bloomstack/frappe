@@ -118,6 +118,9 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 		} else {
 			me.$input_wrapper && me.$input_wrapper.find(".btn-open") &&
 			!me.$input_wrapper.find(".btn-open").hasClass("hide") && me.$input_wrapper.find(".btn-open").addClass("hide");
+		} else {
+			me.$input_wrapper && me.$input_wrapper.find(".btn-open") &&
+			!me.$input_wrapper.find(".btn-open").hasClass("hide") && me.$input_wrapper.find(".btn-open").addClass("hide");
 		}
 	},
 	validate: function(v) {
