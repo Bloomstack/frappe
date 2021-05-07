@@ -87,8 +87,7 @@ def validate_url(url, throw=False):
 	match = re.match(r"(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$", url)
 
 	if not match and throw:
-		# frappe.throw(frappe._("{0} is not a valid URL").format(url),
-			frappe.throw(frappe._("""
+		frappe.throw(frappe._("""
 			{0} is not a valid URL.
 			<br><br>
 			URL should be of the format <b>example.com</b>, <b>www.example.com</b>, <b>https://example.com</b>
