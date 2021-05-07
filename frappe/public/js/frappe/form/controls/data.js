@@ -96,7 +96,7 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	},
 	bind_open_link_event: function() {
 		let me = this;
-		if(me.df.options === 'URL')
+		if(me.df.options != 'URL') return;
 		me.$input.on('blur', function() {
 			me.show_open_link_button();
 		});
@@ -111,9 +111,13 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 		let link = me.get_input_value();
 
 		if (link && validate_url(link)) {
-			me.$input_wrapper.find(".btn-open") && me.$input_wrapper.find(".btn-open").toggleClass("hide");
+			me.$input_wrapper && me.$input_wrapper.find(".btn-open") &&
+			me.$input_wrapper.find(".btn-open").hasClass("hide") && me.$input_wrapper.find(".btn-open").removeClass("hide");
 			me.$input_wrapper.find(".btn-open") && me.$input_wrapper.find(".btn-open").attr("href",
 				link.match('https://') || link.match('http://') || link.match('ftp://') ? link : "//" + link);
+		} else {
+			me.$input_wrapper && me.$input_wrapper.find(".btn-open") &&
+			!me.$input_wrapper.find(".btn-open").hasClass("hide") && me.$input_wrapper.find(".btn-open").addClass("hide");
 		}
 	},
 	validate: function(v) {
@@ -182,5 +186,5 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 		} else {
 			return v;
 		}
-	},
+	}
 });

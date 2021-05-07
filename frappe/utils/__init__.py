@@ -88,10 +88,10 @@ def validate_url(url, throw=False):
 
 	if not match and throw:
 		# frappe.throw(frappe._("{0} is not a valid URL").format(url),
-			frappe.msgprint(frappe._("""
+			frappe.throw(frappe._("""
 			{0} is not a valid URL.
 			<br><br>
-			URL should be in the format of https://site.test
+			URL should be of the format <b>example.com</b>, <b>www.example.com</b>, <b>https://example.com</b>
 		""").format(frappe.bold(url)))
 	return bool(match)
 
