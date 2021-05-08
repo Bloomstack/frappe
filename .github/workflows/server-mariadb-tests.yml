@@ -101,29 +101,14 @@ jobs:
         run: |
           cp ~/frappe-bench/sites/.coverage ${GITHUB_WORKSPACE}
           cd ${GITHUB_WORKSPACE}
-          pip install coveralls==2.2.0
-          pip install coverage==4.5.4
-          coveralls debug --service=github
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
-          COVERALLS_FLAG_NAME: run-${{ matrix.test_number }}
-          COVERALLS_SERVICE_NAME: github
-          COVERALLS_PARALLEL: true
-
-      - name: Upload Coverage Data
-        if: github.event_name == 'push'
-        run: |
-          cp ~/frappe-bench/sites/.coverage ${GITHUB_WORKSPACE}
-          cd ${GITHUB_WORKSPACE}
-          pip install coveralls==2.2.0
-          pip install coverage==4.5.4
-          coveralls debug --service=github-actions
+          pip3 install coverage==5.5
+          pip3 install coveralls==3.0.1
+          coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
           COVERALLS_FLAG_NAME: run-${{ matrix.container }}
-          COVERALLS_SERVICE_NAME: github-actions
+          COVERALLS_SERVICE_NAME: ${{ github.event_name == 'pull_request' && 'github' || 'github-actions' }}
           COVERALLS_PARALLEL: true
 
   coveralls:
