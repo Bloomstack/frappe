@@ -5,13 +5,15 @@ frappe.ui.form.ControlFloat = frappe.ui.form.ControlInt.extend({
 			me.parse_validate_and_set_in_model(me.get_input_value(), e);
 		});
 
-		this.$input && this.$input.on("click", function(e) {
-			me.set_formatted_input(me.get_input_value(), false);
-		})
+		this.$input && this.$input.on("click", function() {
+			// When the input in clicked, restore the original value with precision
+			me.set_formatted_input(me.get_value(), false);
+		});
 
-		this.$input && this.$input.on("blur", function(e) {
+		this.$input && this.$input.on("blur", function() {
+			// Set the formatted value with display precision
 			me.set_formatted_input(me.get_input_value(), true);
-		})
+		});
 	},
 
 	parse: function(value) {
@@ -43,6 +45,10 @@ frappe.ui.form.ControlFloat = frappe.ui.form.ControlInt.extend({
 
 	set_formatted_input: function(value, label=true) {
 		this.$input && this.$input.val(this.format_for_input(value, label));
+	},
+
+	get_value: function() {
+		return this.value || null;
 	}
 });
 
