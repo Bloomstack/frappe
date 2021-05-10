@@ -94,7 +94,9 @@ jobs:
         uses: mxschmitt/action-tmate@v3
 
       - name: Run Tests
-        run: cd ~/frappe-bench/ && bench --site test_site run-parallel-tests --with-coverage --ci-build-id $GITHUB_RUN_ID
+        run: cd ~/frappe-bench/ && bench --site test_site run-parallel-tests --use-orchestrator --with-coverage
+        env:
+          CI_BUILD_ID: ${{ github.run_id }}
 
       - name: Upload Coverage Data
         if: github.event_name == 'pull_request'
