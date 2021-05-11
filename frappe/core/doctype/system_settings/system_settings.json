@@ -436,6 +436,7 @@
    "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
   },
   {
+   "default": "2",
    "description": "Currency Precision for displaying data in UI.",
    "fieldname": "display_currency_precision",
    "fieldtype": "Select",
@@ -445,7 +446,7 @@
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2021-05-11 00:04:21.802636",
+ "modified": "2021-05-11 00:38:20.813917",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

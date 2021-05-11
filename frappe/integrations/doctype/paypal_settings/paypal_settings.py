@@ -246,37 +246,46 @@ def get_express_checkout_details(token):
 	except Exception:
 		frappe.log_error(frappe.get_traceback())
 
+def get_integration_status_from_token(token):
+	if frappe.db.exists("Integration Request", token):
+		return frappe.get_value("Integration Request", token, "status")
+	else:
+		None
+
 @frappe.whitelist(allow_guest=True, xss_safe=True)
 def confirm_payment(token):
 	try:
 		custom_redirect_to = None
 		data, params, url = get_paypal_and_transaction_details(token)
 
-		params.update({
-			"METHOD": "DoExpressCheckoutPayment",
-			"PAYERID": data.get("payerid"),
-			"TOKEN": token,
-			"PAYMENTREQUEST_0_PAYMENTACTION": "SALE",
-			"PAYMENTREQUEST_0_AMT": data.get("amount"),
-			"PAYMENTREQUEST_0_CURRENCYCODE": data.get("currency").upper()
-		})
-
-		response = make_post_request(url, data=params)
-
-		if response.get("ACK")[0] == "Success":
-			update_integration_request_status(token, {
-				"transaction_id": response.get("PAYMENTINFO_0_TRANSACTIONID")[0],
-				"correlation_id": response.get("CORRELATIONID")[0]
-			}, "Completed")
-
-			if data.get("reference_doctype") and data.get("reference_docname"):
-				custom_redirect_to = frappe.get_doc(data.get("reference_doctype"),
-					data.get("reference_docname")).run_method("on_payment_authorized", "Completed")
-				frappe.db.commit()
-
+		if get_integration_status_from_token(token) == "Completed":
 			redirect_url = '/integrations/payment-success?doctype={0}&docname={1}'.format(data.get("reference_doctype"), data.get("reference_docname"))
 		else:
-			redirect_url = "/integrations/payment-failed"
+			params.update({
+				"METHOD": "DoExpressCheckoutPayment",
+				"PAYERID": data.get("payerid"),
+				"TOKEN": token,
+				"PAYMENTREQUEST_0_PAYMENTACTION": "SALE",
+				"PAYMENTREQUEST_0_AMT": data.get("amount"),
+				"PAYMENTREQUEST_0_CURRENCYCODE": data.get("currency").upper()
+			})
+
+			response = make_post_request(url, data=params)
+
+			if response.get("ACK")[0] == "Success":
+				update_integration_request_status(token, {
+					"transaction_id": response.get("PAYMENTINFO_0_TRANSACTIONID")[0],
+					"correlation_id": response.get("CORRELATIONID")[0]
+				}, "Completed")
+
+				if data.get("reference_doctype") and data.get("reference_docname"):
+					custom_redirect_to = frappe.get_doc(data.get("reference_doctype"),
+						data.get("reference_docname")).run_method("on_payment_authorized", "Completed")
+					frappe.db.commit()
+
+				redirect_url = '/integrations/payment-success?doctype={0}&docname={1}'.format(data.get("reference_doctype"), data.get("reference_docname"))
+			else:
+				redirect_url = "/integrations/payment-failed"
 
 		setup_redirect(data, redirect_url, custom_redirect_to)
 

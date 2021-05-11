@@ -530,9 +530,24 @@ def get_all_roles(arg=None):
 	}, or_filters={
 		"ifnull(restrict_to_domain, '')": "",
 		"restrict_to_domain": ("in", active_domains)
-	}, order_by="name")
+	}, fields = [
+		"name",
+		"for_mobile_application"
+	],
+	order_by="name")
 
-	return [ role.get("name") for role in roles ]
+	app_roles = []
+	mobile_app_roles = []
+	for role in roles:
+		if role.get("for_mobile_application"):
+			mobile_app_roles.append(role.get("name"))
+		else:
+			app_roles.append(role.get("name"))
+
+	return {
+		"roles": app_roles,
+		"mobile_app_roles": mobile_app_roles
+	}
 
 @frappe.whitelist()
 def get_roles(arg=None):

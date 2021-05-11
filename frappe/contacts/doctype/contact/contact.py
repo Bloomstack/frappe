@@ -111,15 +111,7 @@ class Contact(Document):
 				break
 
 	def set_title(self):
-		self.title = "{0} {1}".format(self.first_name, self.last_name)
-
-		if frappe.db.exists("Contact", {"title": self.title}):
-			self.title = append_number_if_name_exists('Contact', self.title)
-
-		 # concat party name if reqd
-		for link in self.links:
-			self.title = self.title + '-' + link.link_name.strip()
-			break
+		self.title = "{0} {1}".format(self.first_name or "", self.last_name or "")
 
 def get_default_contact(doctype, name):
 	'''Returns default contact for the given doctype, name'''
