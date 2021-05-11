@@ -11,6 +11,6 @@ frappe.ui.form.ControlCurrency = frappe.ui.form.ControlFloat.extend({
 
 	get_display_precision: function() {
 		// round based on field precision or display float precision, else don't round
-		return this.df.precision || cint(frappe.boot.sysdefaults.display_currency_precision || 2, null);
+		return this.df.display_precision || cint(frappe.boot.sysdefaults.display_currency_precision || 2, null);
 	},
 });

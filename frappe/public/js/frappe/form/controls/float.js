@@ -40,7 +40,7 @@ frappe.ui.form.ControlFloat = frappe.ui.form.ControlInt.extend({
 
 	get_display_precision: function() {
 		// round based on field precision or display float precision, else don't round
-		return this.df.precision || cint(frappe.boot.sysdefaults.display_float_precision, null);
+		return this.df.display_precision || cint(frappe.boot.sysdefaults.display_float_precision, null);
 	},
 
 	set_formatted_input: function(value, label=true) {

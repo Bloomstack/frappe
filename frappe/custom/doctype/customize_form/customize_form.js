@@ -160,6 +160,11 @@ frappe.ui.form.on("Customize Form Field", {
 	fields_add: function(frm, cdt, cdn) {
 		var f = frappe.model.get_doc(cdt, cdn);
 		f.is_custom_field = 1;
+	},
+	fieldtype: function(frm, cdt, cdn) {
+		let precision_field = in_list(["Float", "Currency", "Percent"], doc.fieldtype);
+		frappe.model.set_value(cdt, cdn, "precision", precision_field ? "9" : "");
+		frappe.model.set_value(cdt, cdn, "display_precision", precision_field ? "2" : "");
 	}
 });
 

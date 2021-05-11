@@ -59,6 +59,7 @@ CREATE TABLE `tabDocField` (
   `in_preview` int(1) NOT NULL DEFAULT 0,
   `read_only` int(1) NOT NULL DEFAULT 0,
   `precision` varchar(255) DEFAULT NULL,
+  `display_precision` varchar(255) DEFAULT NULL,
   `length` int(11) NOT NULL DEFAULT 0,
   `translatable` int(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`name`),

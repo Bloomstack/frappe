@@ -135,17 +135,22 @@
    "reqd": 1
   },
   {
+   "default": "9",
+   "description": "Float Precision for the database.",
    "fieldname": "float_precision",
    "fieldtype": "Select",
    "label": "Float Precision",
-   "options": "\n2\n3\n4\n5\n6\n7\n8\n9"
+   "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9",
+   "read_only": 1
   },
   {
-   "description": "If not set, the currency precision will depend on number format",
+   "default": "9",
+   "description": "Currency Precision for the database.",
    "fieldname": "currency_precision",
    "fieldtype": "Select",
    "label": "Currency Precision",
-   "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
+   "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9",
+   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -423,12 +428,15 @@
    "options": "Email Template"
   },
   {
+   "default": "2",
+   "description": "Float Precision for displaying data in UI.",
    "fieldname": "display_float_precision",
    "fieldtype": "Select",
    "label": "Display Float Precision",
-   "options": "\n2\n3\n4\n5\n6\n7\n8\n9"
+   "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
   },
   {
+   "description": "Currency Precision for displaying data in UI.",
    "fieldname": "display_currency_precision",
    "fieldtype": "Select",
    "label": "Display Currency Precision",
@@ -437,7 +445,7 @@
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2021-05-04 02:08:07.884664",
+ "modified": "2021-05-11 00:04:21.802636",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

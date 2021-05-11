@@ -12,6 +12,7 @@
   "fieldname",
   "reqd",
   "precision",
+  "display_precision",
   "length",
   "search_index",
   "in_list_view",
@@ -108,12 +109,13 @@
   },
   {
    "depends_on": "eval:in_list([\"Float\", \"Currency\", \"Percent\"], doc.fieldtype)",
-   "description": "Set non-standard precision for a Float or Currency field",
+   "description": "Set non-standard precision for a Float or Currency field in the database.",
    "fieldname": "precision",
    "fieldtype": "Select",
    "label": "Precision",
    "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9",
-   "print_hide": 1
+   "print_hide": 1,
+   "read_only": 1
   },
   {
    "depends_on": "eval:in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image', 'Int'], doc.fieldtype)",
@@ -421,11 +423,19 @@
    "hidden": 1,
    "oldfieldname": "oldfieldtype",
    "oldfieldtype": "Data"
+  },
+  {
+   "depends_on": "eval:in_list([\"Float\", \"Currency\", \"Percent\"], doc.fieldtype)",
+   "description": "Set non-standard precision for a Float or Currency field for displaying data in UI.",
+   "fieldname": "display_precision",
+   "fieldtype": "Select",
+   "label": "Display Precision",
+   "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
   }
  ],
  "idx": 1,
  "istable": 1,
- "modified": "2020-03-17 21:29:59.983533",
+ "modified": "2021-05-11 00:26:45.895369",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

@@ -23,8 +23,9 @@ frappe.form.formatters = {
 	},
 	Float: function(value, docfield, options, doc) {
 		// don't allow 0 precision for Floats, hence or'ing with null
-		let precision = docfield.precision
+		let precision = cint(docfield.display_precision)
 			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_float_precision)
+			|| cint(docfield.precision)
 			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision)
 			|| null;
 
@@ -52,7 +53,10 @@ frappe.form.formatters = {
 		return frappe.form.formatters._right(value==null ? "" : cint(value), options)
 	},
 	Percent: function(value, docfield, options) {
-		return frappe.form.formatters._right(flt(value, 2) + "%", options)
+		// Check precision for docfield, to display the percentage else set it to 2
+		let precision = cint(docfield.display_precision) || cint(docfield.precision) || 2;
+
+		return frappe.form.formatters._right(flt(value, precision) + "%", options)
 	},
 	Rating: function(value) {
 		return `<span class="rating">
@@ -63,8 +67,9 @@ frappe.form.formatters = {
 	},
 	Currency: function (value, docfield, options, doc) {
 		let currency  = frappe.meta.get_field_currency(docfield, doc);
-		let precision = docfield.precision
+		let precision = cint(docfield.display_precision)
 			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_currency_precision)
+			|| cint(docfield.precision)
 			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.currency_precision)
 			|| 2;
 
