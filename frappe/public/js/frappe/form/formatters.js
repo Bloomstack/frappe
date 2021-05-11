@@ -54,7 +54,11 @@ frappe.form.formatters = {
 	},
 	Percent: function(value, docfield, options) {
 		// Check precision for docfield, to display the percentage else set it to 2
-		let precision = cint(docfield.display_precision) || cint(docfield.precision) || 2;
+		let precision = cint(docfield.display_precision)
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_float_precision)
+			|| cint(docfield.precision)
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision)
+			|| 2;
 
 		return frappe.form.formatters._right(flt(value, precision) + "%", options)
 	},
