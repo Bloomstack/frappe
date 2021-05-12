@@ -4,9 +4,12 @@ pull_request_rules:
       - status-success=Sider
       - status-success=Semantic Pull Request
       - status-success=Codacy Static Code Analysis
-      - check-success=Python Unit Tests (MariaDB)
-      - check-success=Python Unit Tests (Postgres)
-      - check-success=UI Tests (Cypress)
+      - status-success=Python Unit Tests (MariaDB) (1)
+      - status-success=Python Unit Tests (MariaDB) (2)
+      - status-success=Python Unit Tests (Postgres) (1)
+      - status-success=Python Unit Tests (Postgres) (2)
+      - status-success=UI Tests (Cypress) (1)
+      - status-success=UI Tests (Cypress) (2)
       - check-success=security/snyk (Bloomstack)
       - label!=dont-merge
       - label!=squash
@@ -18,9 +21,12 @@ pull_request_rules:
     conditions:
       - status-success=Sider
       - status-success=Codacy Static Code Analysis
-      - check-success=Python Unit Tests (MariaDB)
-      - check-success=Python Unit Tests (Postgres)
-      - check-success=UI Tests (Cypress)
+      - status-success=Python Unit Tests (MariaDB) (1)
+      - status-success=Python Unit Tests (MariaDB) (2)
+      - status-success=Python Unit Tests (Postgres) (1)
+      - status-success=Python Unit Tests (Postgres) (2)
+      - status-success=UI Tests (Cypress) (1)
+      - status-success=UI Tests (Cypress) (2)
       - check-success=security/snyk (Bloomstack)
       - label!=dont-merge
       - label=squash
