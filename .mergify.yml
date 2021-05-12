@@ -4,9 +4,11 @@ pull_request_rules:
       - status-success=Sider
       - status-success=Semantic Pull Request
       - status-success=Codacy Static Code Analysis
-      - status-success=Travis CI - Pull Request
-      - status-success=security/snyk (Bloomstack)
-      - label!=Don't Merge
+      - check-success=Python Unit Tests (MariaDB)
+      - check-success=Python Unit Tests (Postgres)
+      - check-success=UI Tests (Cypress)
+      - check-success=security/snyk (Bloomstack)
+      - label!=dont-merge
       - label!=squash
       - "#approved-reviews-by>=1"
     actions:
@@ -16,9 +18,11 @@ pull_request_rules:
     conditions:
       - status-success=Sider
       - status-success=Codacy Static Code Analysis
-      - status-success=Travis CI - Pull Request
-      - status-success=security/snyk (Bloomstack)
-      - label!=Don't Merge
+      - check-success=Python Unit Tests (MariaDB)
+      - check-success=Python Unit Tests (Postgres)
+      - check-success=UI Tests (Cypress)
+      - check-success=security/snyk (Bloomstack)
+      - label!=dont-merge
       - label=squash
       - "#approved-reviews-by>=1"
     actions:
