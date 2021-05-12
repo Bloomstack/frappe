@@ -75,6 +75,7 @@ def set_name_from_naming_options(autoname, doc):
 		doc.name = _format_autoname(autoname, doc)
 	elif "#" in autoname:
 		doc.name = make_autoname(autoname, doc=doc)
+	return doc.name
 
 def set_name_by_naming_series(doc):
 	"""Sets name by the `naming_series` property"""
