@@ -25,6 +25,7 @@
   "show_title_field_in_link",
   "image_field",
   "search_fields",
+  "file_auto_name",
   "section_break_8",
   "sort_field",
   "column_break_10",
@@ -215,13 +216,20 @@
    "fieldname": "attach_document_print",
    "fieldtype": "Check",
    "label": "Attach Document Print"
+  },
+  {
+   "description": "File Naming Options:\n<ol><li><b>field:[fieldname]</b> - By Field</li><li><b>naming_series:</b> - By Naming Series (field called naming_series must be present</li><li><b>Prompt</b> - Prompt user for a name</li><li><b>[series]</b> - Series by prefix (separated by a dot); for example PRE.#####</li>\n<li><b>format:EXAMPLE-{MM}-{fieldname1}-{fieldname2}-{#####}</b> - Replace all braced words (fieldnames, date words (DD, MM, YY), series) with their value. Outside braces, any characters can be used.</li></ol>",
+   "fieldname": "file_auto_name",
+   "fieldtype": "Data",
+   "label": "File Auto Name"
   }
  ],
+ "file_auto_name": "format:SO-{YYYY}-{customer_name}-{####}",
  "hide_toolbar": 1,
  "icon": "fa fa-glass",
  "idx": 1,
  "issingle": 1,
- "modified": "2021-03-16 02:33:12.086754",
+ "modified": "2021-05-12 23:04:59.414349",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form",
