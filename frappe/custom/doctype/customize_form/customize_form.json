@@ -20,6 +20,7 @@
   "allow_auto_repeat",
   "allow_import",
   "image_view",
+  "autoname",
   "column_break_5",
   "title_field",
   "show_title_field_in_link",
@@ -222,6 +223,12 @@
    "fieldname": "file_auto_name",
    "fieldtype": "Data",
    "label": "File Auto Name"
+  },
+  {
+   "description": "File Naming Options:\n<ol><li><b>field:[fieldname]</b> - By Field</li><li><b>naming_series:</b> - By Naming Series (field called naming_series must be present</li><li><b>Prompt</b> - Prompt user for a name</li><li><b>[series]</b> - Series by prefix (separated by a dot); for example PRE.#####</li>\n<li><b>format:EXAMPLE-{MM}-{fieldname1}-{fieldname2}-{#####}</b> - Replace all braced words (fieldnames, date words (DD, MM, YY), series) with their value. Outside braces, any characters can be used.</li></ol>",
+   "fieldname": "autoname",
+   "fieldtype": "Data",
+   "label": "AutoName"
   }
  ],
  "file_auto_name": "format:SO-{YYYY}-{customer_name}-{####}",
@@ -229,7 +236,7 @@
  "icon": "fa fa-glass",
  "idx": 1,
  "issingle": 1,
- "modified": "2021-05-12 23:04:59.414349",
+ "modified": "2021-05-13 00:13:18.655621",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form",
