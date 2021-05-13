@@ -20,12 +20,14 @@
   "allow_auto_repeat",
   "allow_import",
   "image_view",
-  "autoname",
   "column_break_5",
   "title_field",
   "show_title_field_in_link",
   "image_field",
   "search_fields",
+  "auto_name_section_section",
+  "autoname",
+  "cb_autoname_column",
   "file_auto_name",
   "section_break_8",
   "sort_field",
@@ -229,6 +231,16 @@
    "fieldname": "autoname",
    "fieldtype": "Data",
    "label": "AutoName"
+  },
+  {
+   "depends_on": "doc_type",
+   "fieldname": "auto_name_section_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Name Section"
+  },
+  {
+   "fieldname": "cb_autoname_column",
+   "fieldtype": "Column Break"
   }
  ],
  "file_auto_name": "format:SO-{YYYY}-{customer_name}-{####}",
@@ -236,7 +248,7 @@
  "icon": "fa fa-glass",
  "idx": 1,
  "issingle": 1,
- "modified": "2021-05-13 00:13:18.655621",
+ "modified": "2021-05-13 03:50:44.376980",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form",
