@@ -90,14 +90,14 @@ def read_multi_pdf(output):
 def download_pdf(doctype, name, format=None, doc=None, no_letterhead=0):
 	html = frappe.get_print(doctype, name, format, doc=doc, no_letterhead=no_letterhead)
 	# fetch file auto name format from doctype.
-	file_auto_name = frappe.get_meta(doctype).file_auto_name
+	file_autoname = frappe.get_meta(doctype).file_autoname
 
 	if not doc:
 		doc = frappe.get_doc(doctype, name)
 
-	if file_auto_name:
+	if file_autoname:
 		# based on type of format used set_name_form_naming_option return result.
-		name = set_name_from_naming_options(file_auto_name, doc)
+		name = set_name_from_naming_options(file_autoname, doc)
 
 	frappe.local.response.filename = "{name}.pdf".format(name=name.replace(" ", "-").replace("/", "-"))
 	frappe.local.response.filecontent = get_pdf(html)

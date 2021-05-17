@@ -28,7 +28,7 @@
   "auto_name_section_section",
   "autoname",
   "cb_autoname_column",
-  "file_auto_name",
+  "file_autoname",
   "section_break_8",
   "sort_field",
   "column_break_10",
@@ -222,12 +222,6 @@
   },
   {
    "description": "File Naming Options:\n<ol><li><b>field:[fieldname]</b> - By Field</li><li><b>naming_series:</b> - By Naming Series (field called naming_series must be present</li><li><b>Prompt</b> - Prompt user for a name</li><li><b>[series]</b> - Series by prefix (separated by a dot); for example PRE.#####</li>\n<li><b>format:EXAMPLE-{MM}-{fieldname1}-{fieldname2}-{#####}</b> - Replace all braced words (fieldnames, date words (DD, MM, YY), series) with their value. Outside braces, any characters can be used.</li></ol>",
-   "fieldname": "file_auto_name",
-   "fieldtype": "Data",
-   "label": "File Auto Name"
-  },
-  {
-   "description": "File Naming Options:\n<ol><li><b>field:[fieldname]</b> - By Field</li><li><b>naming_series:</b> - By Naming Series (field called naming_series must be present</li><li><b>Prompt</b> - Prompt user for a name</li><li><b>[series]</b> - Series by prefix (separated by a dot); for example PRE.#####</li>\n<li><b>format:EXAMPLE-{MM}-{fieldname1}-{fieldname2}-{#####}</b> - Replace all braced words (fieldnames, date words (DD, MM, YY), series) with their value. Outside braces, any characters can be used.</li></ol>",
    "fieldname": "autoname",
    "fieldtype": "Data",
    "label": "AutoName"
@@ -241,6 +235,12 @@
   {
    "fieldname": "cb_autoname_column",
    "fieldtype": "Column Break"
+  },
+  {
+   "description": "File Naming Options:\n<ol><li><b>field:[fieldname]</b> - By Field</li><li><b>naming_series:</b> - By Naming Series (field called naming_series must be present</li><li><b>Prompt</b> - Prompt user for a name</li><li><b>[series]</b> - Series by prefix (separated by a dot); for example PRE.#####</li>\n<li><b>format:EXAMPLE-{MM}-{fieldname1}-{fieldname2}-{#####}</b> - Replace all braced words (fieldnames, date words (DD, MM, YY), series) with their value. Outside braces, any characters can be used.</li></ol>",
+   "fieldname": "file_autoname",
+   "fieldtype": "Data",
+   "label": "File Auto Name"
   }
  ],
  "file_auto_name": "format:SO-{YYYY}-{customer_name}-{####}",
@@ -248,7 +248,7 @@
  "icon": "fa fa-glass",
  "idx": 1,
  "issingle": 1,
- "modified": "2021-05-13 03:50:44.376980",
+ "modified": "2021-05-17 02:54:53.063554",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form",

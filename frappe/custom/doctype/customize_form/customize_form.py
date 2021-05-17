@@ -36,7 +36,7 @@ doctype_properties = {
 	'send_me_a_copy': 'Check',
 	'send_read_receipt': 'Check',
 	'attach_document_print': 'Check',
-	'file_auto_name': 'Data',
+	'file_autoname': 'Data',
 	'autoname': 'Data'
 }
 
