@@ -1,0 +1,102 @@
+<div class="page-sidebar-container">
+	<div class="container-fluid page-sidebar-content">
+		<div class="panel-group" id="accordion">
+			{% if modules %}
+			<div class="panel">
+				<div class="panel-heading">
+					<a class="text-decoration-none" data-toggle="collapse" data-parent="#accordion" href="#Modules">
+						<div class="module-category m-0 h6 text-uppercase">Modules</div>
+					</a>
+				</div>
+				<div id="Modules" class="panel-collapse collapse sidebar-accordion-content in">
+					<div class="panel-body">
+						<div class="row">
+							{% for module in modules %}
+								<div class="col-md-12 col-sm-12 col-xs-12">
+									<a class="text-decoration-none" href="{{module.route}}">
+										<p>
+											<i class="{{module.icon}}" style="color: {{module.color}};width: 20px;"></i>  {{module.label}}
+										</p>
+									</a>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+			{% endif %}
+			{% if domains %}
+			<div class="panel">
+				<div class="panel-heading">
+					<a class="text-decoration-none" data-toggle="collapse" data-parent="#accordion" href="#Domains">
+						<div class="module-category m-0 h6 text-uppercase">Domains</div>
+					</a>
+				</div>
+				<div id="Domains" class="panel-collapse collapse sidebar-accordion-content">
+					<div class="panel-body">
+						<div class="row">
+							{% for module in domains %}
+								<div class="col-md-12 col-sm-12 col-xs-12">
+									<a class="text-decoration-none" href="{{module.route}}">
+										<p>
+											<i class="{{module.icon}}" style="color: {{module.color}};width: 20px;"></i>  {{module.label}}
+										</p>
+									</a>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+			{% endif %}
+			{% if places %}
+			<div class="panel">
+				<div class="panel-heading">
+					<a class="text-decoration-none" data-toggle="collapse" data-parent="#accordion" href="#Places">
+						<div class="module-category m-0 h6 text-uppercase">Places</div>
+					</a>
+				</div>
+				<div id="Places" class="panel-collapse collapse sidebar-accordion-content">
+					<div class="panel-body">
+						<div class="row">
+							{% for module in places %}
+								<div class="col-md-12 col-sm-12 col-xs-12">
+									<a class="text-decoration-none" href="{{module.route}}">
+										<p>
+											<i class="{{module.icon}}" style="color: {{module.color}};width: 20px;"></i>  {{module.label}}
+										</p>
+									</a>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+			{% endif %}
+			{% if administration %}
+			<div class="panel">
+				<div class="panel-heading">
+					<a class="text-decoration-none" data-toggle="collapse" data-parent="#accordion" href="#Administration">
+						<div class="module-category m-0 h6 text-uppercase">Administration</div>
+					</a>
+				</div>
+				<div id="Administration" class="panel-collapse collapse sidebar-accordion-content">
+					<div class="panel-body">
+						<div class="row">
+							{% for module in administration %}
+								<div class="col-md-12 col-sm-12 col-xs-12">
+									<a class="text-decoration-none" href="{{module.route}}">
+										<p>
+											<i class="{{module.icon}}" style="color: {{module.color}};width: 20px;"></i>  {{module.label}}
+										</p>
+									</a>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+			{% endif %}
+		</div>
+	</div>
+</div>

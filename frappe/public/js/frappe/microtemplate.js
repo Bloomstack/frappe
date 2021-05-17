@@ -71,6 +71,7 @@ frappe.template.compile = function(str, name) {
 	return frappe.template.compiled[key];
 };
 frappe.render = function(str, data, name) {
+	console.log(data)
 	return frappe.template.compile(str, name)(data);
 };
 frappe.render_template = function(name, data) {

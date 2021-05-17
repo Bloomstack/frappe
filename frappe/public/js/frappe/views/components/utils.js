@@ -1,3 +1,5 @@
+frappe.provide("frappe.desk");
+
 function generate_route(item) {
 	if(item.type==="doctype") {
 		item.doctype = item.name;
@@ -21,6 +23,8 @@ function generate_route(item) {
 			route="List/" + item.doctype + "/Report/" + item.name;
 		} else if(item.type==="page") {
 			route=item.name;
+		} else if(item.type==="module") {
+			route="modules/" + item.module_name;
 		}
 
 		route = '#' + route;
@@ -37,8 +41,11 @@ function generate_route(item) {
 	// (item.doctype && frappe.model.can_read(item.doctype))) {
 	//     item.shown = true;
 	// }
+	console.log(route);
 	return route;
 }
+
+frappe.desk.generate_route = generate_route;
 
 export {
 	generate_route

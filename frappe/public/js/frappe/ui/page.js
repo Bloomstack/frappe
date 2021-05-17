@@ -41,6 +41,10 @@ frappe.ui.Page = Class.extend({
 
 	make: function() {
 		this.wrapper = $(this.parent);
+		this.sidebar = this.wrapper.get(0) && this.wrapper.get(0).getElementsByClassName("page-sidebar");
+		this.wrapper = this.wrapper.get(0) && this.wrapper.get(0).getElementsByClassName("page-container");
+		this.wrapper = $(this.wrapper && this.wrapper[0]);
+		this.add_sidebar();
 		this.add_main_section();
 	},
 
@@ -65,6 +69,15 @@ frappe.ui.Page = Class.extend({
 		frappe.require(this.required_libs, callback);
 	},
 
+	add_sidebar: function() {
+		$(frappe.render_template("sidebar", {
+			"modules": frappe.desk.modules.Modules,
+			"places": frappe.desk.modules.Places,
+			"domains": frappe.desk.modules.Domains,
+			"administration": frappe.desk.modules.Administration
+		})).appendTo(this.sidebar);
+	},
+
 	add_main_section: function() {
 		$(frappe.render_template("page", {})).appendTo(this.wrapper);
 		if(this.single_column) {
@@ -77,11 +90,11 @@ frappe.ui.Page = Class.extend({
 				</div>');
 		} else {
 			this.add_view("main", '<div class="row layout-main">\
-				<div class="col-md-2 layout-side-section"></div>\
 				<div class="col-md-10 layout-main-section-wrapper">\
 					<div class="layout-main-section"></div>\
 					<div class="layout-footer hide"></div>\
 				</div>\
+				<div class="col-md-2 layout-side-section"></div>\
 			</div>');
 		}
 

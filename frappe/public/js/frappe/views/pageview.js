@@ -45,7 +45,8 @@ frappe.views.pageview = {
 			if(name === "desktop") {
 				if(!frappe.pages.desktop) {
 					let page = frappe.container.add_page('desktop');
-					let container = $('<div class="container"></div>').appendTo(page);
+					let page_container = page && page.getElementByClass("page-container")[0];
+					let container = $('<div class="container"></div>').appendTo(page_container);
 					container = $('<div></div>').appendTo(container);
 
 					new Vue({
@@ -59,6 +60,7 @@ frappe.views.pageview = {
 				return;
 			}
 		}
+
 		frappe.model.with_doctype("Page", function() {
 			frappe.views.pageview.with_page(name, function(r) {
 				if(r && r.exc) {
