@@ -32,8 +32,16 @@ frappe.confirm = function(message, ifyes, ifno) {
 		],
 		primary_action_label: __("Yes"),
 		primary_action: function() {
-			if(ifyes) ifyes();
-			d.hide();
+			if(ifyes)
+			{
+				ifyes();
+				d.hide();
+			} 
+			else
+			{
+				ifno();
+				d.hide();
+			}
 		},
 		secondary_action_label: __("No")
 	});
@@ -42,14 +50,6 @@ frappe.confirm = function(message, ifyes, ifno) {
 	// flag, used to bind "okay" on enter
 	d.confirm_dialog = true;
 
-	// no if closed without primary action
-	if(ifno) {
-		d.onhide = function() {
-			if(!d.primary_action_fulfilled) {
-				ifno();
-			}
-		};
-	}
 	return d;
 }
 
