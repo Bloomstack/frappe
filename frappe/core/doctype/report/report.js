@@ -1,8 +1,10 @@
 frappe.ui.form.on('Report', {
 	refresh: function(frm) {
-		if(!frappe.boot.developer_mode && frappe.session.user !== 'Administrator') {
+		if (frm.doc.is_standard === "Yes" && !frappe.boot.developer_mode) {
 			// make the document read-only
-			frm.set_read_only();
+			frm.disable_form();
+		} else {
+			frm.enable_save();
 		}
 
 		let doc = frm.doc;
