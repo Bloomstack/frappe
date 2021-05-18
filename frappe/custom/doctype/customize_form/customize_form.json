@@ -230,7 +230,7 @@
    "depends_on": "doc_type",
    "fieldname": "auto_name_section_section",
    "fieldtype": "Section Break",
-   "label": "Auto Name Section"
+   "label": "Naming"
   },
   {
    "fieldname": "cb_autoname_column",
