@@ -58,7 +58,7 @@ def has_permission(doc, ptype, user):
 
 @frappe.whitelist()
 def get_result(doc, filters, to_date=None):
-	number_card = frappe._dict(frappe.parse_json(doc))
+	number_card = frappe.parse_json(doc)
 
 	# For Servcer Script Enabled Number Cards
 	if number_card.type == "Script" and number_card.script:
