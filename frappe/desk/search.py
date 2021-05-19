@@ -216,7 +216,7 @@ def build_for_autosuggest(res, doctype):
 					"description": ", ".join(unique(cstr(d) for d in r[2:] if d))
 				}
 
-		results.append(out)
+			results.append(out)
 	return results
 
 def scrub_custom_query(query, key, txt):
