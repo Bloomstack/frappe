@@ -62,7 +62,6 @@ def search_link(doctype, txt, query=None, filters=None, page_length=20, searchfi
 @frappe.whitelist()
 def search_widget(doctype, txt, query=None, searchfield=None, start=0,
 	page_length=20, filters=None, filter_fields=None, as_dict=False, reference_doctype=None, ignore_user_permissions=False):
-
 	start = cint(start)
 
 	if isinstance(filters, string_types):
@@ -204,17 +203,18 @@ def build_for_autosuggest(res, doctype):
 	results = []
 	for r in res:
 		r = list(r)
-		if not (meta.title_field and meta.show_title_field_in_link) or doctype in (frappe.get_hooks().standard_queries or {}):
-			out = {
-				"value": r[0],
-				"description": ", ".join(unique(cstr(d) for d in r[1:] if d))
-			}
-		else:
-			out = {
-				"value": r[0],
-				"label": r[1],
-				"description": ", ".join(unique(cstr(d) for d in r[2:] if d))
-			}
+		if len(r):
+			if not (meta.title_field and meta.show_title_field_in_link) or doctype in (frappe.get_hooks().standard_queries or {}):
+				out = {
+					"value": r[0],
+					"description": ", ".join(unique(cstr(d) for d in r[1:] if d))
+				}
+			else:
+				out = {
+					"value": r[0],
+					"label": r[1],
+					"description": ", ".join(unique(cstr(d) for d in r[2:] if d))
+				}
 
 		results.append(out)
 	return results
