@@ -65,14 +65,16 @@ export default class BulkOperations {
 	}
 
 	delete(docnames, done = null) {
+		let action = "delete";
 		frappe
 			.call({
-				method: 'frappe.desk.reportview.delete_items',
+				method: 'frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_delete_or_update_docs',
 				freeze: true,
 				args: {
-					items: docnames,
-					doctype: this.doctype
-				}
+					doctype: this.doctype,
+					action: action,
+					docnames: docnames
+				},
 			})
 			.then((r) => {
 				let failed = r.message;
@@ -81,7 +83,7 @@ export default class BulkOperations {
 				if (failed.length && !r._server_messages) {
 					frappe.throw(__('Cannot delete {0}', [failed.map(f => f.bold()).join(', ')]));
 				}
-				if (!failed.length) {
+				if (!(Object.keys(failed).length)) {
 					frappe.show_alert({
 						message: __("Deleted Successfully"),
 						indicator: "green"
@@ -123,7 +125,7 @@ export default class BulkOperations {
 		action = action.toLowerCase();
 		frappe
 			.call({
-				method: 'frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs',
+				method: 'frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_delete_or_update_docs',
 				args: {
 					doctype: this.doctype,
 					action: action,
@@ -180,7 +182,7 @@ export default class BulkOperations {
 				const fieldname = field_mappings[dialog.get_value('field')].fieldname;
 				dialog.disable_primary_action();
 				frappe.call({
-					method: 'frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs',
+					method: 'frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_delete_or_update_docs',
 					args: {
 						doctype: this.doctype,
 						freeze: true,
