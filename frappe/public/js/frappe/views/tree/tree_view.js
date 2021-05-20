@@ -325,7 +325,7 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 
 		return `
 			<a class="btn btn-xs ${collapsible} tree-node text-muted" data-doctype="${escape(this.doctype)}" data-name="${escape(doc.name)}" style="width:28px">
-				<i class="${icon}" />
+				<i class="${icon}" />
 			</a>
 		`
 	}

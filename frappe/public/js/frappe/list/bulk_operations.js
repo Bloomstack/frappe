@@ -81,7 +81,11 @@ export default class BulkOperations {
 				if (failed.length && !r._server_messages) {
 					frappe.throw(__('Cannot delete {0}', [failed.map(f => f.bold()).join(', ')]));
 				}
-				if (failed.length < docnames.length) {
+				if (!failed.length) {
+					frappe.show_alert({
+						message: __("Deleted Successfully"),
+						indicator: "green"
+					});
 					frappe.utils.play_sound('delete');
 					if (done) done();
 				}
