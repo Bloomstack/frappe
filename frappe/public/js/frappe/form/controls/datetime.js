@@ -11,16 +11,26 @@ frappe.ui.form.ControlDatetime = frappe.ui.form.ControlDate.extend({
 	get_now_date: function() {
 		return frappe.datetime.now_datetime(true);
 	},
-	set_description: function() {
+	refresh_input: function() {
+		this._super();
+
+		let timezone = this.get_timezone();
+		if (timezone && this.disp_status != "None") {
+			this.set_description(timezone);
+		}
+	},
+	get_timezone: function() {
 		const { description } = this.df;
 		const { time_zone } = frappe.sys_defaults;
+		let timezone = null;
 		if (!frappe.datetime.is_timezone_same()) {
 			if (!description) {
-				this.df.description = time_zone;
+				timezone = time_zone;
 			} else if (!description.includes(time_zone)) {
-				this.df.description += '<br>' + time_zone;
+				timezone += '<br>' + time_zone;
 			}
 		}
-		this._super();
+
+		return timezone;
 	}
 });

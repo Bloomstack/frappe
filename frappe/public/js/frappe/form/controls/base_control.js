@@ -197,5 +197,40 @@ frappe.ui.form.Control = Class.extend({
 			this.$input.get(0).focus();
 			return true;
 		}
+	},
+	set_popup_description: function() {
+		if (!this.df.description) return;
+
+		if (this.$wrapper.find('.description-popover').length) return;
+
+		const popover = this.get_popup_template();
+
+		$(popover.popover)
+			.appendTo(this.$wrapper.find(this.get_popup_description_area()))
+			.popover({
+				html: true,
+				template: popover.template,
+				trigger: "hover",
+				title: "Help",
+				content: this.df.description,
+				placement: "top"
+			});
+	},
+	get_popup_description_area: function() {
+		return ".clearfix";
+	},
+	get_popup_template: function() {
+		return {
+			template: `<div class="popover help-popover" role="tooltip">
+					<div class="arrow"></div>
+					<h3 class="popover-title text-muted"></h3>
+					<div class="popover-content text-muted">
+					</div>
+				</div>`,
+			popover: `<a class="description-popover no-decoration text-muted"
+					data-toggle="popover">
+					<i class="fa fa-info-circle"></i>
+				</a>`
+		};
 	}
 });

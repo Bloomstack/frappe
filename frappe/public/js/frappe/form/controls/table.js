@@ -112,39 +112,5 @@ frappe.ui.form.ControlTable = frappe.ui.form.Control.extend({
 		if (this.df.description) {
 			this.set_popup_description();
 		}
-	},
-	set_popup_description() {
-		if (!this.df.description) return;
-
-		console.log(this.$wrapper)
-		// Already attached button
-		if (this.$wrapper.find('.clearfix .description-popover').length) return;
-
-		const template = `
-			<div class="popover help-popover" role="tooltip">
-				<div class="arrow"></div>
-				<h3 class="popover-title text-muted"></h3>
-				<div class="popover-content text-muted">
-				</div>
-			</div>`;
-
-		const popover =
-			`<a class="description-popover no-decoration text-muted" title="${this.df.description}"
-				data-toggle="popover">
-				<i class="fa fa-info-circle"></i>
-			</a>`;
-
-		console.log($(this.wrapper))
-		console.log($(this.wrapper).find(".clearfix"))
-		$(popover)
-			.appendTo(this.$wrapper.find(".clearfix"))
-			.popover({
-				html: true,
-				template: template,
-				trigger: "hover",
-				title: "Help",
-				content: this.df.description,
-				placement: "top"
-			});
 	}
 });

@@ -17,7 +17,6 @@ frappe.ui.form.ControlCheck = frappe.ui.form.ControlData.extend({
 		this.label_area = this.label_span = this.$wrapper.find(".label-area").get(0);
 		this.input_area = this.$wrapper.find(".input-area").get(0);
 		this.disp_area = this.$wrapper.find(".disp-area").get(0);
-		this.help_area = this.$wrapper.find(".help-area").get(0);
 	},
 	make_input: function() {
 		this._super();
@@ -38,34 +37,7 @@ frappe.ui.form.ControlCheck = frappe.ui.form.ControlData.extend({
 		this.set_mandatory(value);
 		this.set_disp_area(value);
 	},
-	set_popup_description: function() {
-		if (!this.df.description) return;
-
-		if (this.$wrapper.find('.description-popover').length) return;
-
-		const template = `
-			<div class="popover help-popover" role="tooltip">
-				<div class="arrow"></div>
-				<h3 class="popover-title text-muted"></h3>
-				<div class="popover-content text-muted">
-				</div>
-			</div>`;
-
-		const popover =
-			`<a class="description-popover no-decoration text-muted"
-				data-toggle="popover">
-				<i class="fa fa-info-circle"></i>
-			</a>`;
-
-		$(popover)
-			.appendTo(this.help_area)
-			.popover({
-				html: true,
-				template: template,
-				trigger: "hover",
-				title: "Help",
-				content: this.df.description,
-				placement: "top"
-			});
-	},
+	get_popup_description_area: function() {
+		return ".help-area";
+	}
 });
