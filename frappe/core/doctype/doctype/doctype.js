@@ -56,26 +56,4 @@ frappe.ui.form.on('DocType', {
 	autoname(frm) {
 		frm.set_df_property('fields', 'reqd', frm.doc.autoname !== 'Prompt');
 	}
-})
-
-frappe.ui.form.on('DocField', {
-	fieldtype: function(frm, cdt, cdn) {
-		let doc = locals[cdt][cdn];
-		let precision_field = in_list(["Float", "Currency", "Percent"], doc.fieldtype);
-		let precision = null;
-		let display_precision = null;
-
-		if (precision_field) {
-			precision = in_list(["Float", "Percent"], doc.fieldtype) ?
-				frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision :
-				frappe.boot.sysdefaults && frappe.boot.sysdefaults.currency_precision;
-
-			display_precision = in_list(["Float", "Percent"], doc.fieldtype) ?
-				frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_float_precision :
-				frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_currency_precision;
-		}
-
-		frappe.model.set_value(cdt, cdn, "precision", precision_field ? precision || "9" : "");
-		frappe.model.set_value(cdt, cdn, "display_precision", precision_field ? display_precision || "2" : "");
-	}
 });

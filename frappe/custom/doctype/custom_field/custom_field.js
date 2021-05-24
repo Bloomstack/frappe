@@ -65,9 +65,6 @@ frappe.ui.form.on('Custom Field', {
 	},
 	fieldtype: function(frm) {
 		let msg = "";
-		let precision_field = in_list(["Float", "Currency", "Percent"], frm.doc.fieldtype);
-		let precision = null;
-		let display_precision = null;
 
 		if(frm.doc.fieldtype == 'Link') {
 			msg = __('Name of the Document Type (DocType) you want this field to be linked to. e.g. Customer');
@@ -78,18 +75,6 @@ frappe.ui.form.on('Custom Field', {
 		}
 
 		frm.fields_dict['options_help'].disp_area.innerHTML = msg;
-		if (precision_field) {
-			precision = in_list(["Float", "Percent"], doc.fieldtype) ?
-				frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision :
-				frappe.boot.sysdefaults && frappe.boot.sysdefaults.currency_precision;
-
-			display_precision = in_list(["Float", "Percent"], doc.fieldtype) ?
-				frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_float_precision :
-				frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_currency_precision;
-		}
-
-		frm.set_value("precision", precision_field ? precision || "9" : "");
-		frm.set_value("display_precision", precision_field ? display_precision || "2" : "");
 	}
 });
 

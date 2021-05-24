@@ -27,11 +27,11 @@ def update(doctype, field, value, condition='', limit=500):
 	)
 	data = {}
 	data[field] = value
-	return submit_cancel_or_update_docs(doctype, docnames, 'update', data)
+	return submit_cancel_delete_or_update_docs(doctype, docnames, 'update', data)
 
 
 @frappe.whitelist()
-def submit_cancel_or_update_docs(doctype, docnames, action='submit', data=None):
+def submit_cancel_delete_or_update_docs(doctype, docnames, action='submit', data=None):
 	docnames = frappe.parse_json(docnames)
 
 	if data:
@@ -54,6 +54,10 @@ def submit_cancel_or_update_docs(doctype, docnames, action='submit', data=None):
 				doc.update(data)
 				doc.save()
 				message = _('Updating {0}').format(doctype)
+
+			elif action == 'delete':
+				doc.delete()
+				message = _('Deleting {0}').format(doctype)
 
 			frappe.db.commit()
 			show_progress(docnames, message, i, d)

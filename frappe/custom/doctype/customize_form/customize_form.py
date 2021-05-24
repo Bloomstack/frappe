@@ -35,7 +35,9 @@ doctype_properties = {
 	'show_title_field_in_link': 'Check',
 	'send_me_a_copy': 'Check',
 	'send_read_receipt': 'Check',
-	'attach_document_print': 'Check'
+	'attach_document_print': 'Check',
+	'file_autoname': 'Data',
+	'autoname': 'Data'
 }
 
 docfield_properties = {
