@@ -202,21 +202,22 @@ def get_title_field_query(meta):
 def build_for_autosuggest(res, doctype):
 	meta = frappe.get_meta(doctype)
 	results = []
-	for r in res:
-		r = list(r)
-		if not (meta.title_field and meta.show_title_field_in_link) or doctype in (frappe.get_hooks().standard_queries or {}):
-			out = {
-				"value": r[0],
-				"description": ", ".join(unique(cstr(d) for d in r[1:] if d))
-			}
-		else:
-			out = {
-				"value": r[0],
-				"label": r[1],
-				"description": ", ".join(unique(cstr(d) for d in r[2:] if d))
-			}
+	if res:
+		for r in res:
+			r = list(r)
+			if not (meta.title_field and meta.show_title_field_in_link) or doctype in (frappe.get_hooks().standard_queries or {}):
+				out = {
+					"value": r[0],
+					"description": ", ".join(unique(cstr(d) for d in r[1:] if d))
+				}
+			else:
+				out = {
+					"value": r[0],
+					"label": r[1],
+					"description": ", ".join(unique(cstr(d) for d in r[2:] if d))
+				}
 
-		results.append(out)
+			results.append(out)
 	return results
 
 def scrub_custom_query(query, key, txt):
