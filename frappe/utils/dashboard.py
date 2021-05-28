@@ -85,6 +85,7 @@ def sync_dashboards(app=None):
 	"""Import, overwrite fixtures from `[app]/fixtures`."""
 	if not cint(frappe.db.get_single_value('System Settings', 'setup_complete')):
 		return
+
 	if app:
 		apps = [app]
 	else:
@@ -98,7 +99,7 @@ def sync_dashboards(app=None):
 			frappe.flags.in_import = False
 
 def make_records_in_module(app, module):
-	dashboards_path = frappe.get_module_path(module, "{module}_dashboard".format(module=module))
+	dashboards_path = frappe.get_module_path(module, "dashboard")
 	charts_path = frappe.get_module_path(module, "dashboard chart")
 	cards_path = frappe.get_module_path(module, "number card")
 

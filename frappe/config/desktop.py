@@ -119,16 +119,5 @@ def get_data():
 			"color": '#FF4136',
 			'standard': 1,
 			'idx': 10
-		},
-		{
-			"module_name": 'Insights',
-			"category": "Places",
-			"label": _('Insight Engine'),
-			"icon": "octicon octicon-graph",
-			"type": "link",
-			"link": "#insight-engine",
-			"color": '#FF4136',
-			'standard': 1,
-			'idx': 10
-		},
+		}
 	]
