@@ -398,7 +398,7 @@ def validate_ip_address(user):
 
 
 class LoginAttemptTracker(object):
-	"""Track login attemts of a user.
+	"""Track login attempts of a user.
 
 	Lock the account for s number of seconds if there have been n consecutive unsuccessful attempts to log in.
 	"""
