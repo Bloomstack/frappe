@@ -74,6 +74,10 @@ def get_unseen_post_count():
 	return post_count - view_post_count
 
 @frappe.whitelist()
+def edit_post(post_name):
+	return frappe.get_doc('Post', post_name)
+
+@frappe.whitelist()
 def get_posts(filters=None, limit_start=0):
 	filters = frappe.utils.get_safe_filters(filters)
 	posts = frappe.get_list('Post',
