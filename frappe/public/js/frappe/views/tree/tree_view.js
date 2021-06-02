@@ -107,7 +107,7 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 			$nested_result.append(
 				data.map((doc, i) => {
 					doc._idx = i;
-					return this.get_nested_list_row_html(doc, level);
+					return this.get_nested_list_row_html(doc, level, data.length-1 == i);
 				}).join('')
 			);
 		});
@@ -153,13 +153,13 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 		return this.get_list_row_html_skeleton(this.get_left_html(doc), this.get_right_html(doc), doc, 0);
 	}
 
-	get_nested_list_row_html(doc, level) {
-		return this.get_list_row_html_skeleton(this.get_left_html(doc, level), this.get_right_html(doc), doc, level);
+	get_nested_list_row_html(doc, level, last_node) {
+		return this.get_list_row_html_skeleton(this.get_left_html(doc, level), this.get_right_html(doc), doc, level, last_node);
 	}
 
-	get_list_row_html_skeleton(left = '', right = '', doc = {}, level = 0) {
+	get_list_row_html_skeleton(left = '', right = '', doc = {}, level = 0, last_node) {
 		return `
-			<div class="list-container" data-doctype="${escape(this.doctype)}" data-name="${escape(doc.name)}" data-level="${level}">
+			<div class="list-container ${last_node ? "last-node" : ""}" data-doctype="${escape(this.doctype)}" data-name="${escape(doc.name)}" data-level="${level}">
 				<div class="list-row-container collapsed" tabindex="1">
 					<div class="level list-row small">
 						<div class="level-left ellipsis">
@@ -170,7 +170,7 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 						</div>
 					</div>
 				</div>
-				<div class="list-nested-row-container hide">
+				<div class="list-nested-row-container hide" style="--level:${level}">
 				</div>
 			</div>
 		`;
