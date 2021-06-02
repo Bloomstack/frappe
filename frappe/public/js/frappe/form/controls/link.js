@@ -83,7 +83,10 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 	},
 	parse_validate_and_set_in_model: function(value, label, e) {
 		if (this.parse) value = this.parse(value, label);
-		if (label) frappe.add_link_title(this.doctype, value, label);
+		if (label) {
+			this.label = label;
+			frappe.add_link_title(this.doctype, value, label);
+		}
 
 		return this.validate_and_set_in_model(value, e);
 	},
@@ -300,9 +303,8 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			}
 			let value = me.get_input_value();
 			let label = me.get_label_value();
-			let last_label = me.label;
 
-			if (value !== me.last_value || last_label !== label) {
+			if (value !== me.last_value || me.label !== label) {
 				me.parse_validate_and_set_in_model(value, label);
 			}
 		});
