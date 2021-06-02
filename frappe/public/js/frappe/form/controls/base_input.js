@@ -157,18 +157,19 @@ frappe.ui.form.ControlInput = frappe.ui.form.Control.extend({
 		this._label = this.df.label;
 	},
 	set_description: function(description) {
-		if (description !== undefined) {
-			this.df.description = description;
-		}
-		if (this.only_input || this.df.description===this._description) {
+		this.set_empty_description();
+
+		if (this.only_input) {
 			return;
 		}
+
 		if (this.df.description) {
-			this.$wrapper.find(".help-box").html(__(this.df.description));
-		} else {
-			this.set_empty_description();
+			this.set_popup_description();
 		}
-		this._description = this.df.description;
+
+		if (description) {
+			this.set_new_description(description);
+		}
 	},
 	set_new_description: function(description) {
 		this.$wrapper.find(".help-box").html(description);
