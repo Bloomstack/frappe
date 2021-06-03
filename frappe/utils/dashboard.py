@@ -8,7 +8,6 @@ from frappe.utils import cint, get_link_to_form
 from frappe.modules.import_file import import_file_by_path
 import os
 from os.path import join
-import json
 
 def cache_source(function):
 	@wraps(function)
