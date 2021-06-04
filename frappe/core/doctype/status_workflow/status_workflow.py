@@ -14,21 +14,9 @@ class StatusWorkflow(Document):
 		self.name = self.document_type+ "-" + self.status
 
 	def validate(self):
-		# self.validate_condition()
 		self.validate_standard()
 	
 
 	def validate_standard(self):
 		if self.is_standard and not frappe.conf.developer_mode:
 			frappe.throw(_('Cannot edit Standard Status Workflow. To edit, please disable this and duplicate it'))
-	
-	# def validate_condition(self):
-	# 	temp_doc = frappe.new_doc(self.document_type)
-	# 	if self.condition:
-	# 		try:
-	# 			frappe.safe_eval(self.condition, None, get_context(temp_doc.as_dict()))
-	# 		except Exception:
-	# 			frappe.throw(_("The Condition '{0}' is invalid").format(self.condition))
-
-def get_context(doc):
-	return {"doc": doc, "nowdate": nowdate, "frappe": frappe._dict(utils=frappe.utils)}

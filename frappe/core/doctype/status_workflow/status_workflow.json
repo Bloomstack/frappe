@@ -1,4 +1,5 @@
 {
+ "autoname": "format:{document_type}-{status}",
  "creation": "2021-05-30 21:39:15.248666",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -50,7 +51,6 @@
    "description": "Optional: The status will be set if this expression is true",
    "fieldname": "condition",
    "fieldtype": "Code",
-   "ignore_xss_filter": 1,
    "in_list_view": 1,
    "label": "Condition"
   },
@@ -61,7 +61,7 @@
   {
    "fieldname": "html_8",
    "fieldtype": "HTML",
-   "options": "<p><strong>Condition Examples:</strong></p>\n<pre>doc.status==\"Open\"<br>doc.due_date==nowdate()<br>doc.total &gt; 40000\n</pre>\n"
+   "options": "<p><strong>Condition Examples:</strong></p>\n<pre>self.status==\"Open\"<br>self.due_date==nowdate()<br>self.total &gt; 40000\n</pre>\n"
   },
   {
    "fieldname": "status",
@@ -70,7 +70,7 @@
    "options": "Status"
   }
  ],
- "modified": "2021-05-30 21:55:46.561508",
+ "modified": "2021-06-04 02:58:35.239711",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Status Workflow",
