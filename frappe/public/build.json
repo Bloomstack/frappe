@@ -97,7 +97,8 @@
 		"public/less/chat.less",
 		"public/less/filters.less",
 		"public/less/social.less",
-		"node_modules/frappe-charts/dist/frappe-charts.min.css"
+		"node_modules/frappe-charts/dist/frappe-charts.min.css",
+		"public/js/lib/summernote/summernote.min.css"
 	],
 	"css/frappe-rtl.css": [
 		"public/css/bootstrap-rtl.css",
@@ -125,7 +126,8 @@
 		"public/js/lib/leaflet/leaflet.js",
 		"public/js/lib/leaflet/leaflet.draw.js",
 		"public/js/lib/leaflet/L.Control.Locate.js",
-		"public/js/lib/leaflet/easy-button.js"
+		"public/js/lib/leaflet/easy-button.js",
+		"public/js/lib/summernote/summernote.min.js"
 	],
 	"js/desk.min.js": [
 		"public/js/frappe/class.js",
