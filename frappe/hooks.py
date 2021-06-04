@@ -35,8 +35,7 @@ app_include_js = [
 	"assets/js/list.min.js",
 	"assets/js/form.min.js",
 	"assets/js/control.min.js",
-	"assets/js/report.min.js",
-	"assets/frappe/js/lib/ckeditor.js"
+	"assets/js/report.min.js"
 ]
 app_include_css = [
 	"assets/css/desk.min.css",
@@ -47,8 +46,7 @@ app_include_css = [
 ]
 
 web_include_js = [
-	"website_script.js",
-	"assets/frappe/js/lib/ckeditor.js"
+	"website_script.js"
 ]
 
 web_include_css = []
