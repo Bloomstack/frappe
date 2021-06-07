@@ -272,7 +272,7 @@ def get_link_preview_doctypes():
 
 def doctypes_with_show_link_field_title():
 	dts = frappe.get_all("DocType", {"show_title_field_in_link": 1})
-	custom_dts = frappe.get_all("Property Setter", {"field_name": "show_title_field_in_link", "value": 1})
+	custom_dts = frappe.get_all("Property Setter", {"field_name": "show_title_field_in_link", "value": "1"})
 
 	return [d.name for d in dts + custom_dts if d]
 
