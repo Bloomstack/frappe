@@ -44,7 +44,7 @@ def clean_script_and_style(html):
 		s.decompose()
 	return frappe.as_unicode(soup)
 
-def sanitize_html(html, linkify=False):
+def sanitize_html(html, linkify=False, protocols=None):
 	"""
 	Sanitize HTML tags, attributes and style to prevent XSS attacks
 	Based on bleach clean, bleach whitelist and HTML5lib's Sanitizer defaults
@@ -57,6 +57,9 @@ def sanitize_html(html, linkify=False):
 	elif is_json(html):
 		return html
 
+	if not protocols:
+		protocols = ['cid', 'http', 'https', 'mailto']
+
 	tags = (acceptable_elements + svg_elements + mathml_elements
 		+ ["html", "head", "meta", "link", "body", "style", "o:p"])
 	attributes = {"*": acceptable_attributes, 'svg': svg_attributes}
@@ -65,7 +68,7 @@ def sanitize_html(html, linkify=False):
 
 	# returns html with escaped tags, escaped orphan >, <, etc.
 	escaped_html = bleach.clean(html, tags=tags, attributes=attributes, styles=styles,
-		strip_comments=strip_comments, protocols=['cid', 'http', 'https', 'mailto'])
+		strip_comments=strip_comments, protocols=protocols)
 
 	return escaped_html
 

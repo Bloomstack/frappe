@@ -799,7 +799,7 @@ def validate_fields(meta):
 				if has_non_unique_values and has_non_unique_values[0][0]:
 					frappe.throw(_("{0}: Field '{1}' cannot be set as Unique as it has non-unique values").format(docname, d.label), NonUniqueError)
 
-		if d.search_index and d.fieldtype in ("Text", "Long Text", "Small Text", "Code", "Text Editor"):
+		if d.search_index and d.fieldtype in ("Text", "Long Text", "Small Text", "Code", "Text Editor", "Text Editor Alt"):
 			frappe.throw(_("{0}:Fieldtype {1} for {2} cannot be indexed").format(docname, d.fieldtype, d.label), CannotIndexedError)
 
 

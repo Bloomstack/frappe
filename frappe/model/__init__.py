@@ -16,6 +16,7 @@ data_fieldtypes = (
 	'Long Text',
 	'Code',
 	'Text Editor',
+	'Text Editor Alt',
 	'Markdown Editor',
 	'HTML Editor',
 	'Date',

@@ -113,7 +113,7 @@
    "label": "Field Type",
    "oldfieldname": "fieldtype",
    "oldfieldtype": "Select",
-   "options": "Attach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDynamic Link\nFloat\nGeolocation\nHTML\nHTML Editor\nImage\nInt\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nRating\nRead Only\nSection Break\nSelect\nSmall Text\nTable\nTable MultiSelect\nText\nText Editor\nTime\nSignature",
+   "options": "Attach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDynamic Link\nFloat\nGeolocation\nHTML\nHTML Editor\nImage\nInt\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nRating\nRead Only\nSection Break\nSelect\nSmall Text\nTable\nTable MultiSelect\nText\nText Editor\nText Editor Alt\nTime\nSignature",
    "reqd": 1
   },
   {

@@ -519,7 +519,7 @@ class BaseDocument(object):
 				fetch_from_df = frappe.get_meta(doctype).get_field(fetch_from_fieldname)
 
 			fetch_from_ft = fetch_from_df.get('fieldtype')
-			if fetch_from_ft == 'Text Editor' and value:
+			if fetch_from_ft in ['Text Editor', 'Text Editor Alt'] and value:
 				value = unescape_html(strip_html(value))
 		setattr(self, df.fieldname, value)
 
@@ -571,6 +571,9 @@ class BaseDocument(object):
 
 			if data_field_options == "Phone":
 				frappe.utils.validate_phone_number(data, throw=True)
+
+			if data_field_options == "URL":
+				frappe.utils.validate_url(data, throw=True)
 
 	def _validate_constants(self):
 		if frappe.flags.in_import or self.is_new() or self.flags.ignore_validate_constants:
@@ -696,7 +699,7 @@ class BaseDocument(object):
 				continue
 
 			else:
-				sanitized_value = sanitize_html(value, linkify=df and df.fieldtype=='Text Editor')
+				sanitized_value = sanitize_html(value, linkify=df and df.fieldtype in ['Text Editor', 'Text Editor Alt'])
 
 			self.set(fieldname, sanitized_value)
 
@@ -849,7 +852,8 @@ class BaseDocument(object):
 	def _extract_images_from_text_editor(self):
 		from frappe.core.doctype.file.file import extract_images_from_doc
 		if self.doctype != "DocType":
-			for df in self.meta.get("fields", {"fieldtype": ('=', "Text Editor")}):
+			editor_fields = self.meta.get("fields", {"fieldtype": ('=', "Text Editor")}) + self.meta.get("fields", {"fieldtype": ('=', "Text Editor Alt")})
+			for df in editor_fields:
 				extract_images_from_doc(self, df.fieldname)
 
 def _filter(data, filters, limit=None):

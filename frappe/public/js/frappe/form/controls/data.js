@@ -3,22 +3,30 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	input_type: "text",
 	make_input: function() {
 		if(this.$input) return;
-
 		this.$input = $("<"+ this.html_element +">")
 			.attr("type", this.input_type)
 			.attr("autocomplete", "off")
 			.addClass("input-with-feedback form-control")
 			.prependTo(this.input_area);
 
-		if (in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image'],
-			this.df.fieldtype)) {
+		if (in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image'], this.df.fieldtype)) {
 			this.$input.attr("maxlength", this.df.length || 140);
+		}
+
+		if (this.df.options === "URL") {
+			$(this.input_area).addClass("form-control-url");
+			$(`<span>
+				<a class="btn-open no-decoration hide" title="${__("Open Link")}" target="_blank">
+					<i class="fa fa-external-link"></i>
+				</a>
+			</span>`).appendTo(this.input_area);
 		}
 
 		this.set_input_attributes();
 		this.input = this.$input.get(0);
 		this.has_input = true;
 		this.bind_change_event();
+		this.bind_open_link_event();
 		this.bind_focusout();
 		this.setup_autoname_check();
 
@@ -86,6 +94,32 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 	format_for_input: function(val) {
 		return val==null ? "" : val;
 	},
+	bind_open_link_event: function() {
+		let me = this;
+		if(me.df.options != 'URL') return;
+		me.$input.on('blur', function() {
+			me.show_open_link_button();
+		});
+
+		setTimeout(() => {
+			// Show open link button when loading the page
+			me.show_open_link_button();
+		}, 300);
+	},
+	show_open_link_button: function() {
+		let me = this;
+		let link = me.get_input_value();
+
+		if (link && validate_url(link)) {
+			me.$input_wrapper && me.$input_wrapper.find(".btn-open") &&
+			me.$input_wrapper.find(".btn-open").hasClass("hide") && me.$input_wrapper.find(".btn-open").removeClass("hide");
+			me.$input_wrapper.find(".btn-open") && me.$input_wrapper.find(".btn-open").attr("href",
+				link.match('https://') || link.match('http://') || link.match('ftp://') ? link : "//" + link);
+		} else {
+			me.$input_wrapper && me.$input_wrapper.find(".btn-open") &&
+			!me.$input_wrapper.find(".btn-open").hasClass("hide") && me.$input_wrapper.find(".btn-open").addClass("hide");
+		}
+	},
 	validate: function(v) {
 		if(this.df.is_filter) {
 			return v;
@@ -117,6 +151,14 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 			}
 
 			return formatted;
+		} else if(this.df.options == 'URL') {
+			if(v+''=='') {
+				return '';
+			}
+			if(!validate_url(v)) {
+				frappe.throw(__("Invalid URL"));
+			}
+			return v;
 		} else if(this.df.options == 'Email') {
 			if(v+''=='') {
 				return '';

@@ -1,0 +1,39 @@
+@import 'variables.less';
+
+.ckeditor {
+	border: 1px solid @border-color !important;
+	border-radius: 4px !important;
+}
+
+.ck-toolbar {
+	border: 1px solid @border-color !important;
+	border-top: none !important;
+	border-left: none !important;
+	border-right: none !important;
+	border-radius: 0 !important;
+	border-color: @border-color !important;
+	background-color: @panel-bg !important;
+}
+
+.ck-content {
+	min-height: 400px;
+	max-height: 400px;
+	border: none !important;
+}
+
+.ck-focused {
+	border: none !important;
+	box-shadow: none !important;
+}
+
+.ck-list {
+	border-color: @border-color !important;
+}
+
+.ckeditor-content > p {
+	margin-bottom: 0 !important;
+}
+
+.ck.ck-list__item .ck-button.ck-on {
+	background: @brand-primary !important;
+}

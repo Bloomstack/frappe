@@ -14,6 +14,7 @@ import './dynamic_link';
 import './text';
 import './code';
 import './text_editor';
+import './text_editor_alt';
 import './comment';
 import './check';
 import './image';

@@ -118,7 +118,7 @@ def search_widget(doctype, txt, query=None, searchfield=None, start=0,
 				for f in search_fields:
 					fmeta = meta.get_field(f.strip())
 					if (doctype not in UNTRANSLATED_DOCTYPES) and (f == "name" or (fmeta and fmeta.fieldtype in ["Data", "Text", "Small Text", "Long Text",
-						"Link", "Select", "Read Only", "Text Editor"])):
+						"Link", "Select", "Read Only", "Text Editor", "Text Editor Alt"])):
 							or_filters.append([doctype, f.strip(), "like", "%{0}%".format(txt)])
 
 			if meta.get("fields", {"fieldname":"enabled", "fieldtype":"Check"}):

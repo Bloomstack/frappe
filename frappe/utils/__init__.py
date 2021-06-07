@@ -79,6 +79,22 @@ def validate_phone_number(phone_number, throw=False):
 		""").format(frappe.bold(phone_number)))
 	return bool(match)
 
+def validate_url(url, throw=False):
+	if not url:
+		return False
+
+	url = url.strip()
+	match = re.match(r"(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$", url)
+
+	if not match and throw:
+		frappe.throw(frappe._("""
+			{0} is not a valid URL.
+			<br><br>
+			URL should be of the format <b>example.com</b>, <b>www.example.com</b>, <b>https://example.com</b>
+		""").format(frappe.bold(url)))
+	return bool(match)
+
+
 def get_formatted_email(user):
 	"""get Email Address of user formatted as: `John Doe <johndoe@example.com>`"""
 	fullname = get_fullname(user)

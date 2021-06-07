@@ -51,4 +51,4 @@ def get_change_column_query(f, new):
 				(f['parent'], f['fieldname'], new, d[1])
 
 def supports_translation(fieldtype):
-	return fieldtype in ["Data", "Select", "Text", "Small Text", "Text Editor"]
+	return fieldtype in ["Data", "Select", "Text", "Small Text", "Text Editor", "Text Editor Alt"]
