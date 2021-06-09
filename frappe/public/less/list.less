@@ -89,12 +89,11 @@ body.no-list-sidebar {
 	position: relative;
 	&::before {
 		content: '';
-		position: absolute;
-		top: -10px;
-    left: 65px;
-    height: 97%;
-		width: 1px;
-		background: @border-color!important;
+    position: absolute;
+    top: -10px;
+    left: 68px;
+    bottom: 22px;
+    border-left: 1px solid @border-color;
 	}
 }
 
@@ -102,13 +101,7 @@ body.no-list-sidebar {
 	.list-nested-row-container:not(.hide) {
 		position: relative;
 		&::before {
-			content: '';
-			position: absolute;
-			top: -20px;
-			left: calc(65px + (var(--level) * 20px));
-			width: 1px;
-			height: 99%;
-			background: @border-color!important;
+			left: calc(68px + (var(--level) * 20px));
 		}
 	}
 }
@@ -117,7 +110,7 @@ body.no-list-sidebar {
 	content: '';
 	position: absolute;
 	top: -22px;
-	left: calc(65px + ((var(--level) - 1) * 20px));
+	left: calc(68px + ((var(--level) - 1) * 20px));
 	height: 200%;
 	width: 1px;
 	background: #fff!important;
@@ -178,7 +171,7 @@ body.no-list-sidebar {
 				width: 10px;
 				height: 1px;
 				top: 8px;
-				left: -11px;
+				left: -8px;
 				background: @border-color;
 			}
 		}
