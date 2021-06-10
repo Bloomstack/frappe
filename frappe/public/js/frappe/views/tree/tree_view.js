@@ -89,8 +89,6 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 		$row.toggleClass("opened");
 		$list.toggleClass("hide");
 
-		console.log($list);
-
 		if ($list[0].classList.contains("hide")) {
 			$list.find(`.nested-result`).remove();
 			$el.find(".fa").removeClass("fa-folder-open").addClass("fa-folder");
