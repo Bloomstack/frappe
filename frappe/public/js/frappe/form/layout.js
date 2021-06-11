@@ -498,11 +498,22 @@ frappe.ui.form.Layout = Class.extend({
 	},
 	set_dependant_property: function(condition, fieldname, property) {
 		let set_property = this.evaluate_depends_on_value(condition);
+		let value = set_property ? 1 : 0;
+		let form_obj;
 		if (this.frm) {
-			if (set_property) {
-				this.frm.set_df_property(fieldname, property, 1);
+			form_obj = this.frm;
+		} else if (this.is_dialog || this.doctype === 'Web Form') {
+			form_obj = this;
+		}
+		if (form_obj) {
+			if (this.doc && this.doc.parent && this.doc.parentfield) {
+				form_obj.setting_dependency = true;
+				form_obj.set_df_property(this.doc.parentfield, property, value, this.doc.parent, fieldname, this.doc.name);
+				form_obj.setting_dependency = false;
+				// refresh child fields
+				this.fields_dict[fieldname] && this.fields_dict[fieldname].refresh();
 			} else {
-				this.frm.set_df_property(fieldname, property, 0);
+				form_obj.set_df_property(fieldname, property, value);
 			}
 		}
 	},
@@ -518,7 +529,7 @@ frappe.ui.form.Layout = Class.extend({
 			return;
 		}
 
-		var parent = this.frm ? this.frm.doc : null;
+		var parent = this.frm ? this.frm.doc : this.doc || null;
 
 		if(typeof(expression) === 'boolean') {
 			out = expression;
