@@ -97,7 +97,7 @@ class TestDocType(unittest.TestCase):
 		import re
 
 		docfields = frappe.get_all("DocField",
-			 or_filters={
+			or_filters={
 			"ifnull(depends_on, '')": ("!=", ''),
 			"ifnull(collapsible_depends_on, '')": ("!=", ''),
 			"ifnull(mandatory_depends_on, '')": ("!=", ''),
