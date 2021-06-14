@@ -103,7 +103,7 @@ class TestDocType(unittest.TestCase):
 			"ifnull(mandatory_depends_on, '')": ("!=", ''),
 			"ifnull(read_only_depends_on, '')": ("!=", '')
 			},
-			fields=["parent", "depends_on", "collapsible_depends_on", "mandatory_depends_on",\
+			fields=["parent", "depends_on", "collapsible_depends_on", "mandatory_depends_on",
 				"read_only_depends_on", "fieldname", "fieldtype"])
 
 		pattern = """[\w\.:_]+\s*={1}\s*[\w\.@'"]+"""
