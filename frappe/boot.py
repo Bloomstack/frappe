@@ -19,6 +19,7 @@ from frappe.email.inbox import get_email_accounts
 from frappe.social.doctype.energy_point_settings.energy_point_settings import is_energy_point_enabled
 from frappe.social.doctype.energy_point_log.energy_point_log import get_energy_points
 from frappe.social.doctype.post.post import frequently_visited_links
+from frappe.utils import get_time_zone
 
 def get_bootinfo():
 	"""build and return boot info"""
@@ -57,6 +58,7 @@ def get_bootinfo():
 	load_print(bootinfo, doclist)
 	doclist.extend(get_meta_bundle("Page"))
 	bootinfo.home_folder = frappe.db.get_value("File", {"is_home_folder": 1})
+	set_time_zone(bootinfo)
 
 	# ipinfo
 	if frappe.session.data.get('ipinfo'):
@@ -208,7 +210,7 @@ def load_translations(bootinfo):
 def get_fullnames():
 	"""map of user fullnames"""
 	ret = frappe.db.sql("""select `name`, full_name as fullname,
-		user_image as image, gender, email, username, bio, location, interest, banner_image, allowed_in_mentions
+		user_image as image, gender, email, username, bio, location, interest, banner_image, allowed_in_mentions, time_zone
 		from tabUser where enabled=1 and user_type!='Website User'""", as_dict=1)
 
 	d = {}
@@ -275,6 +277,12 @@ def doctypes_with_show_link_field_title():
 	custom_dts = frappe.get_all("Property Setter", {"field_name": "show_title_field_in_link", "value": 1})
 
 	return [d.name for d in dts + custom_dts if d]
+
+def set_time_zone(bootinfo):
+	bootinfo.time_zone = {
+		"system_time_zone": get_time_zone(),
+		"user_time_zone": bootinfo.get("user", {}).get("time_zone") or get_time_zone()
+	}
 
 def get_default_country():
 	if not (frappe.db.exists("DocType", "System Settings") and frappe.db.exists("DocType", "Country")):

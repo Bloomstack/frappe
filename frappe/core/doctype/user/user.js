@@ -56,6 +56,11 @@ frappe.ui.form.on('User', {
 	},
 	refresh: function(frm) {
 		var doc = frm.doc;
+
+		if (frm.is_new()) {
+			frm.set_value("time_zone", frappe.sys_defaults.time_zone);
+		}
+
 		if(!frm.is_new() && !frm.roles_editor && frm.can_edit_roles) {
 			frm.reload_doc();
 			return;

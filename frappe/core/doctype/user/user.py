@@ -102,6 +102,9 @@ class User(Document):
 		if self.name not in ('Administrator', 'Guest') and not self.user_image:
 			frappe.enqueue('frappe.core.doctype.user.user.update_gravatar', name=self.name)
 
+		if self.time_zone:
+			frappe.defaults.set_default("time_zone", self.time_zone, self.name)
+
 	def has_website_permission(self, ptype, user, verbose=False):
 		"""Returns true if current user is the session user"""
 		return self.name == frappe.session.user
