@@ -89,8 +89,6 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 		$row.toggleClass("opened");
 		$list.toggleClass("hide");
 
-		console.log($list);
-
 		if ($list[0].classList.contains("hide")) {
 			$list.find(`.nested-result`).remove();
 			$el.find(".fa").removeClass("fa-folder-open").addClass("fa-folder");
@@ -325,9 +323,9 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 
 		return `
 			<a class="btn btn-xs ${collapsible} tree-node text-muted" data-doctype="${escape(this.doctype)}" data-name="${escape(doc.name)}" style="width:28px">
-				<i class="${icon}" />
+				<i class="${icon}" />
 			</a>
-		`
+		`;
 	}
 
 	get_meta_html(doc) {
@@ -358,8 +356,6 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 				${this.get_indicator_dot(doc)}
 			</div>
 		`;
-
-		return html;
 	}
 
 	get_add_child_button(doc) {
