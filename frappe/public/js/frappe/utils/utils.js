@@ -621,7 +621,7 @@ Object.assign(frappe.utils, {
 	format_phone: function(value, doc) {
 		let country_code = frappe.boot.default_country.code;
 
-		if (doc.hasOwnProperty("country_code")) {
+		if (Object.prototype.hasOwnProperty.call(doc, "country_code")) {
 			country_code = doc.country_code;
 		}
 
