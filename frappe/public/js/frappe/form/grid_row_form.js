@@ -133,7 +133,7 @@ export default class GridRowForm {
 			if (me.row.frm && me.row.frm.doc.docstatus===0 || !me.row.frm) {
 				let first = me.form_area.find("input:first");
 				let has_value = first && first[0] && $(first[0]).val();
-				if(!has_value && first.length && !in_list(["Date", "Datetime", "Time"], first.attr("data-fieldtype"))) {
+				if (!has_value && first.length && !in_list(["Date", "Datetime", "Time"], first.attr("data-fieldtype"))) {
 					try {
 						first.get(0).focus();
 					} catch(e) {
