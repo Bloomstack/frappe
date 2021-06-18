@@ -2,7 +2,7 @@
 // MIT License. See license.txt
 
 import deep_equal from "fast-deep-equal";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { parsePhoneNumber } from "libphonenumber-js";
 
 frappe.provide('frappe.utils');
 
@@ -621,7 +621,7 @@ Object.assign(frappe.utils, {
 	format_phone: function(value, doc) {
 		let country_code = frappe.boot.default_country.code;
 
-		if (frappe.meta.has_field(doc.doctype, "country_code")) {
+		if (Object.prototype.hasOwnProperty.call(doc, "country_code")) {
 			country_code = doc.country_code;
 		}
 
@@ -630,8 +630,8 @@ Object.assign(frappe.utils, {
 			value = "+" + value;
 		}
 
-		let formatted = parsePhoneNumberFromString(value, country_code.toUpperCase());
-		return formatted ? formatted.formatInternational() : formatted;
+		let formatted = parsePhoneNumber(value, country_code.toUpperCase());
+		return formatted.isValid() ? formatted.formatInternational() : false;
 	},
 
 	supportsES6: function() {

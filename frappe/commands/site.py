@@ -28,6 +28,8 @@ from frappe.utils import get_site_path, touch_file
 @click.option('--db-name', help='Database name')
 @click.option('--db-password', help='Database password')
 @click.option('--db-type', default='mariadb', type=click.Choice(['mariadb', 'postgres']), help='Optional "postgres" or "mariadb". Default is "mariadb"')
+@click.option('--db-host', help='Database Host')
+@click.option('--db-port', type=int, help='Database Port')
 @click.option('--mariadb-root-username', default='root', help='Root username for MariaDB')
 @click.option('--mariadb-root-password', help='Root password for MariaDB')
 @click.option('--no-mariadb-socket', is_flag=True, default=False, help='Set MariaDB host to % and use TCP/IP Socket instead of using the UNIX Socket')
@@ -137,7 +139,7 @@ def restore(context, sql_file_path, mariadb_root_username=None, mariadb_root_pas
 	_new_site(frappe.conf.db_name, site, mariadb_root_username=mariadb_root_username,
 		mariadb_root_password=mariadb_root_password, admin_password=admin_password,
 		verbose=context.verbose, install_apps=install_app, source_sql=decompressed_file_name,
-		force=True)
+		force=True, db_type=frappe.conf.db_type)
 
 	# Extract public and/or private files to the restored site, if user has given the path
 	if with_public_files:

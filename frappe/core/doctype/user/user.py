@@ -75,6 +75,7 @@ class User(Document):
 		ask_pass_update()
 		self.validate_roles()
 		self.validate_user_image()
+		self.set_time_zone()
 
 		if self.language == "Loading...":
 			self.language = None
@@ -91,6 +92,12 @@ class User(Document):
 	def validate_user_image(self):
 		if self.user_image and len(self.user_image) > 2000:
 			frappe.throw(_("Not a valid User Image."))
+
+	def set_time_zone(self):
+		from frappe.utils import get_time_zone
+
+		if not self.time_zone:
+			self.time_zone = get_time_zone()
 
 	def on_update(self):
 		# clear new password
