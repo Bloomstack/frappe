@@ -19,7 +19,7 @@ class Mention {
     this.options = {
       source: null,
       renderItem(item, searchTerm) {
-        return `${item.value}`;
+        return `${item.value || item}`;
       },
       mentionDenotationChars: ['@'],
       allowedChars: /^[a-zA-Z0-9_]*$/,
@@ -196,8 +196,8 @@ class Mention {
         const li = document.createElement('li');
         li.className = 'ql-mention-list-item';
         li.dataset.index = i;
-        li.dataset.id = data[i].id;
-        li.dataset.value = data[i].value;
+        li.dataset.id = data[i].id || data[i];
+        li.dataset.value = data[i].value || data[i];
         li.dataset.denotationChar = mentionChar;
         if (data[i].link) {
           li.dataset.link = data[i].link;

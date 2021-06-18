@@ -1,167 +1,75 @@
 // Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 // MIT License. See license.txt
 
-import * as luxon from "luxon";
 frappe.provide('frappe.datetime');
-frappe.provide('frappe.luxon');
-frappe.provide('frappe._luxon');
-
-frappe.luxon = luxon;
-frappe._luxon.defaultDateFormat = "yyyy-MM-dd";
-frappe._luxon.defaultDateFormat = "yyyy-MM-dd";
-frappe._luxon.defaultTimeFormat = "HH:mm:ss";
-frappe._luxon.defaultDatetimeFormat = frappe._luxon.defaultDateFormat + " " + frappe._luxon.defaultTimeFormat;
 
 frappe.defaultDateFormat = "YYYY-MM-DD";
 frappe.defaultTimeFormat = "HH:mm:ss";
 frappe.defaultDatetimeFormat = frappe.defaultDateFormat + " " + frappe.defaultTimeFormat;
 moment.defaultFormat = frappe.defaultDateFormat;
 
+frappe.provide("frappe.datetime");
 
 $.extend(frappe.datetime, {
-	get_luxon_map: function(fmt) {
-		return {
-			"yyyy-mm-dd": "yyyy-MM-dd",
-			"dd-mm-yyyy": "dd-MM-yyyy",
-			"dd/mm/yyyy": "dd/MM/yyyy",
-			"dd.mm.yyyy": "dd.MM.yyyy",
-			"mm/dd/yyyy": "MM/dd/yyyy",
-			"mm-dd-yyyy": "MM-dd-yyyy"
-		}[fmt];
-	},
-
-	convert_to_user_tz: function(date, format=true, luxon=false) {
+	convert_to_user_tz: function(date, format) {
 		// format defaults to true
-		if (luxon) {
-			return frappe.datetime._convert_to_user_tz(date, format);
-		}
-
+		// Converts the datetime string to system time zone first since the database only stores datetime in
+		// system time zone and then convert the string to user time zone(from User doctype).
 		let date_obj = null;
-
-		if (frappe.boot.time_zone && frappe.boot.time_zone.user_time_zone && frappe.boot.time_zone.system_time_zone) {
-			date_obj = moment.tz(date, frappe.boot.time_zone.system_time_zone).tz(frappe.boot.time_zone.user_time_zone);
- 		} else {
-			date_obj = moment(date);
-		}
-
-		return format ? date_obj.format(frappe.defaultDatetimeFormat) : date_obj;
-	},
-
-	_convert_to_user_tz: function(date, format=true) {
-		// luxon based fn
-		let date_obj = null;
-
-		if (frappe.boot.time_zone && frappe.boot.time_zone.user_time_zone && frappe.boot.time_zone.system_time_zone) {
-			date_obj = frappe.luxon.DateTime.fromFormat(date, frappe._luxon.defaultDatetimeFormat, {
-				zone: frappe.boot.time_zone.system_time_zone
-			}).setZone(frappe.boot.time_zone.user_time_zone);
-		} else {
-			date_obj = frappe.luxon.DateTime.fromFormat(date, frappe._luxon.defaultDatetimeFormat);
-		}
-
-		return format ? date_obj.toFormat(frappe._luxon.defaultDatetimeFormat) : date_obj;
-	},
-
-	convert_to_system_tz: function(date, format=true, luxon=false) {
-		// format defaults to true
-		if (luxon) {
-			return frappe.datetime._convert_to_system_tz(date, format);
-		}
-
-		let date_obj = null;
-
-		if (frappe.boot.time_zone && frappe.boot.time_zone.user_time_zone && frappe.boot.time_zone.system_time_zone) {
-			date_obj = moment.tz(date, frappe.boot.time_zone.user_time_zone).tz(frappe.boot.time_zone.system_time_zone);
+		if (frappe.boot.time_zone && frappe.boot.time_zone.system_time_zone && frappe.boot.time_zone.user_time_zone) {
+			date_obj = moment.tz(date, frappe.boot.time_zone.system_time_zone)
+				.clone()
+				.tz(frappe.boot.time_zone.user_time_zone);
 		} else {
 			date_obj = moment(date);
 		}
 
-		return format ? date_obj.format(frappe.defaultDatetimeFormat) : date_obj;
+		return format===false ? date_obj : date_obj.format(frappe.defaultDatetimeFormat);
 	},
 
-	_convert_to_system_tz: function(date, format=true) {
-		// luxon based fn
+	convert_to_system_tz: function(date, format) {
+		// format defaults to true
+		// Converts the datetime string to user time zone (from User doctype) first since this fn is called in datetime which accepts datetime
+		// in user time zone then convert the string to user time zone.
+		// This is done so that only one timezone is present in database and we do not end up storing local timezone since it changes
+		// as per the location of user.
 		let date_obj = null;
-
-		if (frappe.boot.time_zone && frappe.boot.time_zone.user_time_zone && frappe.boot.time_zone.system_time_zone) {
-			date_obj = frappe.luxon.DateTime.fromFormat(date, frappe._luxon.defaultDatetimeFormat, {
-				zone: frappe.boot.time_zone.user_time_zone
-			}).setZone(frappe.boot.time_zone.system_time_zone);
+		if (frappe.boot.time_zone && frappe.boot.time_zone.system_time_zone && frappe.boot.time_zone.user_time_zone) {
+			date_obj = moment.tz(date, frappe.boot.time_zone.user_time_zone)
+				.clone()
+				.tz(frappe.boot.time_zone.system_time_zone);
 		} else {
-			date_obj = frappe.luxon.DateTime.fromFormat(date, frappe._luxon.defaultDatetimeFormat);
+			date_obj = moment(date);
 		}
 
-		return format ? date_obj.toFormat(frappe._luxon.defaultDatetimeFormat) : date_obj;
+		return format===false ? date_obj : date_obj.format(frappe.defaultDatetimeFormat);
 	},
 
-	is_timezone_same: function(luxon=false) {
-		if (luxon) {
-			return frappe.datetime._is_timezone_same();
-		}
-
+	is_system_time_zone: function() {
 		if (frappe.boot.time_zone && frappe.boot.time_zone.system_time_zone && frappe.boot.time_zone.user_time_zone) {
 			return moment().tz(frappe.boot.time_zone.system_time_zone).utcOffset() === moment().tz(frappe.boot.time_zone.user_time_zone).utcOffset();
-		} else {
-			return true;
 		}
+
+		return true;
 	},
 
-	_is_timezone_same: function() {
-		// luxon based fn
-		if (frappe.boot.time_zone && frappe.boot.time_zone.system_time_zone && frappe.boot.time_zone.user_time_zone) {
-			return frappe.luxon.DateTime.now().setZone(frappe.boot.time_zone.system_time_zone).offset === frappe.luxon.DateTime.now().setZone(frappe.boot.time_zone.user_time_zone).offset
-		} else {
-			return true;
-		}
+	is_timezone_same: function() {
+		return frappe.datetime.is_system_time_zone();
 	},
 
-	str_to_obj: function(d, luxon=false) {
-		if (luxon) {
-			return frappe.datetime._str_to_obj(d);
-		}
-
+	str_to_obj: function(d) {
 		return moment(d, frappe.defaultDatetimeFormat)._d;
 	},
 
-	_str_to_obj: function(d) {
-		// luxon based fn
-		return frappe.luxon.DateTime.fromFormat(d, frappe._luxon.defaultDatetimeFormat);
-	},
-
-	obj_to_str: function(d, luxon=false) {
-		if (luxon) {
-			return frappe.datetime._str_to_obj(d);
-		}
-
+	obj_to_str: function(d) {
 		return moment(d).locale("en").format();
 	},
 
-	_obj_to_str: function(d) {
-		// luxon based fn
-		return frappe.luxon.DateTime.toFormat(d, frappe._luxon.defaultDateFormat);
-	},
-
-	obj_to_user: function(d, luxon=false) {
-		if (luxon) {
-			return frappe.datetime._obj_to_user(d);
-		}
-
+	obj_to_user: function(d) {
 		return moment(d).format(frappe.datetime.get_user_fmt().toUpperCase());
 	},
 
-	_obj_to_user: function(d) {
-		// luxon based fn
-		let user_fmt = frappe.datetime.get_user_fmt();
-		user_fmt = frappe.datetime.get_luxon_map(user_fmt);
-
-		return frappe.luxon.DateTime.toFormat(d, user_fmt);
-	},
-
-	get_diff: function(d1, d2, luxon=false) {
-		if (luxon) {
-			return frappe.datetime._obj_to_user(d);
-		}
-
+	get_diff: function(d1, d2) {
 		return moment(d1).diff(d2, "days");
 	},
 
@@ -205,43 +113,27 @@ $.extend(frappe.datetime, {
 		return moment().endOf("year").format();
 	},
 
-	get_user_fmt: function() {
+	get_user_date_fmt: function() {
 		return frappe.sys_defaults && frappe.sys_defaults.date_format || "yyyy-mm-dd";
 	},
 
-	str_to_user: function(val, only_time=false, luxon=false) {
-		if (!val) return "";
+	get_user_fmt: function() {  // For backwards compatibility only
+		return frappe.sys_defaults && frappe.sys_defaults.date_format || "yyyy-mm-dd";
+	},
 
-		if (luxon) {
-			return frappe.datetime._str_to_user(val, only_time);
-		}
+	str_to_user: function(val, only_time = false) {
+		if(!val) return "";
 
-		if (only_time) {
+		if(only_time) {
 			return moment(val, frappe.defaultTimeFormat)
 				.format(frappe.defaultTimeFormat);
 		}
 
 		let user_fmt = frappe.datetime.get_user_fmt().toUpperCase();
-		if (typeof val !== "string" || val.indexOf(" ")===-1) {
+		if(typeof val !== "string" || val.indexOf(" ")===-1) {
 			return moment(val).format(user_fmt);
 		} else {
 			return moment(val, "YYYY-MM-DD HH:mm:ss").format(user_fmt + " HH:mm:ss");
-		}
-	},
-
-	_str_to_user: function(val, only_time) {
-		if (!val) return "";
-
-		if (only_time) {
-			return frappe.luxon.DateTime.fromFormat(val, frappe._luxon.defaultTimeFormat);
-		}
-
-		let user_fmt = frappe.datetime.get_luxon_map(frappe.datetime.get_user_fmt());
-
-		if (typeof val !== "string" || val.indexOf(" ")===-1) {
-			return frappe.luxon.DateTime.toFormat(system_fmt + " HH:mm:ss")
-		} else {
-			return frappe.luxon.DateTime.fromFormat(val, frappe._luxon.defaultDatetimeFormat).toFormat(user_fmt + " HH:mm:ss");
 		}
 	},
 
@@ -249,17 +141,14 @@ $.extend(frappe.datetime, {
 		return moment(d).format("YYYY-MM-DD HH:mm:ss");
 	},
 
-	user_to_str: function(val, only_time=false, luxon=false) {
-		if (luxon) {
-			return frappe.datetime._user_to_str(val, only_time);
-		}
+	user_to_str: function(val, only_time = false) {
 
 		if(only_time) {
 			return moment(val, frappe.defaultTimeFormat)
 				.format(frappe.defaultTimeFormat);
 		}
 
-		let user_fmt = frappe.datetime.get_luxon_map(frappe.datetime.get_user_fmt());
+		let user_fmt = frappe.datetime.get_user_fmt().toUpperCase();
 		let system_fmt = "YYYY-MM-DD";
 
 		if(val.indexOf(" ")!==-1) {
@@ -270,23 +159,6 @@ $.extend(frappe.datetime, {
 		// user_fmt.replace("YYYY", "YY")? user might only input 2 digits of the year, which should also be parsed
 		return moment(val, [user_fmt.replace("YYYY", "YY"),
 			user_fmt]).locale("en").format(system_fmt);
-	},
-
-	_user_to_str: function(val, only_time=false) {
-
-		if (only_time) {
-			return frappe.luxon.DateTime.fromFormat(val, frappe._luxon.defaultTimeFormat);
-		}
-
-		let user_fmt = frappe.datetime.get_luxon_map(frappe.datetime.get_user_fmt());
-		let system_fmt = frappe._luxon.defaultDateFormat;
-
-		if (val.indexOf(" ")!==-1) {
-			user_fmt += " HH:mm:ss";
-			system_fmt += " HH:mm:ss";
-		}
-
-		return frappe.luxon.DateTime.fromFormat(val, user_fmt).toFormat(system_fmt);
 	},
 
 	user_to_obj: function(d) {
@@ -302,35 +174,30 @@ $.extend(frappe.datetime, {
 		}
 	},
 
-	now_date: function(as_obj=false, luxon=false) {
-		return frappe.datetime._date(luxon ? frappe._luxon.defaultDateFormat : frappe.defaultDateFormat, as_obj, luxon);
+	now_date: function(as_obj = false) {
+		return frappe.datetime._date(frappe.defaultDateFormat, as_obj);
 	},
 
-	now_time: function(as_obj=false, luxon=false) {
-		return frappe.datetime._date(luxon ? frappe._luxon.defaultTimeFormat : frappe.defaultTimeFormat, as_obj, luxon);
+	now_time: function(as_obj = false) {
+		return frappe.datetime._date(frappe.defaultTimeFormat, as_obj);
 	},
 
-	now_datetime: function(as_obj=false, luxon=false) {
-		return frappe.datetime._date(luxon ? frappe._luxon.defaultDatetimeFormat : frappe.defaultDatetimeFormat, as_obj, luxon);
+	now_datetime: function(as_obj = false) {
+		return frappe.datetime._date(frappe.defaultDatetimeFormat, as_obj);
 	},
 
-	_date: function(format, as_obj=false, luxon=false) {
-		if (luxon) {
-			return frappe.datetime.__date(format, as_obj);
-		}
-
-		const time_zone = (frappe.boot.time_zone && frappe.boot.time_zone.user_time_zone) || (frappe.sys_defaults && frappe.boot.time_zone.system_time_zone);
-		let date = time_zone ? moment.tz(time_zone) : moment();
+	_date: function(format, as_obj = false) {
+		/**
+		 * Whenever we are getting now_date/datetime, always make sure dates are fetched using usertime zone.
+		 * This is to make sure that time is as per user time zone set in User doctype, If a user had to change the timezone,
+		 * we will end up having multiple timezone by not honouring timezone in User doctype.
+		 * This will make sure that at any point we know which timezone the user if following and not have random timezone
+		 * when the timezone of the local machine changes.
+		 */
+		let time_zone = frappe.boot.time_zone ? frappe.boot.time_zone.user_time_zone || frappe.boot.time_zone.system_time_zone : frappe.sys_defaults.time_zone;
+		let date = moment.tz(time_zone);
 
 		return as_obj ? frappe.datetime.moment_to_date_obj(date) : date.format(format);
-	},
-
-	__date: function(format, as_obj=false) {
-		// luxon based fn
-		const time_zone = (frappe.boot.time_zone && frappe.boot.time_zone.user_time_zone) || (frappe.sys_defaults && frappe.boot.time_zone.system_time_zone);
-		let date = time_zone ? frappe.luxon.DateTime.now().setZone(time_zone) : frappe.luxon.DateTime.now();
-
-		return as_obj ? frappe.datetime.luxon_to_date_obj(date) : date.toFormat(format);
 	},
 
 	moment_to_date_obj: function(moment) {
@@ -346,25 +213,12 @@ $.extend(frappe.datetime, {
 		return date_obj;
 	},
 
-	luxon_to_date_obj: function(date) {
-		// luxon based fn
-		const date_obj = new Date();
-		date_obj.setFullYear(date.year);
-		date_obj.setMonth(date.month);
-		date_obj.setDate(date.day);
-		date_obj.setHours(date.hour);
-		date_obj.setMinutes(date.minute);
-		date_obj.setSeconds(date.second);
-		date_obj.setMilliseconds(date.millisecond);
-		return date_obj;
+	nowdate: function() {
+		return frappe.datetime.now_date();
 	},
 
-	nowdate: function(luxon=false) {
-		return frappe.datetime.now_date(false, luxon);
-	},
-
-	get_today: function(luxon=false) {
-		return frappe.datetime.now_date(false, luxon);
+	get_today: function() {
+		return frappe.datetime.now_date();
 	},
 
 	get_time: (timestamp) => {
@@ -372,11 +226,7 @@ $.extend(frappe.datetime, {
 		return moment(timestamp).format('hh:mm A');
 	},
 
-	validate: function(d, luxon=false) {
-		if (luxon) {
-			return frappe.datetime._validate(d);
-		}
-
+	validate: function(d) {
 		return moment(d, [
 			frappe.defaultDateFormat,
 			frappe.defaultDatetimeFormat,
@@ -384,25 +234,6 @@ $.extend(frappe.datetime, {
 		], true).isValid();
 	},
 
-	_validate: function(d) {
-		let _d = null;
-		let user_fmt = frappe.datetime.get_luxon_map(frappe.datetime.get_user_fmt());
-		let system_fmt = frappe._luxon.defaultDateFormat;
-
-		if(d.indexOf(" ") !== -1) {
-			user_fmt += " HH:mm:ss";
-			system_fmt += " HH:mm:ss";
-		}
-
-		for (let format of [user_fmt, system_fmt]) {
-			_d = frappe.luxon.DateTime.fromFormat(d, format);
-			if (!_d.invalid) {
-				return true;
-			}
-		}
-
-		return false;
-	},
 });
 
 // Proxy for dateutil and get_today

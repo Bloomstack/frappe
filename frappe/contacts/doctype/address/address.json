@@ -15,6 +15,7 @@
   "county",
   "state",
   "country",
+  "country_code",
   "pincode",
   "column_break0",
   "email_id",
@@ -110,6 +111,7 @@
    "fieldname": "phone",
    "fieldtype": "Data",
    "label": "Phone",
+   "options": "Phone",
    "reqd": 1
   },
   {
@@ -158,11 +160,19 @@
    "fieldname": "ignore_owner_links",
    "fieldtype": "Check",
    "label": "Ignore Owner Links"
+  },
+  {
+   "fetch_from": "country.code",
+   "fieldname": "country_code",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Country Code",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
- "modified": "2020-12-02 20:42:36.303850",
+ "modified": "2021-06-15 08:57:55.857908",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",

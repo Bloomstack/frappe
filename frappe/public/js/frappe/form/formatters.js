@@ -159,9 +159,8 @@ frappe.form.formatters = {
 	},
 	Datetime: function(value) {
 		if (value) {
-			let m = frappe.datetime.convert_to_user_tz(value, true, true);
-
-			return frappe.datetime.str_to_user(m, false, true)
+			return moment(frappe.datetime.convert_to_user_tz(value))
+				.format(frappe.boot.sysdefaults.date_format.toUpperCase() + ' ' + frappe.boot.sysdefaults.time_format);
 		} else {
 			return "";
 		}

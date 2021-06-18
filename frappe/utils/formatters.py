@@ -46,7 +46,7 @@ def format_value(value, df=None, doc=None, currency=None, translated=False):
 		return formatdate(value)
 
 	elif df.get("fieldtype")=="Datetime":
-		return format_datetime(value)
+		return format_datetime(value, convert_to_user_tz=True)
 
 	elif df.get("fieldtype")=="Time":
 		return format_time(value)
