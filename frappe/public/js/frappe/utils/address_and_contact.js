@@ -131,7 +131,7 @@ $.extend(frappe.contacts, {
 				},
 				(data) => {
 					frappe.call({
-						method: "bloomstack_core.utils.link_address_or_contact",
+						method: "frappe.contacts.address_and_contact.link_address_or_contact",
 						args: {
 							"ref_doctype": "Address",
 							"ref_name": data.address,
@@ -151,7 +151,7 @@ $.extend(frappe.contacts, {
 				`Are you sure you want to unlink this address with ${cur_frm.docname}?`,
 				function () {
 					frappe.call({
-						method: "bloomstack_core.utils.unlink_address_or_contact",
+						method: "frappe.contacts.address_and_contact.unlink_address_or_contact",
 						args: {
 							"ref_doctype": "Address",
 							"ref_name": name,
@@ -173,7 +173,7 @@ $.extend(frappe.contacts, {
 					Are you sure you want to delete this address?`,
 				function () {
 					frappe.call({
-						method: "bloomstack_core.utils.delete_address_or_contact",
+						method: "frappe.contacts.address_and_contact.delete_address_or_contact",
 						args: {
 							"ref_doctype": "Address",
 							"ref_name": name,
@@ -251,7 +251,7 @@ $.extend(frappe.contacts, {
 				},
 				(data) => {
 					frappe.call({
-						method: "bloomstack_core.utils.link_address_or_contact",
+						method: "frappe.contacts.address_and_contact.link_address_or_contact",
 						args: {
 							"ref_doctype": "Contact",
 							"ref_name": data.contact,
@@ -271,7 +271,7 @@ $.extend(frappe.contacts, {
 				`Are you sure you want to unlink this contact with ${cur_frm.docname}?`,
 				function () {
 					frappe.call({
-						method: "bloomstack_core.utils.unlink_address_or_contact",
+						method: "frappe.contacts.address_and_contact.unlink_address_or_contact",
 						args: {
 							"ref_doctype": "Contact",
 							"ref_name": name,
@@ -293,7 +293,7 @@ $.extend(frappe.contacts, {
 							Are you sure you want to delete this contact?`,
 				function () {
 					frappe.call({
-						method: "bloomstack_core.utils.delete_address_or_contact",
+						method: "frappe.contacts.address_and_contact.delete_address_or_contact",
 						args: {
 							"ref_doctype": "Contact",
 							"ref_name": name,
