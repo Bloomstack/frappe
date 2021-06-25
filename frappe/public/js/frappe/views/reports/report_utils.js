@@ -137,4 +137,37 @@ frappe.report_utils = {
 		return filter_values;
 	},
 
+	get_field_options_from_report: function(columns, data) {
+		const rows =  data.result.filter(value => Object.keys(value).length);
+		const first_row = Array.isArray(rows[0]) ? rows[0] : columns.map(col => rows[0][col.fieldname]);
+
+		const indices = first_row.reduce((accumulator, current_value, current_index) => {
+			if (Number.isFinite(current_value)) {
+				accumulator.push(current_index);
+			}
+			return accumulator;
+		}, []);
+
+		function get_options(fields) {
+			return fields.map((field) => {
+				if (field.fieldname) {
+					return {label: field.label, value: field.fieldname};
+				} else {
+					field = frappe.report_utils.prepare_field_from_column(field);
+					return {label: field.label, value: field.fieldname};
+				}
+			});
+		}
+
+		const numeric_fields = columns.filter((col, i) => indices.includes(i));
+		const non_numeric_fields = columns.filter((col, i) => !indices.includes(i));
+
+		let numeric_field_options = get_options(numeric_fields);
+		let non_numeric_field_options = get_options(non_numeric_fields);
+
+		return {
+			'numeric_fields': numeric_field_options,
+			'non_numeric_fields': non_numeric_field_options
+		};
+	}
 };
