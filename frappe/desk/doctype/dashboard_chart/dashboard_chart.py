@@ -8,7 +8,7 @@ from frappe import _
 import datetime
 import json
 from frappe.utils.dashboard import cache_source
-from frappe.utils import nowdate, getdate, get_datetime, cint, now_datetime
+from frappe.utils import nowdate, getdate, get_datetime, cint, now_datetime, add_years
 from frappe.utils.dateutils import\
 	get_period, get_period_beginning, get_from_date_from_timespan, get_dates_from_timegrain
 from frappe.model.naming import append_number_if_name_exists
@@ -168,15 +168,17 @@ def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
 	from_date = from_date.strftime('%Y-%m-%d')
 	to_date = to_date
 
-	filters.append([doctype, datefield, '>=', from_date, False])
-	filters.append([doctype, datefield, '<=', to_date, False])
+	date_filters = [
+		[doctype, datefield, '>=', from_date, False],
+		[doctype, datefield, '<=', to_date, False]
+	]
 
 	if chart.chart_type == "Script" and chart.script:
 		doc = {
 			"chart": chart,
 			"aggregate_function": aggregate_function,
 			"value_field": value_field,
-			"filters": filters,
+			"filters": filters + date_filters,
 			"datefield": datefield,
 			"timegrain": timegrain,
 			"from_date": from_date,
@@ -186,21 +188,8 @@ def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
 		safe_exec(chart.script, None, doc)
 
 		return doc.get("data")
-	else:
-		data = frappe.db.get_list(
-			doctype,
-			fields = [
-				'{} as _unit'.format(datefield),
-				'{aggregate_function}({value_field})'.format(aggregate_function=aggregate_function, value_field=value_field),
-			],
-			filters = filters,
-			group_by = '_unit',
-			order_by = '_unit asc',
-			as_list = True,
-			ignore_ifnull = True
-		)
 
-	result = get_result(data, timegrain, from_date, to_date)
+	result = get_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, date_filters)
 
 	chart_config = {
 		"labels": [get_period(r[0], timegrain) for r in result],
@@ -210,7 +199,46 @@ def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
 		}]
 	}
 
+	if chart.show_previous_data:
+		previous_result = get_previous_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date,
+			to_date, filters, date_filters)
+
+		chart_config["datasets"].append({
+			"name": "Previous " + chart.name,
+			"values": [r[1] for r in previous_result]
+		})
+
 	return chart_config
+
+def get_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, date_filters):
+	data = frappe.db.get_list(
+		doctype,
+		fields = [
+			'{} as _unit'.format(datefield),
+			'{aggregate_function}({value_field})'.format(aggregate_function=aggregate_function, value_field=value_field),
+		],
+		filters = filters + date_filters,
+		group_by = '_unit',
+		order_by = '_unit asc',
+		as_list = True,
+		ignore_ifnull = True
+	)
+
+	return get_result(data, timegrain, from_date, to_date)
+
+def get_previous_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, date_filters):
+	"""
+		Get corresponding data for previous year with the same timespan
+	"""
+	from_date = add_years(from_date, -1)
+	to_date = add_years(to_date, -1)
+
+	date_filters = [
+		[doctype, datefield, '>=', from_date, False],
+		[doctype, datefield, '<=', to_date, False]
+	]
+
+	return get_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, date_filters)
 
 def get_heatmap_chart_config(chart, filters, heatmap_year):
 	aggregate_function = get_aggregate_function(chart.chart_type)

@@ -23,24 +23,30 @@ frappe.ui.form.on('Dashboard Chart', {
 		frm.chart_filters = null;
 		frm.is_disabled = !frappe.boot.developer_mode && frm.doc.is_standard;
 
+		if (!frappe.boot.developer_mode) {
+			frm.set_df_property("is_standard", "read_only", 1);
+		}
+
 		if (frm.is_disabled) {
 			!frm.doc.custom_options && frm.set_df_property('chart_options_section', 'hidden', 1);
 			frm.disable_form();
 		}
 
-		frm.add_custom_button('Add Chart to Dashboard', () => {
-			const dialog = frappe.dashboard_utils.get_add_to_dashboard_dialog(
-				frm.doc.name,
-				'Dashboard Chart',
-				'frappe.desk.doctype.dashboard_chart.dashboard_chart.add_chart_to_dashboard'
-			);
+		if (!frm.is_new()) {
+			frm.add_custom_button('Add Chart to Dashboard', () => {
+				const dialog = frappe.dashboard_utils.get_add_to_dashboard_dialog(
+					frm.doc.name,
+					'Dashboard Chart',
+					'frappe.desk.doctype.dashboard_chart.dashboard_chart.add_chart_to_dashboard'
+				);
 
-			if (!frm.doc.chart_name) {
-				frappe.msgprint(__('Please create chart first'));
-			} else {
-				dialog.show();
-			}
-		});
+				if (!frm.doc.chart_name) {
+					frappe.msgprint(__('Please create chart first'));
+				} else {
+					dialog.show();
+				}
+			});
+		}
 
 		frm.set_df_property("filters_section", "hidden", 1);
 		frm.set_df_property("dynamic_filters_section", "hidden", 1);
@@ -496,6 +502,10 @@ frappe.ui.form.on('Dashboard Chart', {
 
 			frm.dynamic_filter_table.find('tbody').html(filter_rows);
 		}
+	},
+	timeseries: function(frm) {
+		if (!frm.doc.timeseries && frm.doc.show_previous_data) {
+			frm.set_value("show_previous_data", 0);
+		}
 	}
-
 });

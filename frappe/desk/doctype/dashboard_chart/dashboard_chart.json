@@ -30,6 +30,7 @@
   "to_date",
   "time_interval",
   "timeseries",
+  "show_previous_data",
   "type",
   "section_break_34",
   "script",
@@ -238,7 +239,8 @@
    "default": "0",
    "fieldname": "is_standard",
    "fieldtype": "Check",
-   "label": "Is Standard"
+   "label": "Is Standard",
+   "no_copy": 1
   },
   {
    "depends_on": "eval: doc.is_standard",
@@ -275,9 +277,16 @@
    "fieldname": "script",
    "fieldtype": "Code",
    "label": "Script"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: !['Group By', 'Report'].includes(doc.chart_type)",
+   "fieldname": "show_previous_data",
+   "fieldtype": "Check",
+   "label": "Show Corresponding Previous Years Data"
   }
  ],
- "modified": "2021-03-11 22:15:17.850682",
+ "modified": "2021-06-26 16:50:48.603163",
  "modified_by": "Administrator",
  "module": "Desk",
  "name": "Dashboard Chart",
@@ -291,19 +300,21 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "All",
    "share": 1,
    "write": 1
   },
   {
    "create": 1,
+   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "All",
-   "share": 1
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
   }
  ],
  "sort_field": "modified",

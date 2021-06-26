@@ -18,6 +18,14 @@ frappe.ui.form.on('Number Card', {
 			frm.trigger('set_report_filters');
 		}
 
+		if (!frappe.boot.developer_mode) {
+			frm.set_df_property("is_standard", "read_only", 1);
+		}
+
+		if (!frm.is_new()) {
+			frm.trigger('create_add_to_dashboard_button');
+		}
+
 		if (frm.doc.type == 'Custom') {
 			if (!frappe.boot.developer_mode) {
 				frm.disable_form();
@@ -27,7 +35,6 @@ frappe.ui.form.on('Number Card', {
 			frm.trigger('set_method_description');
 			frm.trigger('render_filters_table');
 		}
-		frm.trigger('create_add_to_dashboard_button');
 	},
 
 	create_add_to_dashboard_button: function(frm) {
