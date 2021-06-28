@@ -13,6 +13,13 @@ frappe.ui.form.Viewers = Class.extend({
 		}
 	},
 	refresh: function(data_updated) {
+		if (this.frm.doc.__islocal) {
+			this.parent.toggle(false);
+			this.frm.sidebar.sidebar.find(".viewers-label").toggle(false);
+			return;
+		}
+		this.frm.sidebar.sidebar.find(".viewers-label").toggle(true);
+		this.parent.toggle(true);
 		this.parent.empty();
 
 		var viewers = this.get_viewers();

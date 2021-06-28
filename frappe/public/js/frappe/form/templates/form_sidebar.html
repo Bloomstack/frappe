@@ -40,7 +40,7 @@
 	</li>
 	<li class="rating-icons"></li>
 </ul>
-<ul class="list-unstyled sidebar-menu">
+<ul class="list-unstyled sidebar-menu comments-section">
 	<li class="divider visible-sm visible-xs"></li>
 	<li style="position: relative;">
 		<a class="sidebar-comments badge-hover">
@@ -48,9 +48,6 @@
 			<span class="badge n-comments">0</span>
 		</a>
 	</li>
-    {% if(frappe.help.has_help(doctype)) { %}
-    <li><a class="help-link list-link" data-doctype="{{ doctype }}">{{ __("Help") }}</a></li>
-    {% } %}
 </ul>
 <ul class="list-unstyled sidebar-menu form-assignments">
 	<li class="h6 assigned-to-label">{%= __("Assigned To") %}</li>
@@ -62,7 +59,7 @@
 	<li><a class="add-attachment text-muted">{%= __("Attach File") %}
 		<i class="octicon octicon-plus" style="margin-left: 2px;"></i></li></a>
 </ul>
-<ul class="list-unstyled sidebar-menu">
+<ul class="list-unstyled sidebar-menu tags-section">
 	<li class="h6 tags-label">{%= __("Tags") %}</li>
 	<li class="form-tags">
 		<div class="tag-area"></div>
@@ -70,10 +67,10 @@
 	</li>
 </ul>
 <ul class="list-unstyled sidebar-menu form-reviews">
-	<li class="h6 attachments-label">{%= __("Reviews") %}</li>
+	<li class="h6 reviews-label">{%= __("Reviews") %}</li>
 	<li class="review-list"></li>
 </ul>
-<ul class="list-unstyled sidebar-menu">
+<ul class="list-unstyled sidebar-menu form-share">
 	<li class="h6 shared-with-label">{%= __("Shared With") %}</li>
 	<li class="form-shared"></li>
 </ul>
@@ -84,7 +81,7 @@
 <ul class="list-unstyled sidebar-menu">
 	<a><li class="auto-repeat-status"><li></a>
 </ul>
-<ul class="list-unstyled sidebar-menu">
+<ul class="list-unstyled sidebar-menu like-section">
 	<li class="liked-by-parent">
 		<span class="liked-by">
 			<i class="octicon octicon-heart like-action text-extra-muted fa-fw"></i>
