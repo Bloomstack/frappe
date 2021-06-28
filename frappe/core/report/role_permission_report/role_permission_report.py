@@ -102,8 +102,7 @@ def get_data(filters):
 	perms = frappe.get_all('DocPerm', fields='*', filters=conditions, order_by='role')
 	custom_perms = frappe.get_all('Custom DocPerm', fields='*', filters=conditions, order_by='role')
 
-	doctypes_with_custom_perms = frappe.db.sql_list("""select distinct parent
-		from `tabCustom DocPerm`""")
+	doctypes_with_custom_perms = set([custom_perm.parent for custom_perm in custom_perms])
 	
 	for p in perms:
 		if p.parent not in doctypes_with_custom_perms:
