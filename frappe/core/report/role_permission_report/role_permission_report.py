@@ -98,9 +98,6 @@ def get_conditions(filters):
 	return conditions
 
 def get_data(filters):
-
-	data = []
-
 	conditions = get_conditions(filters)
 
 	perms = frappe.get_all('DocPerm', fields='*', filters=conditions, order_by='role')
@@ -112,7 +109,5 @@ def get_data(filters):
 	for p in perms:
 		if p.parent not in doctypes_with_custom_perms:
 			custom_perms.append(p)
-	
-	# data.append(custom_perms)
 
 	return custom_perms
