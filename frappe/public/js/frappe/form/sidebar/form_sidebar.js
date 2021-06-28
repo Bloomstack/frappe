@@ -69,18 +69,18 @@ frappe.ui.form.Sidebar = Class.extend({
 	},
 
 	refresh: function() {
-		if(this.frm.doc.__islocal) {
-			this.sidebar.toggle(false);
-		} else {
-			this.sidebar.toggle(true);
-			this.frm.assign_to.refresh();
-			this.frm.attachments.refresh();
-			this.frm.shared.refresh();
-			if (frappe.boot.user.document_follow_notify) {
-				this.frm.follow.refresh();
-			}
-			this.frm.viewers.refresh();
-			this.frm.tags && this.frm.tags.refresh(this.frm.get_docinfo().tags);
+		this.sidebar.toggle(true);
+		this.frm.shared.refresh();
+		this.frm.assign_to.refresh();
+		this.frm.attachments.refresh();
+		this.frm.viewers.refresh();
+		if (frappe.boot.user.document_follow_notify) this.frm.follow.refresh();
+		this.frm.reviews && this.frm.reviews.refresh();
+		this.frm.tags && this.frm.tags.refresh(this.frm.get_docinfo().tags);
+		this.refresh_like();
+		this.frm.sidebar.refresh_comments();
+		this.image_section.toggle(!this.frm.doc.__islocal);
+		if (!this.frm.doc.__islocal) {
 			this.sidebar.find(".modified-by").html(__("{0} edited this {1}",
 				["<strong>" + frappe.user.full_name(this.frm.doc.modified_by) + "</strong>",
 					"<br>" + comment_when(this.frm.doc.modified)]));
@@ -88,7 +88,6 @@ frappe.ui.form.Sidebar = Class.extend({
 				["<strong>" + frappe.user.full_name(this.frm.doc.owner) + "</strong>",
 					"<br>" + comment_when(this.frm.doc.creation)]));
 
-			this.refresh_like();
 			frappe.ui.form.set_user_image(this.frm);
 		}
 	},
@@ -116,6 +115,11 @@ frappe.ui.form.Sidebar = Class.extend({
 	},
 
 	refresh_comments: function() {
+		if (this.frm.doc.__islocal) {
+			this.frm.sidebar.sidebar.find(".comments-section").toggle(false);
+			return;
+		}
+		this.frm.sidebar.sidebar.find(".comments-section").toggle(true);
 		$.map(this.frm.timeline.get_communications(), function(c) {
 			return (c.communication_type==="Communication" || (c.communication_type=="Comment" && c.comment_type==="Comment")) ? c : null;
 		});
@@ -187,6 +191,13 @@ frappe.ui.form.Sidebar = Class.extend({
 			return;
 		}
 
+		if (this.frm.doc.__islocal) {
+			this.frm.sidebar.sidebar.find(".like-section").toggle(false);
+			return;
+		}
+
+		this.frm.sidebar.sidebar.find(".like-section").toggle(true);
+
 		this.like_wrapper.attr("data-liked-by", this.frm.doc._liked_by);
 
 		this.like_icon.toggleClass("text-extra-muted not-liked",
@@ -201,7 +212,7 @@ frappe.ui.form.Sidebar = Class.extend({
 	},
 
 	make_review: function() {
-		if (frappe.boot.energy_points_enabled && !this.frm.is_new()) {
+		if (frappe.boot.energy_points_enabled) {
 			this.frm.reviews = new frappe.ui.form.Review({
 				parent: this.sidebar.find(".form-reviews"),
 				frm: this.frm

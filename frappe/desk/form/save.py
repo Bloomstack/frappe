@@ -9,7 +9,12 @@ from frappe.desk.form.load import run_onload
 def savedocs(doc, action):
 	"""save / submit / update doclist"""
 	try:
-		doc = frappe.get_doc(json.loads(doc))
+		doc = json.loads(doc)
+		__rollover_attachments = []
+		if doc.get("__rollover_attachments") and doc.get("__rollover_attachments").get("fileid"):
+			__rollover_attachments = doc.get("__rollover_attachments").get("fileid")
+			doc.pop("__rollover_attachments")
+		doc = frappe.get_doc(doc)
 		set_local_name(doc)
 
 		# action
@@ -28,6 +33,7 @@ def savedocs(doc, action):
 		# update recent documents
 		run_onload(doc)
 		send_updated_docs(doc)
+		attach_rollover_attachments(doc, __rollover_attachments)
 	except Exception:
 		frappe.errprint(frappe.utils.get_traceback())
 		raise
@@ -69,3 +75,11 @@ def set_local_name(doc):
 
 	if doc.get("__newname"):
 		doc.name = doc.get("__newname")
+
+def attach_rollover_attachments(doc, attachments):
+	for attachment in attachments:
+		filedoc = frappe.get_doc("File", attachment)
+		new_filedoc = frappe.copy_doc(filedoc, ignore_no_copy=True)
+		new_filedoc.attached_to_doctype = doc.doctype
+		new_filedoc.attached_to_name = doc.name
+		new_filedoc.save(ignore_permissions=True)
