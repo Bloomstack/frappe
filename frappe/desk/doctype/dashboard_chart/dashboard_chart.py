@@ -194,7 +194,7 @@ def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
 	chart_config = {
 		"labels": [get_period(r[0], timegrain) for r in result],
 		"datasets": [{
-			"name": chart.name,
+			"name": "{0} - {1}".format(getdate(from_date), getdate(to_date)),
 			"values": [r[1] for r in result]
 		}]
 	}
@@ -204,7 +204,7 @@ def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
 			to_date, filters, date_filters)
 
 		chart_config["datasets"].append({
-			"name": "Previous " + chart.name,
+			"name": "{0} - {1}".format(getdate(from_date), getdate(to_date)),
 			"values": [r[1] for r in previous_result]
 		})
 
