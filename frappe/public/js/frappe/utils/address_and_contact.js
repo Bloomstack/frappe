@@ -6,65 +6,36 @@ $.extend(frappe.contacts, {
 		frm.fields_dict['contact_html'] && $(frm.fields_dict['contact_html'].wrapper).html("");
 	},
 
-	paginate_address: function (frm) {
-		$('div[title="contact_html"]').append("<div class='contact_pagination'><p>Hello</p></div>");
-		let no_of_addresses = frm.doc.__onload.addr_list.length;
-		let address_per_page = 3;
-		let count = Math.ceil(no_of_addresses/address_per_page);
-		if($('body').has('.address_pagination').length) {
-			$('.address_pagination').empty();
+
+
+	paginate: function(total_items, pagination_class,html_class, box_class) {
+		let per_page = 3;
+		let count = Math.ceil(total_items/per_page);
+		if($('body').has(`.${pagination_class}`).length) {
+			$(`.${pagination_class}`).empty();
 		}
 		else {
-			$('div[title="address_html"]').append("<div class='address_pagination'></div>");
+			$(`div[title="${html_class}"]`).append(`<div class = "${pagination_class}"></div>`);
 		}
 		for(var i=1; i<=count; i++){
-		  $(".address_pagination").append("<div class='page_number'>"+i+"</div>");
+			$(`.${pagination_class}`).append("<div class='page_number'>"+i+"</div>");
 		}
-		$(".page_number:first-child").addClass('active');
-		$("div[data-fieldname='address_html'] .address-box").filter(function(index) {
-			return index < address_per_page;
+		$(`.${pagination_class} .page_number:first-child`).addClass('active');
+		$(`div[data-fieldname=${html_class}] .${box_class}`).filter(function(index) {
+			return index < per_page;
 		}).addClass('active');
-
-		$('body').on('click',`.page_number`,function(){
+	
+		$(`body`).on('click',`.${pagination_class} .page_number`,function(){
 			var page_index = $(this).index();
-			var start=page_index*address_per_page;
-			$('div[data-fieldname="address_html"] .address-box').removeClass('active');
-			$(`.page_number`).removeClass('active');
-			$(`.page_number`).eq(page_index).addClass('active');
-			for(var j=0;j<address_per_page;j++){
-			  $('div[data-fieldname="address_html"] .address-box').eq(start+j).addClass('active');
+			var start=page_index*per_page;
+			$(`div[data-fieldname=${html_class}] .${box_class}`).removeClass('active');
+			$(`.${pagination_class} .page_number`).removeClass('active');
+			$(`.${pagination_class} .page_number`).eq(page_index).addClass('active');
+			for(var j=0;j<per_page;j++){
+			  $(`div[data-fieldname=${html_class}] .${box_class}`).eq(start+j).addClass('active');
 			}
 		});
-	},
-
-	paginate_contacts: function (frm) {
-		let no_of_contacts = frm.doc.__onload.contact_list.length;
-		let contact_per_page = 3;
-		let count = Math.ceil(no_of_contacts/contact_per_page);
-		if($('body').has('.contact_pagination').length) {
-			$('.contact_pagination').empty();
-		}
-		else {
-			$('div[data-fieldname="contact_html"]').append("<div class='contact_pagination'></div>");
-		}
-		for(var i=1; i<=count; i++){
-		  $(".contact_pagination").append("<div class='contact_page_number'>"+i+"</div>");
-		}
-		$(".contact_page_number:first-child").addClass('active');
-		$("div[data-fieldname='contact_html'] .contact-box").filter(function(index) {
-			return index < contact_per_page;
-		}).addClass('active');
-
-		$('body').on('click',`.contact_page_number`,function(){
-			var page_index = $(this).index();
-			var start=page_index*contact_per_page;
-			$('div[data-fieldname="contact_html"] .contact-box').removeClass('active');
-			$(`.contact_page_number`).removeClass('active');
-			$(`.contact_page_number`).eq(page_index).addClass('active');
-			for(var j=0;j<contact_per_page;j++){
-			  $('div[data-fieldname="contact_html"] .contact-box').eq(start+j).addClass('active');
-			}
-		});
+	
 	},
 
 	render_address_and_contact: function (frm) {
@@ -86,15 +57,21 @@ $.extend(frappe.contacts, {
 								if(res.message) {
 									frm.doc.__onload.addr_list = res.message
 									frappe.contacts.render_address_and_contact(frm);
-									frm.refresh_field("address_html")
+									frm.refresh_field("address_html1")
 								}
 							}
 						})
 					}
 					else {
+						frappe.contacts.clear_address_and_contact(frm);
 						frappe.contacts.render_address_and_contact(frm)
 					}
 				}
+			},
+			{
+				fieldtype: "HTML",
+				label: "Address List",
+				fieldname: "address_html1",
 			}
 		];
 		var layout_for_address = new frappe.ui.FieldGroup({
@@ -104,15 +81,17 @@ $.extend(frappe.contacts, {
 		// render address
 		if (frm.fields_dict['address_html'] && "addr_list" in frm.doc.__onload) {
 			$(frm.fields_dict['address_html'].wrapper)
-				.html(frappe.render_template("address_list",
-					frm.doc.__onload))
+				// .html(frappe.render_template("address_list",
+				// 	frm.doc.__onload))
 				.find(".btn-address").on("click", function () {
 					frappe.new_doc("Address");
 				});
 				layout_for_address.make();
+				layout_for_address.set_input("address_html1", frappe.render_template("address_list",frm.doc.__onload))
 			}
 			
-		frappe.contacts.paginate_address(frm);
+		let no_of_addresses = frm.doc.__onload.addr_list.length;
+		frappe.contacts.paginate(no_of_addresses, "address_pagination", "address_html1", "address-box");
 		$(document).on('click', '.btn-address-link', function () {
 			frappe.prompt({
 					label: "Link Address",
@@ -206,15 +185,21 @@ $.extend(frappe.contacts, {
 								if(res.message) {
 									frm.doc.__onload.contact_list = res.message
 									frappe.contacts.render_address_and_contact(frm);
-									frm.refresh_field("contact_html")
+									frm.refresh_field("contact_html1")
 								}
 							}
 						})
 					}
 					else {
+						frappe.contacts.clear_address_and_contact(frm);
 						frappe.contacts.render_address_and_contact(frm)
 					}
 				}
+			},
+			{
+				fieldtype: "HTML",
+				label: "Contact List",
+				fieldname: "contact_html1",
 			}
 		];
 		var layout_for_contacts = new frappe.ui.FieldGroup({
@@ -224,15 +209,17 @@ $.extend(frappe.contacts, {
 		// render contact
 		if (frm.fields_dict['contact_html'] && "contact_list" in frm.doc.__onload) {
 			$(frm.fields_dict['contact_html'].wrapper)
-				.html(frappe.render_template("contact_list",
-					frm.doc.__onload))
+				// .html(frappe.render_template("contact_list",
+					// frm.doc.__onload))
 				.find(".btn-contact").on("click", function () {
 					frappe.new_doc("Contact");
 				}, 
 				);
 				layout_for_contacts.make()
+				layout_for_contacts.set_input("contact_html1", frappe.render_template("contact_list",frm.doc.__onload))
 		}
-		frappe.contacts.paginate_contacts(frm);
+		let no_of_contacts = frm.doc.__onload.contact_list.length;
+		frappe.contacts.paginate(no_of_contacts, "contact_pagination", "contact_html1", "contact-box");
 		$(document).on('click', '.btn-contact-link', function () {
 			frappe.prompt({
 					label: "Link Contact",

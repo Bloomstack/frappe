@@ -1049,53 +1049,37 @@ body[data-route^="Form/Communication"] textarea[data-fieldname="subject"] {
 	color: black;
 	padding: 10px 0;
 	max-width:100%;
-	text-align: center;
   }
 }
 
   .page_number {
-	width: 20px;
-	display: inline-block;
-	text-align: center;
-	border: 1px solid black;
-	margin: 0 2px;
+    width: 30px;
+    height: 30px;
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    display: inline-block;
+    border: 1px solid #f0f4f7;
 	cursor: pointer;
-	border-radius: 20px;
+	background-color: #f0f4f7;
+  }
+
+  .page_number:hover {
+	  background-color: #cfdce5;
+  }
+
+  .page_number:first-child {
+	border-top-left-radius: 3px;
+	border-bottom-left-radius: 3px;
   }
   
-  .page_number.active{
-	background:#000;
-	color: #fff;
-	border-color: #fff;
+  .page_number:last-child {
+	border-top-right-radius: 3px;
+	border-bottom-right-radius: 3px;
   }
-.frappe-control[data-fieldname="contact_html"] {
-	.contact-box {
-		display:none;
-	}
 
-	.contact-box.active{
-	   display: block;
-	  } 
-	  
-	  .contact_pagination {
-		color: black;
-		padding: 10px 0;
-		max-width:100%;
-		text-align: center;
-	  }
-	  .contact_page_number {
-		width: 20px;
-		display: inline-block;
-		text-align: center;
-		border: 1px solid black;
-		margin: 0 2px;
-		cursor: pointer;
-		border-radius: 20px;
-	  }
-	  
-	  .contact_page_number.active{
-		background:#000;
-		color: #fff;
-		border-color: #fff;
-	  }
-	}
+  .page_number.active{
+	background:#707f90;
+	color: #fff;
+	border-color: #707f90;
+  }
