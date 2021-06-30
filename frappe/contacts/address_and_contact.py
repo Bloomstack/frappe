@@ -199,6 +199,7 @@ def get_addresses(doc, search_keyword):
 
 @frappe.whitelist()
 def get_contacts(doc, search_keyword):
+	from frappe.contacts.doctype.address.address import get_condensed_address
 	doc = json.loads(doc)
 	contact_list = []
 	filters = [
