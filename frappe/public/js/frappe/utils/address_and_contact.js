@@ -13,8 +13,7 @@ $.extend(frappe.contacts, {
 		let count = Math.ceil(total_items / per_page);
 		if ($('body').has(`.${pagination_class}`).length) {
 			$(`.${pagination_class}`).empty();
-		}
-		else {
+		} else {
 			$(`div[title="${html_class}"]`).append(`<div class = "${pagination_class}"></div>`);
 		}
 		for (var i = 1; i <= count; i++) {
@@ -61,8 +60,7 @@ $.extend(frappe.contacts, {
 								}
 							}
 						});
-					}
-					else {
+					} else {
 						frappe.contacts.clear_address_and_contact(frm);
 						frappe.contacts.render_address_and_contact(frm);
 					}
@@ -189,8 +187,7 @@ $.extend(frappe.contacts, {
 								}
 							}
 						});
-					}
-					else {
+					} else {
 						frappe.contacts.clear_address_and_contact(frm);
 						frappe.contacts.render_address_and_contact(frm);
 					}
