@@ -122,7 +122,7 @@ $.extend(frappe.contacts, {
 					}
 				});
 			}, __("Select Address"));
-		})
+		});
 
 		$(document).on('click', '.address-box a.unlink_address', function () {
 			var name = $(this).attr('data_address_name');
@@ -140,7 +140,7 @@ $.extend(frappe.contacts, {
 						callback: function () {
 							window.location.reload();
 						}
-					})
+					});
 				}
 			);
 		});
@@ -162,7 +162,7 @@ $.extend(frappe.contacts, {
 						callback: function () {
 							window.location.reload();
 						}
-					})
+					});
 				}
 			);
 		});
@@ -188,7 +188,7 @@ $.extend(frappe.contacts, {
 									frm.refresh_field("contact_html1");
 								}
 							}
-						})
+						});
 					}
 					else {
 						frappe.contacts.clear_address_and_contact(frm);
@@ -215,8 +215,8 @@ $.extend(frappe.contacts, {
 					frappe.new_doc("Contact");
 				},
 				);
-			layout_for_contacts.make()
-			layout_for_contacts.set_input("contact_html1", frappe.render_template("contact_list", frm.doc.__onload))
+			layout_for_contacts.make();
+			layout_for_contacts.set_input("contact_html1", frappe.render_template("contact_list", frm.doc.__onload));
 		}
 		let no_of_contacts = frm.doc.__onload.contact_list.length;
 		frappe.contacts.paginate(no_of_contacts, "contact_pagination", "contact_html1", "contact-box");
@@ -236,20 +236,20 @@ $.extend(frappe.contacts, {
 					}
 				}
 			},
-				(data) => {
-					frappe.call({
-						method: "frappe.contacts.address_and_contact.link_address_or_contact",
-						args: {
-							"ref_doctype": "Contact",
-							"ref_name": data.contact,
-							"link_doctype": frm.doctype,
-							"link_name": frm.docname
-						},
-						callback: function () {
-							window.location.reload();
-						}
-					});
-				}, __("Select Contact"));
+			(data) => {
+				frappe.call({
+					method: "frappe.contacts.address_and_contact.link_address_or_contact",
+					args: {
+						"ref_doctype": "Contact",
+						"ref_name": data.contact,
+						"link_doctype": frm.doctype,
+						"link_name": frm.docname
+					},
+					callback: function () {
+						window.location.reload();
+					}
+				});
+			}, __("Select Contact"));
 		});
 
 		$(document).on('click', '.contact-box a.unlink_contact', function () {
