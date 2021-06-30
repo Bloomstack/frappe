@@ -1052,6 +1052,22 @@ body[data-route^="Form/Communication"] textarea[data-fieldname="subject"] {
   }
 }
 
+.frappe-control[data-fieldname="contact_html"] {
+	.contact-box {
+		display:none;
+	  }
+	  
+	   .contact-box.active{
+	   display: block;
+	  } 
+	
+	  .contact_pagination {
+		color: black;
+		padding: 10px 0;
+		max-width:100%;
+	  }
+	}
+
   .page_number {
     width: 30px;
     height: 30px;
@@ -1079,7 +1095,21 @@ body[data-route^="Form/Communication"] textarea[data-fieldname="subject"] {
   }
 
   .page_number.active{
-	background:#707f90;
+	background:hsl(212, 13%, 50%);
 	color: #fff;
 	border-color: #707f90;
   }
+
+  div[data-fieldname="address_html"] .row.form-section,
+  div[data-fieldname="address_html"] .row.form-section .form-column.col-sm-12,
+  div[data-fieldname="contact_html"] .row.form-section,
+  div[data-fieldname="contact_html"] .row.form-section .form-column.col-sm-12 {
+	padding: 0;
+  }
+
+  div[data-fieldname="address_html"] div[data-fieldname="search_address"],
+  div[data-fieldname="contact_html"] div[data-fieldname="search_contact"] {
+	max-width: unset!important;
+	padding-right: 0!important;
+  } 
+

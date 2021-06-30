@@ -4,6 +4,8 @@ $.extend(frappe.contacts, {
 	clear_address_and_contact: function (frm) {
 		frm.fields_dict['address_html'] && $(frm.fields_dict['address_html'].wrapper).html("");
 		frm.fields_dict['contact_html'] && $(frm.fields_dict['contact_html'].wrapper).html("");
+		frm.fields_dict['address_html1'] && $(frm.fields_dict['address_html1'].wrapper).html("");
+		frm.fields_dict['contact_html1'] && $(frm.fields_dict['contact_html1'].wrapper).html("");
 	},
 
 
@@ -84,7 +86,8 @@ $.extend(frappe.contacts, {
 				.find(".btn-address").on("click", function () {
 					frappe.new_doc("Address");
 				});
-			layout_for_address.make();
+			frappe.contacts.clear_address_and_contact(frm)
+			layout_for_address.make()
 			layout_for_address.set_input("address_html1", frappe.render_template("address_list", frm.doc.__onload));
 		}
 
@@ -103,7 +106,7 @@ $.extend(frappe.contacts, {
 						filters: {
 							"name": ["not in", addr_list]
 						}
-					}
+					};
 				}
 			},
 			(data) => {
@@ -230,7 +233,7 @@ $.extend(frappe.contacts, {
 						filters: {
 							"name": ["not in", contact_list]
 						}
-					}
+					};
 				}
 			},
 			(data) => {
