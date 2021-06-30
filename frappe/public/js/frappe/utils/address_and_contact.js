@@ -60,7 +60,7 @@ $.extend(frappe.contacts, {
 									frm.refresh_field("address_html1");
 								}
 							}
-						})
+						});
 					}
 					else {
 						frappe.contacts.clear_address_and_contact(frm);
@@ -87,7 +87,7 @@ $.extend(frappe.contacts, {
 					frappe.new_doc("Address");
 				});
 			layout_for_address.make();
-			layout_for_address.set_input("address_html1", frappe.render_template("address_list", frm.doc.__onload))
+			layout_for_address.set_input("address_html1", frappe.render_template("address_list", frm.doc.__onload));
 		}
 
 		let no_of_addresses = frm.doc.__onload.addr_list.length;
@@ -108,20 +108,20 @@ $.extend(frappe.contacts, {
 					}
 				}
 			},
-				(data) => {
-					frappe.call({
-						method: "frappe.contacts.address_and_contact.link_address_or_contact",
-						args: {
-							"ref_doctype": "Address",
-							"ref_name": data.address,
-							"link_doctype": frm.doctype,
-							"link_name": frm.docname
-						},
-						callback: function () {
-							window.location.reload()
-						}
-					})
-				}, __("Select Address"));
+			(data) => {
+				frappe.call({
+					method: "frappe.contacts.address_and_contact.link_address_or_contact",
+					args: {
+						"ref_doctype": "Address",
+						"ref_name": data.address,
+						"link_doctype": frm.doctype,
+						"link_name": frm.docname
+					},
+					callback: function () {
+						window.location.reload();
+					}
+				});
+			}, __("Select Address"));
 		})
 
 		$(document).on('click', '.address-box a.unlink_address', function () {
@@ -248,7 +248,7 @@ $.extend(frappe.contacts, {
 						callback: function () {
 							window.location.reload();
 						}
-					})
+					});
 				}, __("Select Contact"));
 		});
 
@@ -268,7 +268,7 @@ $.extend(frappe.contacts, {
 						callback: function () {
 							window.location.reload();
 						}
-					})
+					});
 				}
 			);
 		});
@@ -290,7 +290,7 @@ $.extend(frappe.contacts, {
 						callback: function () {
 							window.location.reload();
 						}
-					})
+					});
 				}
 			);
 		});
