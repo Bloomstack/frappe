@@ -621,7 +621,7 @@ Object.assign(frappe.utils, {
 	format_phone: function(value, doc) {
 		let country_code = frappe.boot.default_country.code;
 
-		if (frappe.meta.has_field(doc.doctype, "country_code")) {
+		if (doc && doc.country_code) {
 			country_code = doc.country_code;
 		}
 
