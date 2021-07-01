@@ -1112,9 +1112,9 @@ def job_rename_owner_modified_by(table, old_name, new_name):
 	field_where = []
 	for field in has_fields:
 		field_sql.append(
-			"`{}` = IF(`{}` = %(old_name)s, %(new_name)s, `{}`)".format(field, field, field))
+			"`{field}` = IF(`{field}` = %(old_name)s, %(new_name)s, `{field}`)".format(field=field))
 		field_where.append(
-			"`{}` = %(old_name)s".format(field))
+			"`{field}` = %(old_name)s".format(field=field))
 
 	# Finally update only if desired fields were found
 	if has_fields:
