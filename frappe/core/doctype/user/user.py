@@ -361,19 +361,6 @@ class User(Document):
 		validate_email_address(email.strip(), True)
 
 	def after_rename(self, old_name, new_name, merge=False):
-		tables = frappe.db.get_tables()
-		for tab in tables:
-			desc = frappe.db.get_table_columns_description(tab)
-			has_fields = []
-			for d in desc:
-				if d.get('name') in ['owner', 'modified_by']:
-					has_fields.append(d.get('name'))
-			for field in has_fields:
-				frappe.db.sql("""UPDATE `%s`
-					SET `%s` = %s
-					WHERE `%s` = %s""" %
-					(tab, field, '%s', field, '%s'), (new_name, old_name))
-
 		if frappe.db.exists("Chat Profile", old_name):
 			frappe.rename_doc("Chat Profile", old_name, new_name, force=True)
 
@@ -384,6 +371,11 @@ class User(Document):
 		frappe.db.sql("""UPDATE `tabUser`
 			SET email = %s
 			WHERE name = %s""", (new_name, new_name))
+
+		# Enqueue owner and modified by job per table
+		tables = frappe.db.get_tables()
+		for tab in tables:
+			frappe.enqueue("frappe.core.doctype.user.user.job_rename_owner_modified_by", timeout=300, table=tab, old_name=old_name, new_name=new_name)
 
 	def append_roles(self, *roles):
 		"""Add roles to user"""
@@ -1097,3 +1089,37 @@ def generate_keys(user):
 
 		return {"api_secret": api_secret}
 	frappe.throw(frappe._("Not Permitted"), frappe.PermissionError)
+
+def job_rename_owner_modified_by(table, old_name, new_name):
+	"""Renames doctype's owner and modified_by fields in a background job"""
+
+	# Find out which fields are valid per table
+	desc = frappe.db.get_table_columns_description(table)
+	has_fields = []
+	for d in desc:
+		if d.get('name') in ['owner', 'modified_by']:
+			has_fields.append(d.get('name'))
+
+	# builds field update queries like:
+	# UPDATE `tabSome Doctype`
+	# 	SET `owner` = IF(`owner` = <old name>, <new name>, `owner`),
+	# 		`modified_by` = IF(`modified_by` = <old name>, <new name>, `modified_by`)
+	#	WHERE
+	#		`owner` = <old name> OR
+	#		`modified_by` = <old name>
+	# To avoid double update queries per doctype.
+	field_sql = []
+	field_where = []
+	for field in has_fields:
+		field_sql.append(
+			"`{}` = IF(`{}` = %(old_name)s, %(new_name)s, `{}`)".format(field, field, field))
+		field_where.append(
+			"`{}` = %(old_name)s".format(field))
+
+	# Finally update only if desired fields were found
+	if has_fields:
+		sql = """UPDATE `{}` SET {} WHERE {}""".format(
+			table, ",".join(field_sql), " OR ".join(field_where))
+		frappe.db.sql(sql, dict(new_name=new_name, old_name=old_name))
+
+	frappe.db.commit()
