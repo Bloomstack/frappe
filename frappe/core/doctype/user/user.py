@@ -1121,5 +1121,3 @@ def job_rename_owner_modified_by(table, old_name, new_name):
 		sql = """UPDATE `{}` SET {} WHERE {}""".format(
 			table, ",".join(field_sql), " OR ".join(field_where))
 		frappe.db.sql(sql, dict(new_name=new_name, old_name=old_name))
-
-	frappe.db.commit()
