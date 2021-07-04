@@ -4,14 +4,14 @@ $.extend(frappe.contacts, {
 	clear_address_and_contact: function (frm) {
 		frm.fields_dict['address_html'] && $(frm.fields_dict['address_html'].wrapper).html("");
 		frm.fields_dict['contact_html'] && $(frm.fields_dict['contact_html'].wrapper).html("");
-		frm.fields_dict['address_html1'] && $(frm.fields_dict['address_html1'].wrapper).html("");
-		frm.fields_dict['contact_html1'] && $(frm.fields_dict['contact_html1'].wrapper).html("");
+		frm.layout_for_address.fields_dict['address_html1'] && $(frm.fields_dict['address_html1'].wrapper).html("");
+		frm.layout_for_address.fields_dict['contact_html1'] && $(frm.fields_dict['contact_html1'].wrapper).html("");
 	},
 
 
 
 	paginate: function (total_items, pagination_class, html_class, box_class) {
-		let per_page = 3;
+		let per_page = 5;
 		let count = Math.ceil(total_items / per_page);
 		if ($('body').has(`.${pagination_class}`).length) {
 			$(`.${pagination_class}`).empty();
@@ -45,28 +45,6 @@ $.extend(frappe.contacts, {
 				fieldtype: "Data",
 				label: "Search Address",
 				fieldname: "search_address",
-				change: () => {
-					if (layout_for_address.get_values().search_address) {
-						frappe.call({
-							"method": "frappe.contacts.address_and_contact.get_addresses",
-							"args": {
-								"doc": frm.doc,
-								"search_keyword": layout_for_address.get_values().search_address
-							},
-							callback: function (res) {
-								frappe.contacts.clear_address_and_contact(frm);
-								if (res.message) {
-									frm.doc.__onload.addr_list = res.message;
-									frappe.contacts.render_address_and_contact(frm);
-									frm.refresh_field("address_html1");
-								}
-							}
-						});
-					} else {
-						frappe.contacts.clear_address_and_contact(frm);
-						frappe.contacts.render_address_and_contact(frm);
-					}
-				}
 			},
 			{
 				fieldtype: "HTML",
@@ -74,21 +52,31 @@ $.extend(frappe.contacts, {
 				fieldname: "address_html1",
 			}
 		];
-		var layout_for_address = new frappe.ui.FieldGroup({
+		frm.layout_for_address = new frappe.ui.FieldGroup({
 			body: frm.get_field('address_html').$wrapper,
 			fields: address_fields,
 		});
+
 		// render address
 		if (frm.fields_dict['address_html'] && "addr_list" in frm.doc.__onload) {
 			$(frm.fields_dict['address_html'].wrapper)
-				// .html(frappe.render_template("address_list",
-				// 	frm.doc.__onload))
 				.find(".btn-address").on("click", function () {
 					frappe.new_doc("Address");
 				});
 			frappe.contacts.clear_address_and_contact(frm);
-			layout_for_address.make();
-			layout_for_address.set_input("address_html1", frappe.render_template("address_list", frm.doc.__onload));
+			frm.layout_for_address.make();
+			$(frm.layout_for_address.fields_dict["address_html1"].wrapper).html(frappe.render_template("address_list", frm.doc.__onload))
+
+			let $input =  frm.layout_for_address.fields_dict["search_address"].$input
+			$input.on("input", function(e) {
+				let addr_list = {
+					"addr_list": frm.doc.__onload.addr_list.filter((obj) =>
+						JSON.stringify(obj).toLowerCase().includes(e.target.value.toLowerCase()))
+				}
+				$(frm.layout_for_address.fields_dict["address_html1"].wrapper).html(frappe.render_template("address_list", addr_list))
+				let no_of_addresses = addr_list.addr_list.length;
+				frappe.contacts.paginate(no_of_addresses, "address_pagination", "address_html1", "address-box");
+			})
 		}
 
 		let no_of_addresses = frm.doc.__onload.addr_list.length;
@@ -173,28 +161,6 @@ $.extend(frappe.contacts, {
 				fieldtype: "Data",
 				label: "Search Contact",
 				fieldname: "search_contact",
-				change: () => {
-					if (layout_for_contacts.get_values().search_contact) {
-						frappe.call({
-							"method": "frappe.contacts.address_and_contact.get_contacts",
-							"args": {
-								"doc": frm.doc,
-								"search_keyword": layout_for_contacts.get_values().search_contact
-							},
-							callback: function (res) {
-								frappe.contacts.clear_address_and_contact(frm);
-								if (res.message) {
-									frm.doc.__onload.contact_list = res.message;
-									frappe.contacts.render_address_and_contact(frm);
-									frm.refresh_field("contact_html1");
-								}
-							}
-						});
-					} else {
-						frappe.contacts.clear_address_and_contact(frm);
-						frappe.contacts.render_address_and_contact(frm);
-					}
-				}
 			},
 			{
 				fieldtype: "HTML",
@@ -202,22 +168,32 @@ $.extend(frappe.contacts, {
 				fieldname: "contact_html1",
 			}
 		];
-		var layout_for_contacts = new frappe.ui.FieldGroup({
+		frm.layout_for_contacts = new frappe.ui.FieldGroup({
 			body: frm.get_field('contact_html').$wrapper,
 			fields: contact_fields,
 		});
+
 		// render contact
 		if (frm.fields_dict['contact_html'] && "contact_list" in frm.doc.__onload) {
 			$(frm.fields_dict['contact_html'].wrapper)
-				// .html(frappe.render_template("contact_list",
-				// frm.doc.__onload))
 				.find(".btn-contact").on("click", function () {
 					frappe.new_doc("Contact");
-				},
-				);
-			layout_for_contacts.make();
-			layout_for_contacts.set_input("contact_html1", frappe.render_template("contact_list", frm.doc.__onload));
+				});
+			frm.layout_for_contacts.make();
+			$(frm.layout_for_contacts.fields_dict["contact_html1"].wrapper).html(frappe.render_template("contact_list", frm.doc.__onload))
+			let $input =  frm.layout_for_contacts.fields_dict["search_contact"].$input
+
+			$input.on("input", function(e) {
+				let contact_list = {
+					"contact_list": frm.doc.__onload.contact_list.filter((obj) =>
+						JSON.stringify(obj).toLowerCase().includes(e.target.value.toLowerCase()))
+				}
+				$(frm.layout_for_contacts.fields_dict["contact_html1"].wrapper).html(frappe.render_template("contact_list", contact_list))
+				let no_of_contacts = contact_list.contact_list.length;
+				frappe.contacts.paginate(no_of_contacts, "contact_pagination", "contact_html1", "contact-box");
+			})
 		}
+
 		let no_of_contacts = frm.doc.__onload.contact_list.length;
 		frappe.contacts.paginate(no_of_contacts, "contact_pagination", "contact_html1", "contact-box");
 		$(document).on('click', '.btn-contact-link', function () {
