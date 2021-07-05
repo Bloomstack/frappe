@@ -385,6 +385,7 @@ frappe.ui.DashboardChart = class DashboardChart {
 
 	prepare_chart_object() {
 		this.filters = this.filters || JSON.parse(this.chart_doc.filters_json || '[]');
+		this.or_filters = this.or_filters || JSON.parse(this.chart_doc.or_filters_json || '[]');
 	}
 
 	get_settings() {

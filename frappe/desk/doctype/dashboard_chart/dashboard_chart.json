@@ -36,6 +36,8 @@
   "script",
   "filters_section",
   "filters_json",
+  "or_filters_section",
+  "or_filters_json",
   "dynamic_filters_section",
   "dynamic_filters_json",
   "chart_options_section",
@@ -116,7 +118,7 @@
   {
    "fieldname": "filters_section",
    "fieldtype": "Section Break",
-   "label": "Filters"
+   "label": "AND Filters Section"
   },
   {
    "fieldname": "filters_json",
@@ -284,9 +286,20 @@
    "fieldname": "show_previous_data",
    "fieldtype": "Check",
    "label": "Show Corresponding Previous Years Data"
+  },
+  {
+   "fieldname": "or_filters_json",
+   "fieldtype": "Code",
+   "label": "OR Filters JSON",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "or_filters_section",
+   "fieldtype": "Section Break",
+   "label": "OR Filters Section"
   }
  ],
- "modified": "2021-06-26 16:50:48.603163",
+ "modified": "2021-07-04 23:21:32.844514",
  "modified_by": "Administrator",
  "module": "Desk",
  "name": "Dashboard Chart",

@@ -201,6 +201,10 @@ frappe.dashboard_utils = {
 		return filters;
 	},
 
+	get_or_filters(doc) {
+		return JSON.parse(doc.or_filters_json || "null") || {};
+	},
+
 	get_dashboard_link_field() {
 		let field = {
 			label: __('Select Dashboard'),

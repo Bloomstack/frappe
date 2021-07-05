@@ -106,11 +106,13 @@ export default class NumberCardWidget extends Widget {
 
 	get_settings(type) {
 		this.filters = this.get_filters();
+		this.or_filters = this.get_or_filters();
 		const settings_map = {
 			'Custom': {
 				method: this.card_doc.method,
 				args: {
-					filters: this.filters
+					filters: this.filters,
+					or_filters: this.or_filters
 				},
 				get_number: res => this.get_number_for_custom_card(res),
 			},
@@ -128,6 +130,7 @@ export default class NumberCardWidget extends Widget {
 				args: {
 					doc: this.card_doc,
 					filters: this.filters,
+					or_filters: this.or_filters
 				},
 				get_number: res => this.get_number_for_doctype_card(res),
 			},
@@ -136,6 +139,7 @@ export default class NumberCardWidget extends Widget {
 				args: {
 					doc: this.card_doc,
 					filters: this.filters,
+					or_filters: this.or_filters
 				},
 				get_number: res => this.get_number_for_doctype_card(res),
 			}
@@ -146,6 +150,10 @@ export default class NumberCardWidget extends Widget {
 	get_filters() {
 		const filters = frappe.dashboard_utils.get_all_filters(this.card_doc);
 		return filters;
+	}
+
+	get_or_filters() {
+		return frappe.dashboard_utils.get_or_filters(this.card_doc);
 	}
 
 	render_card() {
@@ -274,6 +282,7 @@ export default class NumberCardWidget extends Widget {
 		return frappe.xcall('frappe.desk.doctype.number_card.number_card.get_percentage_difference', {
 			doc: this.card_doc,
 			filters: this.filters,
+			or_filters: this.or_filters,
 			result: this.number
 		}).then(res => {
 			if (res !== undefined) {

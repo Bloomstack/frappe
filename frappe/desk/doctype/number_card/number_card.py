@@ -58,7 +58,7 @@ def has_permission(doc, ptype, user):
 	return False
 
 @frappe.whitelist()
-def get_result(doc, filters, to_date=None):
+def get_result(doc, filters, or_filters, to_date=None):
 	number_card = frappe._dict(frappe.parse_json(doc)) if isinstance(doc, string_types) else doc
 
 	# For Servcer Script Enabled Number Cards
@@ -93,16 +93,21 @@ def get_result(doc, filters, to_date=None):
 	if not filters:
 		filters = []
 
+	or_filters = frappe.parse_json(or_filters)
+
+	if not or_filters:
+		or_filters = []
+
 	if to_date:
 		filters.append([number_card.document_type, 'creation', '<', to_date])
 
-	res = frappe.db.get_list(number_card.document_type, fields=fields, filters=filters)
+	res = frappe.db.get_list(number_card.document_type, fields=fields, filters=filters, or_filters=or_filters)
 	number = res[0]['result'] if res else 0
 
 	return cint(number)
 
 @frappe.whitelist()
-def get_percentage_difference(doc, filters, result):
+def get_percentage_difference(doc, filters, or_filters, result):
 	doc = frappe.parse_json(doc)
 	result = frappe.parse_json(result)
 
@@ -111,13 +116,13 @@ def get_percentage_difference(doc, filters, result):
 	if not doc.get('show_percentage_stats'):
 		return
 
-	previous_result = calculate_previous_result(doc, filters)
+	previous_result = calculate_previous_result(doc, filters, or_filters)
 	difference = (result - previous_result)/100.0
 
 	return difference
 
 
-def calculate_previous_result(doc, filters):
+def calculate_previous_result(doc, filters, or_filters):
 	from frappe.utils import add_to_date
 
 	current_date = frappe.utils.now()
@@ -130,7 +135,7 @@ def calculate_previous_result(doc, filters):
 	else:
 		previous_date = add_to_date(current_date, years=-1)
 
-	number = get_result(doc, filters, previous_date)
+	number = get_result(doc, filters, or_filters, previous_date)
 	return number
 
 @frappe.whitelist()

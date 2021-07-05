@@ -200,7 +200,7 @@ export default class ChartWidget extends Widget {
 			heatmap_year: this.selected_heatmap_year || this.chart_settings.heatmap_year,
 		};
 
-		this.fetch(this.filters, true, this.args).then(data => {
+		this.fetch(this.filters, this.or_filters, true, this.args).then(data => {
 			if (this.chart_doc.chart_type == "Report") {
 				this.summary = data.report_summary;
 				data = this.get_report_chart_data(data);
@@ -339,56 +339,130 @@ export default class ChartWidget extends Widget {
 	}
 
 	setup_filter_button() {
+		let filter_actions = [
+			{
+				label: __("AND Filters"),
+				action: "and-filters",
+				handler: () => {
+					this.setup_and_filters();
+				}
+			},
+			{
+				label: __("OR Filters"),
+				action: "or-filters",
+				handler: () => {
+					this.setup_or_filters();
+				}
+			}
+		];
+
+		/* eslint-disable indent */
+		this.filter_actions = $(`<div class="chart-actions dropdown pull-right">
+			<a class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				<button class="btn btn-default btn-xs">${__("Filters")} <span class="caret"></span></button>
+			</a>
+			<ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto;">
+				${filter_actions
+					.map(
+						action =>
+							`<li><a data-action="${action.action}">${
+								action.label
+							}</a></li>`
+					)
+					.join("")}
+			</ul>
+		</div>
+		`);
+		/* eslint-enable indent */
+
+		this.filter_actions.find("a[data-action]").each((i, o) => {
+			const action = o.dataset.action;
+			$(o).click(filter_actions.find(a => a.action === action));
+		});
+		this.filter_actions.appendTo(this.action_area);
+	}
+
+	setup_and_filters() {
 		this.is_document_type =
 			this.chart_doc.chart_type !== "Report" &&
 			this.chart_doc.chart_type !== "Custom";
-		this.filter_button = $(
-			`<div class="filter-chart btn btn-default btn-xs pull-right">${__(
-				"Filter"
-			)}</div>`
-		);
-		this.filter_button.appendTo(this.action_area);
+		let fields;
 
-		this.filter_button.on("click", () => {
-			let fields;
-
-			frappe.dashboard_utils
-				.get_filters_for_chart_type(this.chart_doc)
-				.then(filters => {
-					if (!this.is_document_type) {
-						if (!filters) {
-							fields = [
-								{
-									fieldtype: "HTML",
-									options: __("No Filters Set")
-								}
-							];
-						} else {
-							fields = filters
-								.filter(df => df.fieldname)
-								.map(df => {
-									Object.assign(df, df.dashboard_config || {});
-									return df;
-								});
-						}
-					} else {
+		frappe.dashboard_utils
+			.get_filters_for_chart_type(this.chart_doc)
+			.then(filters => {
+				if (!this.is_document_type) {
+					if (!filters) {
 						fields = [
 							{
 								fieldtype: "HTML",
-								fieldname: "filter_area"
+								options: __("No Filters Set")
 							}
 						];
+					} else {
+						fields = filters
+							.filter(df => df.fieldname)
+							.map(df => {
+								Object.assign(df, df.dashboard_config || {});
+								return df;
+							});
 					}
+				} else {
+					fields = [
+						{
+							fieldtype: "HTML",
+							fieldname: "filter_area"
+						}
+					];
+				}
 
-					this.setup_filter_dialog(fields);
-				});
-		});
+				this.setup_and_filter_dialog(fields);
+			});
 	}
 
-	setup_filter_dialog(fields) {
+	setup_or_filters() {
+		this.is_document_type =
+			this.chart_doc.chart_type !== "Report" &&
+			this.chart_doc.chart_type !== "Custom";
+
+		let fields;
+
+		frappe.dashboard_utils
+			.get_filters_for_chart_type(this.chart_doc)
+			.then(filters => {
+				if (!this.is_document_type) {
+					if (!filters) {
+						fields = [
+							{
+								fieldtype: "HTML",
+								options: __("No Filters Set")
+							}
+						];
+					} else {
+						fields = filters
+							.filter(df => df.fieldname)
+							.map(df => {
+								Object.assign(df, df.dashboard_config || {});
+								return df;
+							});
+					}
+				} else {
+					fields = [
+						{
+							fieldtype: "HTML",
+							fieldname: "filter_area"
+						}
+					];
+				}
+
+				this.setup_or_filter_dialog(fields);
+			});
+	}
+
+	setup_and_filter_dialog(fields) {
 		let me = this;
 		let dialog = new frappe.ui.Dialog({
-			title: __("Set Filters for {0}", [this.chart_doc.chart_name]),
+			title: __("Set AND Filters for {0}", [this.chart_doc.chart_name]),
 			fields: fields,
 			primary_action: function() {
 				let values = this.get_values();
@@ -408,7 +482,9 @@ export default class ChartWidget extends Widget {
 
 		if (this.is_document_type) {
 			this.create_filter_group_and_add_filters(
-				dialog.get_field("filter_area").$wrapper
+				dialog.get_field("filter_area").$wrapper,
+				"filter_group",
+				me.filters
 			);
 		}
 
@@ -421,6 +497,39 @@ export default class ChartWidget extends Widget {
 					&& frappe.query_reports[this.chart_doc.report_name].onload(frappe.query_report);
 		}
 		dialog.set_values(this.filters);
+	}
+
+	setup_or_filter_dialog(fields) {
+		let me = this;
+		let dialog = new frappe.ui.Dialog({
+			title: __("Set OR Filters for {0}", [this.chart_doc.chart_name]),
+			fields: fields,
+			primary_action: function() {
+				let values = this.get_values();
+				if (values) {
+					this.hide();
+					if (me.is_document_type) {
+						me.or_filters = me.or_filter_group.get_filters();
+					} else {
+						me.or_filters = values;
+					}
+					me.save_chart_config_for_user({'or_filters': me.or_filters});
+					me.fetch_and_update_chart();
+				}
+			},
+			primary_action_label: "Set"
+		});
+
+		if (this.is_document_type) {
+			this.create_filter_group_and_add_filters(
+				dialog.get_field("filter_area").$wrapper,
+				"or_filter_group",
+				me.or_filters
+			);
+		}
+
+		dialog.show();
+		dialog.set_values(this.or_filters);
 	}
 
 	reset_chart() {
@@ -441,15 +550,15 @@ export default class ChartWidget extends Widget {
 		});
 	}
 
-	create_filter_group_and_add_filters(parent) {
-		this.filter_group = new frappe.ui.FilterGroup({
+	create_filter_group_and_add_filters(parent, filter_group_name, filters) {
+		this[filter_group_name] = new frappe.ui.FilterGroup({
 			parent: parent,
 			doctype: this.chart_doc.document_type,
 			on_change: () => {}
 		});
 
 		frappe.model.with_doctype(this.chart_doc.document_type, () => {
-			this.filter_group.add_filters_to_filter_group(this.filters);
+			this[filter_group_name].add_filters_to_filter_group(filters);
 		});
 	}
 
@@ -480,7 +589,7 @@ export default class ChartWidget extends Widget {
 		this.chart_actions.appendTo(this.action_area);
 	}
 
-	fetch(filters, refresh = false, args) {
+	fetch(filters, or_filters, refresh = false, args) {
 		let method = this.settings.method;
 
 		if (this.chart_doc.chart_type == "Report") {
@@ -493,6 +602,7 @@ export default class ChartWidget extends Widget {
 			args = {
 				chart_name: this.chart_doc.name,
 				filters: filters,
+				or_filters: or_filters,
 				refresh: refresh ? 1 : 0,
 				time_interval: args && args.time_interval ? args.time_interval : null,
 				timespan: args && args.timespan ? args.timespan : null,
@@ -639,7 +749,9 @@ export default class ChartWidget extends Widget {
 
 	set_chart_filters() {
 		let user_saved_filters = this.chart_settings.filters || null;
+		let user_saved_or_filters = this.chart_settings.or_filters || null;
 		let chart_saved_filters = frappe.dashboard_utils.get_all_filters(this.chart_doc);
+		let chart_saved_or_filters = frappe.dashboard_utils.get_or_filters(this.chart_doc);
 
 		if (this.chart_doc.chart_type == 'Report') {
 			return frappe.dashboard_utils
@@ -649,8 +761,8 @@ export default class ChartWidget extends Widget {
 						user_saved_filters || this.filters || chart_saved_filters;
 				});
 		} else {
-			this.filters =
-				user_saved_filters || this.filters || chart_saved_filters;
+			this.filters = user_saved_filters || this.filters || chart_saved_filters;
+			this.or_filters = user_saved_or_filters || this.or_filters || chart_saved_or_filters ;
 			return Promise.resolve();
 		}
 	}
