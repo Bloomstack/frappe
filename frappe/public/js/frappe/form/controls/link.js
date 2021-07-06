@@ -33,6 +33,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 
 				if(!me.$input.val()) {
 					me.reset_value();
+					me.reset_fetch_values(me.df, me.docname);
 					me.$input.val("").trigger("input");
 				}
 			}, 500);
@@ -355,6 +356,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			var o = e.originalEvent;
 			if(o.text.value.indexOf("__link_option") !== -1) {
 				me.reset_value();
+				me.reset_fetch_values(me.df, me.docname);
 			}
 		});
 	},
@@ -533,6 +535,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 							resolve(r.valid_value);
 						} else {
 							me.reset_value();
+							me.reset_fetch_values(df, docname);
 							resolve("");
 						}
 					}
@@ -540,6 +543,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			});
 		} else {
 			me.reset_value();
+			me.reset_fetch_values(df, docname);
 		}
 	},
 	set_fetch_values: function(df, docname, fetch_values) {
@@ -547,6 +551,17 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 		for(var i=0; i < fl.length; i++) {
 			frappe.model.set_value(df.parent, docname, fl[i], fetch_values[i], df.fieldtype);
 		}
+	},
+	reset_fetch_values: function(df, docname) {
+		if (!this.frm || !this.frm.fetch_dict || !this.frm.fetch_dict[df.fieldname] || this.frm.fetch_dict[df.fieldname].fields) {
+			return;
+		}
+
+		let fields = this.frm.fetch_dict[df.fieldname].fields;
+
+		fields.forEach(field => {
+			frappe.model.set_value(df.parent, docname, field, null, df.fieldtype);
+		});
 	}
 });
 
