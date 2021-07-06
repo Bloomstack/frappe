@@ -10,13 +10,28 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 		this.view = 'Tree';
 	}
 
-	get_filters_for_args() {
-		// filters might have a fifth param called hidden,
-		// we don't want to pass that server side
-		let filters = this.filter_area ? this.filter_area.get().map(filter => filter.slice(0, 4)) : [];
-		filters.push([this.doctype, this.meta.nsm_parent_field, "is", "not set"]);
+	get_or_filters_for_args() {
+		return [
+			[this.doctype, "is_group", "is", "set"],
+			[this.doctype, this.meta.nsm_parent_field, "is", "not set"]
+		];
+	}
 
-		return filters;
+	get_fields() {
+		// convert [fieldname, Doctype] => tabDoctype.fieldname
+		let fields = [];
+		let has_is_group = false;
+		this.fields.forEach(f => {
+			if (f[0] === "is_group") has_is_group = true;
+
+			fields.push(frappe.model.get_full_column_name(f[0], f[1]));
+		});
+
+		if (!has_is_group) {
+			fields.push(frappe.model.get_full_column_name("is_group", this.doctype));
+		}
+
+		return fields;
 	}
 
 	get_call_args_for_nodes(filters) {
@@ -40,7 +55,7 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 	setup_events() {
 		super.setup_events();
 		this.setup_tree_dropdown();
-		this.setup_create_new_task();
+		this.setup_create_new();
 	}
 
 	setup_tree_dropdown() {
@@ -56,7 +71,7 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 		});
 	}
 
-	setup_create_new_task() {
+	setup_create_new() {
 		let me = this;
 
 		this.$result.on('click', '.create-new', (e) => {
@@ -78,7 +93,7 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 	}
 
 	render_nodes(target, $el) {
-		let $row = this.$result.find(`.list-container[data-name="${target}"]`);
+		let $row = this.$result.find(`.list-container[data-name="${encodeURIComponent(target)}"]`);
 		if (!$row || !$row.length) return;
 
 		let list = $row.find(`.list-nested-row-container`);
