@@ -122,7 +122,6 @@
 import FilePreview from './FilePreview.vue';
 import FileBrowser from './FileBrowser.vue';
 import WebLink from './WebLink.vue';
-
 export default {
 	name: 'FileUploader',
 	props: {
@@ -142,9 +141,6 @@ export default {
 			default: null
 		},
 		docname: {
-			default: null
-		},
-		fieldname: {
 			default: null
 		},
 		folder: {
@@ -244,13 +240,10 @@ export default {
 		},
 		check_restrictions(file) {
 			let { max_file_size, allowed_file_types } = this.restrictions;
-
 			let mime_type = file.type;
 			let extension = '.' + file.name.split('.').pop();
-
 			let is_correct_type = true;
 			let valid_file_size = true;
-
 			if (allowed_file_types.length) {
 				is_correct_type = allowed_file_types.some((type) => {
 					// is this is a mime-type
@@ -258,7 +251,6 @@ export default {
 						if (!file.type) return false;
 						return file.type.match(type);
 					}
-
 					// otherwise this is likely an extension
 					if (type[0] === '.') {
 						return file.name.endsWith(type);
@@ -266,18 +258,15 @@ export default {
 					return false;
 				});
 			}
-
 			if (max_file_size && file.size != null) {
 				valid_file_size = file.size < max_file_size;
 			}
-
 			if (!is_correct_type) {
 				console.warn('File skipped because of invalid file type', file);
 			}
 			if (!valid_file_size) {
 				console.warn('File skipped because of invalid file size', file.size, file);
 			}
-
 			return is_correct_type && valid_file_size;
 		},
 		upload_files() {
@@ -303,7 +292,6 @@ export default {
 				frappe.msgprint(__('Click on a file to select it.'));
 				return Promise.reject();
 			}
-
 			return this.upload_file({
 				file_url: selected_file.file_url
 			});
@@ -314,7 +302,6 @@ export default {
 				frappe.msgprint(__('Invalid URL'));
 				return Promise.reject();
 			}
-
 			return this.upload_file({
 				file_url
 			});
@@ -331,7 +318,6 @@ export default {
 		},
 		upload_file(file, i) {
 			this.currently_uploading = i;
-
 			return new Promise((resolve, reject) => {
 				let xhr = new XMLHttpRequest();
 				xhr.upload.addEventListener('loadstart', (e) => {
@@ -364,9 +350,7 @@ export default {
 							} catch(e) {
 								r = xhr.responseText;
 							}
-
 							file.doc = file_doc;
-
 							if (this.on_success) {
 								this.on_success(file_doc, r);
 							}
@@ -385,7 +369,6 @@ export default {
 							} catch(e) {
 								// pass
 							}
-
 							if ( error._server_messages) {
 								try {
 									for(let msg of JSON.parse(error._server_messages)) {
@@ -408,7 +391,6 @@ export default {
 									message: __("There was an error uploading your file.")
 								});
 							}
-
 						} else {
 							file.failed = true;
 							let error = null;
@@ -424,29 +406,22 @@ export default {
 				xhr.open('POST', '/api/method/upload_file', true);
 				xhr.setRequestHeader('Accept', 'application/json');
 				xhr.setRequestHeader('X-Frappe-CSRF-Token', frappe.csrf_token);
-
 				let form_data = new FormData();
 				if (file.file_obj) {
 					form_data.append('file', file.file_obj, file.name);
 				}
 				form_data.append('is_private', +file.private);
 				form_data.append('folder', this.folder);
-
 				if (file.file_url) {
 					form_data.append('file_url', file.file_url);
 				}
-
 				if (this.doctype && this.docname) {
 					form_data.append('doctype', this.doctype);
 					form_data.append('docname', this.docname);
 				}
-
 				if (this.method) {
 					form_data.append('method', this.method);
 				}
-
-				form_data.append('fieldname', this.fieldname);
-
 				xhr.send(form_data);
 			});
 		}
