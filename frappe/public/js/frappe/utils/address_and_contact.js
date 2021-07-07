@@ -65,7 +65,7 @@ $.extend(frappe.contacts, {
 				});
 			frappe.contacts.clear_address_and_contact(frm);
 			frm.layout_for_address.make();
-			$(frm.layout_for_address.fields_dict["address_html1"].wrapper).html(frappe.render_template("address_list", frm.doc.__onload))
+			$(frm.layout_for_address.fields_dict["address_html1"].wrapper).html(frappe.render_template("address_list", frm.doc.__onload));
 
 			let $input =  frm.layout_for_address.fields_dict["search_address"].$input
 			$input.on("input", function(e) {
@@ -73,10 +73,10 @@ $.extend(frappe.contacts, {
 					"addr_list": frm.doc.__onload.addr_list.filter((obj) =>
 						JSON.stringify(obj).toLowerCase().includes(e.target.value.toLowerCase()))
 				}
-				$(frm.layout_for_address.fields_dict["address_html1"].wrapper).html(frappe.render_template("address_list", addr_list))
+				$(frm.layout_for_address.fields_dict["address_html1"].wrapper).html(frappe.render_template("address_list", addr_list));
 				let no_of_addresses = addr_list.addr_list.length;
 				frappe.contacts.paginate(no_of_addresses, "address_pagination", "address_html1", "address-box");
-			})
+			});
 		}
 
 		let no_of_addresses = frm.doc.__onload.addr_list.length;
@@ -180,7 +180,7 @@ $.extend(frappe.contacts, {
 					frappe.new_doc("Contact");
 				});
 			frm.layout_for_contacts.make();
-			$(frm.layout_for_contacts.fields_dict["contact_html1"].wrapper).html(frappe.render_template("contact_list", frm.doc.__onload))
+			$(frm.layout_for_contacts.fields_dict["contact_html1"].wrapper).html(frappe.render_template("contact_list", frm.doc.__onload));
 			let $input =  frm.layout_for_contacts.fields_dict["search_contact"].$input
 
 			$input.on("input", function(e) {
@@ -188,10 +188,10 @@ $.extend(frappe.contacts, {
 					"contact_list": frm.doc.__onload.contact_list.filter((obj) =>
 						JSON.stringify(obj).toLowerCase().includes(e.target.value.toLowerCase()))
 				}
-				$(frm.layout_for_contacts.fields_dict["contact_html1"].wrapper).html(frappe.render_template("contact_list", contact_list))
+				$(frm.layout_for_contacts.fields_dict["contact_html1"].wrapper).html(frappe.render_template("contact_list", contact_list));
 				let no_of_contacts = contact_list.contact_list.length;
 				frappe.contacts.paginate(no_of_contacts, "contact_pagination", "contact_html1", "contact-box");
-			})
+			});
 		}
 
 		let no_of_contacts = frm.doc.__onload.contact_list.length;
