@@ -339,6 +339,53 @@ export default class ChartWidget extends Widget {
 	}
 
 	setup_filter_button() {
+		let filter_actions = [
+			{
+				label: __("AND Filters"),
+				action: "and-filters",
+				handler: () => {
+					this.setup_and_filters();
+				}
+			}
+		];
+
+		if (this.chart_doc.chart_type !== "Report") {
+			filter_actions.push({
+				label: __("OR Filters"),
+				action: "or-filters",
+				handler: () => {
+					this.setup_or_filters();
+				}
+			});
+		}
+
+		/* eslint-disable indent */
+		this.filter_actions = $(`<div class="chart-actions dropdown pull-right">
+			<a class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				<button class="btn btn-default btn-xs">${__("Filters")} <span class="caret"></span></button>
+			</a>
+			<ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto;">
+				${filter_actions
+					.map(
+						action =>
+							`<li><a data-action="${action.action}">${
+								action.label
+							}</a></li>`
+					)
+					.join("")}
+			</ul>
+		</div>
+		`);
+		/* eslint-enable indent */
+
+		this.filter_actions.find("a[data-action]").each((i, o) => {
+			const action = o.dataset.action;
+			$(o).click(filter_actions.find(a => a.action === action));
+		});
+		this.filter_actions.appendTo(this.action_area);
+	}
+
+	setup_and_filters() {
 		this.is_document_type =
 			this.chart_doc.chart_type !== "Report" &&
 			this.chart_doc.chart_type !== "Custom";
@@ -447,6 +494,10 @@ export default class ChartWidget extends Widget {
 			doctype: this.chart_doc.document_type,
 			on_change: () => {}
 		});
+
+		if (!filters) {
+			filters = this.chart_doc.chart_type !== "Report" ? "{}" : "[]";
+		}
 
 		frappe.model.with_doctype(this.chart_doc.document_type, () => {
 			this.filter_group.add_filters_to_filter_group(this.filters);

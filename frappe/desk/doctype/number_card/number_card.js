@@ -65,39 +65,43 @@ frappe.ui.form.on('Number Card', {
 	set_filters_description: function(frm) {
 		if (frm.doc.type == 'Custom') {
 			frm.fields_dict.filters_config.set_description(`
-		Set the filters here. For example:
-<pre class="small text-muted">
-<code>
-[{
-	fieldname: "company",
-	label: __("Company"),
-	fieldtype: "Link",
-	options: "Company",
-	default: frappe.defaults.get_user_default("Company"),
-	reqd: 1
-},
-{
-	fieldname: "account",
-	label: __("Account"),
-	fieldtype: "Link",
-	options: "Account",
-	reqd: 1
-}]
-</code></pre>`);
+				Set the filters here. For example:
+				<pre class="small text-muted">
+					<code>
+					[{
+						fieldname: "company",
+						label: __("Company"),
+						fieldtype: "Link",
+						options: "Company",
+						default: frappe.defaults.get_user_default("Company"),
+						reqd: 1
+					},
+					{
+						fieldname: "account",
+						label: __("Account"),
+						fieldtype: "Link",
+						options: "Account",
+						reqd: 1
+					}]
+					</code>
+				</pre>
+			`);
 		}
 	},
 
 	set_method_description: function(frm) {
 		if (frm.doc.type == 'Custom') {
 			frm.fields_dict.method.set_description(`
-		Set the path to a whitelisted function that will return the number on the card in the format:
-<pre class="small text-muted">
-<code>
-{
-	"value": value,
-	"fieldtype": "Currency"
-}
-</code></pre>`);
+				Set the path to a whitelisted function that will return the number on the card in the format:
+				<pre class="small text-muted">
+					<code>
+					{
+						"value": value,
+						"fieldtype": "Currency"
+					}
+					</code>
+				</pre>
+			`);
 		}
 	},
 
@@ -118,6 +122,7 @@ frappe.ui.form.on('Number Card', {
 	report_name: function(frm) {
 		frm.filters = [];
 		frm.set_value('filters_json', '{}');
+		frm.set_value('or_filters_json', '{}');
 		frm.set_value('dynamic_filters_json', '{}');
 		frm.set_df_property('report_field', 'options', []);
 		frm.trigger('set_report_filters');
@@ -139,6 +144,7 @@ frappe.ui.form.on('Number Card', {
 			};
 		});
 		frm.set_value('filters_json', '[]');
+		frm.set_value('or_filters_json', '[]');
 		frm.set_value('dynamic_filters_json', '[]');
 		frm.set_value('aggregate_function_based_on', '');
 		frm.trigger('set_options');
