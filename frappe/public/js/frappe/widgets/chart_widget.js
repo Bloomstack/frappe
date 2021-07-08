@@ -346,15 +346,18 @@ export default class ChartWidget extends Widget {
 				handler: () => {
 					this.setup_and_filters();
 				}
-			},
-			{
+			}
+		];
+
+		if (this.chart_doc.chart_type !== "Report") {
+			filter_actions.push({
 				label: __("OR Filters"),
 				action: "or-filters",
 				handler: () => {
 					this.setup_or_filters();
 				}
-			}
-		];
+			});
+		}
 
 		/* eslint-disable indent */
 		this.filter_actions = $(`<div class="chart-actions dropdown pull-right">
@@ -556,6 +559,10 @@ export default class ChartWidget extends Widget {
 			doctype: this.chart_doc.document_type,
 			on_change: () => {}
 		});
+
+		if (!filters) {
+			filters = this.chart_doc.chart_type !== "Report" ? "{}" : "[]";
+		}
 
 		frappe.model.with_doctype(this.chart_doc.document_type, () => {
 			this[filter_group_name].add_filters_to_filter_group(filters);
