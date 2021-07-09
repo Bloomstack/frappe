@@ -23,6 +23,16 @@ class NumberCard(Document):
 		if frappe.conf.developer_mode and self.is_standard:
 			export_to_files(record_list=[['Number Card', self.name]], record_module=self.module)
 
+	def validate(self):
+		self.validate_filters()
+
+	def validate_filters(self):
+		if not self.filters_json:
+			self.filters_json = "{}" if self.type == "Report" else "[]"
+
+		if not self.or_filters_json:
+			self.or_filters_json = "{}" if self.type == "Report" else "[]"
+
 def get_permission_query_conditions(user=None):
 	if not user:
 		user = frappe.session.user

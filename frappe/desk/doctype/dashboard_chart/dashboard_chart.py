@@ -371,6 +371,7 @@ class DashboardChart(Document):
 			self.check_document_type()
 
 		self.validate_custom_options()
+		self.validate_filters()
 
 	def check_required_field(self):
 		if not self.document_type:
@@ -398,3 +399,10 @@ class DashboardChart(Document):
 				json.loads(self.custom_options)
 			except ValueError as error:
 				frappe.throw(_("Invalid json added in the custom options: {0}").format(error))
+
+	def validate_filters(self):
+		if not self.filters_json:
+			self.filters_json = "{}" if self.chart_type == "Report" else "[]"
+
+		if not self.or_filters_json:
+			self.or_filters_json = "{}" if self.chart_type == "Report" else "[]"
