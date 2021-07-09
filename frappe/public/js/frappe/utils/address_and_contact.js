@@ -26,7 +26,7 @@ $.extend(frappe.contacts, {
 			return index < per_page;
 		}).addClass('active');
 
-		$(`body`).on('click', `.${pagination_class} .page_number`, function () {
+		$(`div[data-fieldname=${html_class}]`).on('click', `.${pagination_class} .page_number`, function () {
 			var page_index = $(this).index();
 			var start = page_index * per_page;
 			$(`div[data-fieldname=${html_class}] .${box_class}`).removeClass('active');
@@ -81,7 +81,7 @@ $.extend(frappe.contacts, {
 
 		let no_of_addresses = frm.doc.__onload.addr_list.length;
 		frappe.contacts.paginate(no_of_addresses, "address_pagination", "address_html1", "address-box");
-		$(document).on('click', '.btn-address-link', function () {
+		$(frm.fields_dict["address_html"].$wrapper).on('click', '.btn-address-link', function () {
 			frappe.prompt({
 				label: "Link Address",
 				fieldname: "address",
@@ -113,7 +113,7 @@ $.extend(frappe.contacts, {
 			}, __("Select Address"));
 		});
 
-		$(document).on('click', '.address-box a.unlink_address', function () {
+		$(frm.fields_dict["address_html"].$wrapper).on('click', '.address-box a.unlink_address', function () {
 			var name = $(this).attr('data_address_name');
 			frappe.confirm(
 				`Are you sure you want to unlink this address with ${cur_frm.docname}?`,
@@ -134,7 +134,7 @@ $.extend(frappe.contacts, {
 			);
 		});
 
-		$(document).on('click', '.address-box a.delete_address', function () {
+		$(frm.fields_dict["address_html"].$wrapper).on('click', '.address-box a.delete_address', function () {
 			var name = $(this).attr('data_address_name');
 			frappe.confirm(
 				`If this address is linked to any other entity in the system, it will instead remove the address from ${cur_frm.docname}.<br><br>
@@ -196,7 +196,7 @@ $.extend(frappe.contacts, {
 
 		let no_of_contacts = frm.doc.__onload.contact_list.length;
 		frappe.contacts.paginate(no_of_contacts, "contact_pagination", "contact_html1", "contact-box");
-		$(document).on('click', '.btn-contact-link', function () {
+		$(frm.fields_dict["contact_html"].$wrapper).on('click', '.btn-contact-link', function () {
 			frappe.prompt({
 				label: "Link Contact",
 				fieldname: "contact",
@@ -228,7 +228,7 @@ $.extend(frappe.contacts, {
 			}, __("Select Contact"));
 		});
 
-		$(document).on('click', '.contact-box a.unlink_contact', function () {
+		$(frm.fields_dict["contact_html"].$wrapper).on('click', '.contact-box a.unlink_contact', function () {
 			var name = $(this).attr('data_contact_name');
 			frappe.confirm(
 				`Are you sure you want to unlink this contact with ${cur_frm.docname}?`,
@@ -249,7 +249,7 @@ $.extend(frappe.contacts, {
 			);
 		});
 
-		$(document).on('click', '.contact-box a.delete_contact', function () {
+		$(frm.fields_dict["contact_html"].$wrapper).on('click', '.contact-box a.delete_contact', function () {
 			var name = $(this).attr('data_contact_name');
 			frappe.confirm(
 				`If this contact is linked to any other entity in the system, it will instead remove the contact from ${cur_frm.docname}.<br><br>
