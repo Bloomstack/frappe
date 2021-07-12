@@ -182,7 +182,7 @@ def set_link_title(doc):
 
 @frappe.whitelist()
 def get_addresses(doc, search_keyword):
-	doc = json.loads(doc)
+	doc = frappe.parse_json(doc)
 	filters = [
 		["Dynamic Link", "link_doctype", "=", doc.get("doctype")],
 		["Dynamic Link", "link_name", "=", doc.get("name")],
