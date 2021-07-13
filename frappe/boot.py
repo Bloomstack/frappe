@@ -84,6 +84,7 @@ def get_bootinfo():
 	bootinfo.frequently_visited_links = frequently_visited_links()
 	bootinfo.link_preview_doctypes = get_link_preview_doctypes()
 	bootinfo.doctypes_with_show_link_field_title = doctypes_with_show_link_field_title()
+	bootinfo.sentry_dsn = frappe.db.get_single_value("Sentry Settings", "sentry_dsn")
 
 	return bootinfo
 

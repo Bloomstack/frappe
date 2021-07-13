@@ -353,5 +353,11 @@
 	],
 	"js/data_import_tools.min.js": [
 		"public/js/frappe/data_import/index.js"
+	],
+	"js/sentry.min.js": [
+		"public/js/integrations/sentry.js"
+	],
+	"js/sentry-web.min.js": [
+		"public/js/integrations/sentry-web.js"
 	]
 }

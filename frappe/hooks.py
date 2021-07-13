@@ -28,6 +28,10 @@ page_js = {
 	"setup-wizard": "public/js/frappe/setup_wizard.js"
 }
 
+exception_handlers = ["frappe.integrations.doctype.sentry_settings.sentry_settings.handle"]
+# custom handler to report exceptions without necessarily breaking system flow
+error_capture_log = ["frappe.integrations.doctype.sentry_settings.sentry_settings.handle"]
+
 # website
 app_include_js = [
 	"assets/js/libs.min.js",
@@ -36,7 +40,8 @@ app_include_js = [
 	"assets/js/form.min.js",
 	"assets/js/control.min.js",
 	"assets/js/report.min.js",
-	"assets/frappe/js/lib/ckeditor.js"
+	"assets/frappe/js/lib/ckeditor.js",
+	"assets/js/sentry.min.js"
 ]
 app_include_css = [
 	"assets/css/desk.min.css",
@@ -48,7 +53,8 @@ app_include_css = [
 
 web_include_js = [
 	"website_script.js",
-	"assets/frappe/js/lib/ckeditor.js"
+	"assets/frappe/js/lib/ckeditor.js",
+	"assets/js/sentry-web.min.js"
 ]
 
 web_include_css = []
