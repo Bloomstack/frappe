@@ -7,7 +7,6 @@ import frappe
 from frappe import _
 import functools
 import re
-import json
 
 def load_address_and_contact(doc, key=None):
 	"""Loads address list and contact list in `__onload`"""
