@@ -78,7 +78,7 @@ frappe.ui.form.Sidebar = Class.extend({
 		this.frm.reviews && this.frm.reviews.refresh();
 		this.frm.tags && this.frm.tags.refresh(this.frm.get_docinfo().tags);
 		this.refresh_like();
-		this.frm.sidebar.refresh_comments();
+		this.frm.sidebar.sidebar.find(".comments-section").toggle(false);
 		this.image_section.toggle(!this.frm.doc.__islocal);
 		if (!this.frm.doc.__islocal) {
 			this.sidebar.find(".modified-by").html(__("{0} edited this {1}",
@@ -115,10 +115,6 @@ frappe.ui.form.Sidebar = Class.extend({
 	},
 
 	refresh_comments: function() {
-		if (this.frm.doc.__islocal) {
-			this.frm.sidebar.sidebar.find(".comments-section").toggle(false);
-			return;
-		}
 		this.frm.sidebar.sidebar.find(".comments-section").toggle(true);
 		$.map(this.frm.timeline.get_communications(), function(c) {
 			return (c.communication_type==="Communication" || (c.communication_type=="Comment" && c.comment_type==="Comment")) ? c : null;

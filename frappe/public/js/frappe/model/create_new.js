@@ -313,6 +313,7 @@ $.extend(frappe.model, {
 					if(opts.run_link_triggers) {
 						frappe.get_doc(r.message.doctype, r.message.name).__run_link_triggers = true;
 					}
+					frappe.get_doc(r.message.doctype, r.message.name).prev_doc = {"prev_docname": opts.frm.doc.name, "prev_doctype": opts.frm.doc.doctype};
 					frappe.set_route("Form", r.message.doctype, r.message.name);
 				}
 			}

@@ -44,6 +44,8 @@ frappe.ui.form.Attachments = Class.extend({
 				} else {
 					me.parent.find(".attachments-label").hide();
 				}
+			} else {
+				me.parent.find(".attachments-label").hide();
 			}
 		}
 		this.parent.toggle(true);
@@ -68,7 +70,7 @@ frappe.ui.form.Attachments = Class.extend({
 			&& docinfo["__rollover_attachments"].fileid.length !== 0 ? true : false;
 	},
 	get_attachments: function() {
-		return this.frm.get_docinfo().attachments;
+		return (this.frm.get_docinfo() && this.frm.get_docinfo().attachments) ? this.frm.get_docinfo().attachments : [];
 	},
 	add_attachment: function(attachment) {
 		let roll_over_atttachments = this.frm.doc.__islocal ?
