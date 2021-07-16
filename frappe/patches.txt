@@ -273,3 +273,4 @@ frappe.patches.v12_0.change_existing_dashboard_chart_filters
 frappe.patches.v12_0.set_existing_dashboard_charts_as_public
 frappe.patches.v12_0.remove_title_from_search_fields
 frappe.patches.v12_0.set_contact_title #2021-04-30
+frappe.patches.v12_0.uninstall_custom_sentry_app
