@@ -16,7 +16,7 @@ $.extend(frappe.contacts, {
 		if ($('body').has(`.${pagination_class}`).length) {
 			$(`.${pagination_class}`).empty();
 		} else {
-			$(`div[title="${html_class}"]`).append(`<div class = "${pagination_class}"></div>`);
+			$(`div[data-fieldname="${html_class}"]`).append(`<div class = "${pagination_class}"></div>`);
 		}
 		for (var i = 1; i <= count; i++) {
 			$(`.${pagination_class}`).append("<div class='page_number'>" + i + "</div>");
