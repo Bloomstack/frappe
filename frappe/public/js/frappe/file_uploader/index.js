@@ -15,6 +15,7 @@ export default class FileUploader {
 		allow_multiple,
 		as_dataurl,
 		disable_file_browser,
+		__islocal
 	} = {}) {
 		if (!wrapper) {
 			this.make_dialog();
@@ -38,6 +39,7 @@ export default class FileUploader {
 					allow_multiple,
 					as_dataurl,
 					disable_file_browser,
+					__islocal
 				}
 			})
 		});
