@@ -519,6 +519,25 @@ class User(Document):
 
 		return [i.strip() for i in self.restrict_ip.split(",")]
 
+	@classmethod
+	def find_by_credentials(cls, user_name, password, validate_password=True):
+		"""Find the user by credentials."""
+		login_with_mobile = cint(frappe.db.get_value("System Settings", "System Settings", "allow_login_using_mobile_number"))
+		filter = {"mobile_no": user_name} if login_with_mobile else {"name": user_name}
+
+		user = frappe.db.get_value("User", filters=filter, fieldname=['name', 'enabled'], as_dict=True) or {}
+		if not user:
+			return
+
+		user['is_authenticated'] = True
+		if validate_password:
+			try:
+				check_password(user_name, password)
+			except frappe.AuthenticationError:
+				user['is_authenticated'] = False
+
+		return user
+
 @frappe.whitelist()
 def get_timezones():
 	import pytz
