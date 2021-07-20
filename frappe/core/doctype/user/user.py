@@ -6,7 +6,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import cint, flt, has_gravatar, format_datetime, now_datetime, get_formatted_email, today
 from frappe import throw, msgprint, _
-from frappe.utils.password import update_password as _update_password, check_password
+from frappe.utils.password import update_password as _update_password
 from frappe.desk.notifications import clear_notifications
 from frappe.desk.doctype.notification_settings.notification_settings import create_notification_settings
 from frappe.utils.user import get_system_managers
@@ -160,10 +160,16 @@ class User(Document):
 
 	def set_system_user(self):
 		'''Set as System User if any of the given roles has desk_access'''
+		old_user_type = self.user_type
+
 		if self.has_desk_access() or self.name == 'Administrator':
 			self.user_type = 'System User'
+			if self.user_type != old_user_type:
+				msgprint(_("User Type changed from {0} to {1}").format(old_user_type, self.user_type), title=_('Warning'), indicator='red')
 		else:
 			self.user_type = 'Website User'
+			if self.user_type != old_user_type:
+				msgprint(_("User Type changed from {0} to {1}").format(old_user_type, self.user_type), title=_('Warning'), indicator='red')
 
 	def has_desk_access(self):
 		'''Return true if any of the set roles has desk access'''
@@ -512,27 +518,6 @@ class User(Document):
 			return
 
 		return [i.strip() for i in self.restrict_ip.split(",")]
-
-	@classmethod
-	def find_by_credentials(cls, user_name, password, validate_password=True):
-		"""Find the user by credentials.
-		"""
-		login_with_mobile = cint(frappe.db.get_value("System Settings", "System Settings", "allow_login_using_mobile_number"))
-		filter = {"mobile_no": user_name} if login_with_mobile else {"name": user_name}
-
-		user = frappe.db.get_value("User", filters=filter, fieldname=['name', 'enabled'], as_dict=True) or {}
-		if not user:
-			return
-
-		user['is_authenticated'] = True
-		if validate_password:
-			try:
-				check_password(user_name, password)
-			except frappe.AuthenticationError:
-				user['is_authenticated'] = False
-
-		return user
-
 
 @frappe.whitelist()
 def get_timezones():
