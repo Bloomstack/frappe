@@ -164,12 +164,11 @@ class User(Document):
 
 		if self.has_desk_access() or self.name == 'Administrator':
 			self.user_type = 'System User'
-			if self.user_type != old_user_type:
-				msgprint(_("User Type changed from {0} to {1}").format(old_user_type, self.user_type), title=_('Warning'), indicator='red')
 		else:
 			self.user_type = 'Website User'
-			if self.user_type != old_user_type:
-				msgprint(_("User Type changed from {0} to {1}").format(old_user_type, self.user_type), title=_('Warning'), indicator='red')
+
+		if self.user_type != old_user_type:
+			msgprint(_("User Type changed from {0} to {1}").format(old_user_type, self.user_type), title=_('Warning'), indicator='red')
 
 	def has_desk_access(self):
 		'''Return true if any of the set roles has desk access'''
