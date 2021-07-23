@@ -115,7 +115,7 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 
 	save_temp_attachment(attachment) {
 		if (!this.frm.doc.__unsaved_attachments) {
-			this.frm.doc.__unsaved_attachments = []
+			this.frm.doc.__unsaved_attachments = [];
 		}
 
 		this.frm.doc.__unsaved_attachments.push({
