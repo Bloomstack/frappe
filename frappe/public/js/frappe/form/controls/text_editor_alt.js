@@ -87,7 +87,7 @@ frappe.ui.form.ControlTextEditorAlt = frappe.ui.form.ControlCode.extend({
 	},
 
 	set_input: function(value) {
-		if(value !== this.get_value())
+		if (value !== this.get_value())
 			this.editor.summernote('code', value);
 
 		this.last_value = this.value;
