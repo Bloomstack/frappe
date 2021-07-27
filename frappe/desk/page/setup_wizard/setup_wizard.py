@@ -90,6 +90,7 @@ def update_global_settings(args):
 
 def run_post_setup_complete(args):
 	disable_future_access()
+	sync_dashboards()
 	frappe.db.commit()
 	frappe.clear_cache()
 
@@ -239,6 +240,10 @@ def disable_future_access():
 		page.flags.do_not_update_json = True
 		page.flags.ignore_permissions = True
 		page.save()
+
+def sync_dashboards():
+	from frappe.utils.dashboard import sync_dashboards
+	sync_dashboards()
 
 @frappe.whitelist()
 def load_messages(language):

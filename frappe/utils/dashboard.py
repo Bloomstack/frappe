@@ -9,7 +9,6 @@ from frappe.modules.import_file import import_file_by_path
 import os
 from os.path import join
 
-
 def cache_source(function):
 	@wraps(function)
 	def wrapper(*args, **kwargs):
@@ -20,8 +19,8 @@ def cache_source(function):
 		no_cache = kwargs.get("no_cache")
 		if no_cache:
 			return function(chart = chart, no_cache = no_cache)
-		chart_name = frappe.parse_json(chart).name
-		cache_key = "chart-data:{}".format(chart_name)
+
+		cache_key = frappe.parse_json(chart).name
 		if int(kwargs.get("refresh") or 0):
 			results = generate_and_cache_results(kwargs, function, cache_key, chart)
 		else:
@@ -59,6 +58,7 @@ def generate_and_cache_results(args, function, cache_key, chart):
 			raise
 
 	frappe.db.set_value("Dashboard Chart", args.chart_name, "last_synced_on", frappe.utils.now(), update_modified = False)
+	frappe.cache().set_value(cache_key, results)
 	return results
 
 def get_dashboards_with_link(docname, doctype):
@@ -85,6 +85,7 @@ def sync_dashboards(app=None):
 	"""Import, overwrite fixtures from `[app]/fixtures`."""
 	if not cint(frappe.db.get_single_value('System Settings', 'setup_complete')):
 		return
+
 	if app:
 		apps = [app]
 	else:
@@ -98,7 +99,7 @@ def sync_dashboards(app=None):
 			frappe.flags.in_import = False
 
 def make_records_in_module(app, module):
-	dashboards_path = frappe.get_module_path(module, "{module}_dashboard".format(module=module))
+	dashboards_path = frappe.get_module_path(module, "dashboard")
 	charts_path = frappe.get_module_path(module, "dashboard chart")
 	cards_path = frappe.get_module_path(module, "number card")
 

@@ -261,7 +261,7 @@ export default class NumberCardWidget extends Widget {
 			$(this.body).find('.widget-content').append(`<div class="card-stats ${color_class}">
 				<span class="percentage-stat">
 					${caret_html}
-					${Math.abs(this.percentage_stat)} %
+					${frappe.utils.shorten_number(Math.abs(this.percentage_stat))} %
 				</span>
 				<span class="stat-period text-muted">
 					${stats_qualifier}
@@ -277,7 +277,7 @@ export default class NumberCardWidget extends Widget {
 			result: this.number
 		}).then(res => {
 			if (res !== undefined) {
-				this.percentage_stat = frappe.utils.shorten_number(res);
+				this.percentage_stat = res;
 			}
 		});
 	}

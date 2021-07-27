@@ -23,6 +23,17 @@
 			<a class="user-name" @click="goto_profile(post.owner)">{{ user_name }}</a>
 			<div class="text-muted" v-html="post_time"></div>
 			<div ref="content" class="content" v-html="post.content"></div>
+			<div class="edit-box flex-column" v-if="show_edit_post">
+			<div class="text-muted comment-label">{{ __('Update') }}</div>
+			<div ref="edit-section"></div>
+			<div class="flex justify-between">
+				<button
+					class="btn btn-primary btn-sm"
+					@click="update_post">
+					{{ __('Update Post') }}
+				</button>
+			</div>
+		</div>
 		</div>
 		<post-action
 			:liked_by="post.liked_by"
@@ -58,6 +69,7 @@ export default {
 			comment_count: 0,
 			comments: [],
 			show_comments: false,
+			show_edit_post: false,
 			is_globally_pinnable: frappe.user_roles.includes('System Manager') && frappe.social.is_home_page(),
 			is_pinnable: false,
 			is_user_post_owner: this.post.owner === frappe.session.user
@@ -90,6 +102,12 @@ export default {
 				options.push({
 					'label': __('Delete'),
 					'action': this.delete_post
+				})
+			}
+			if (this.is_user_post_owner) {
+				options.push({
+					'label': __('Edit'),
+					'action': this.edit_post
 				})
 			}
 			return options;
@@ -151,6 +169,38 @@ export default {
 			frappe.xcall('frappe.social.doctype.post.post.toggle_like', {
 				post_name: this.post.name,
 			})
+		},
+		edit_post() {
+			this.toggle_edit_section();
+			frappe.xcall('frappe.social.doctype.post.post.edit_post', {
+				'post_name': this.post.name
+			}).then((res) => this.make_edit_section(res))
+		},
+		make_edit_section(edit_post_data) {
+			this.edit_post_section = frappe.ui.form.make_control({
+				parent: this.$refs['edit-section'],
+				only_input: true,
+				render_input: true,
+				value: edit_post_data.content,
+				no_wrapper: true,
+				df: {
+					fieldtype: 'Text Editor',
+					fieldname: 'edit_post',
+					label: 'Update Post'
+				},
+				on_submit: this.update_post.bind(this)
+			});
+		},
+		update_post() {
+			const message = this.edit_post_section.get_value().replace('<div><br></div>', '');
+			if (!strip_html(message)) return
+			frappe.utils.play_sound("click");
+			frappe.db.set_value('Post', this.post.name, 'content', message)
+				.then(res => this.post.content = res.message.content);
+			this.toggle_edit_section();
+		},
+		toggle_edit_section() {
+			this.show_edit_post = !this.show_edit_post;
 		},
 		toggle_pin() {
 			if (this.is_globally_pinnable) {

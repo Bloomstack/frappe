@@ -128,11 +128,12 @@ export default class GridRowForm {
 	}
 	set_focus() {
 		// wait for animation and then focus on the first row
-		var me = this;
+		let me = this;
 		setTimeout(function() {
-			if(me.row.frm && me.row.frm.doc.docstatus===0 || !me.row.frm) {
-				var first = me.form_area.find("input:first");
-				if(first.length && !in_list(["Date", "Datetime", "Time"], first.attr("data-fieldtype"))) {
+			if (me.row.frm && me.row.frm.doc.docstatus===0 || !me.row.frm) {
+				let first = me.form_area.find("input:first");
+				let has_value = first && first[0] && $(first[0]).val();
+				if (!has_value && first.length && !in_list(["Date", "Datetime", "Time"], first.attr("data-fieldtype"))) {
 					try {
 						first.get(0).focus();
 					} catch(e) {

@@ -16,6 +16,7 @@ from frappe.website import render
 from frappe.core.doctype.language.language import sync_languages
 from frappe.modules.utils import sync_customizations
 from frappe.utils import global_search
+from frappe.utils.dashboard import sync_dashboards
 
 def migrate(verbose=True, rebuild_website=False, skip_failing=False):
 	'''Migrate all apps to the latest version, will:
@@ -23,6 +24,7 @@ def migrate(verbose=True, rebuild_website=False, skip_failing=False):
 	- run patches
 	- sync doctypes (schema)
 	- sync fixtures
+	- sync dashboards
 	- sync desktop icons
 	- sync web pages (from /www)
 	- sync web pages (from /www)
@@ -50,6 +52,7 @@ def migrate(verbose=True, rebuild_website=False, skip_failing=False):
 		frappe.model.sync.sync_all(verbose=verbose)
 		frappe.translate.clear_cache()
 		sync_fixtures()
+		sync_dashboards()
 		sync_customizations()
 		sync_languages()
 
