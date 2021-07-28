@@ -9,6 +9,7 @@
   "language",
   "column_break_3",
   "time_zone",
+  "user_default_time_zone",
   "is_first_startup",
   "setup_complete",
   "date_and_number_format",
@@ -89,6 +90,7 @@
    "fieldname": "time_zone",
    "fieldtype": "Select",
    "label": "Time Zone",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -418,11 +420,18 @@
    "fieldtype": "Link",
    "label": "Welcome Email Template",
    "options": "Email Template"
+  },
+  {
+   "description": "Is used to set the User's timezone when creating a new User.",
+   "fieldname": "user_default_time_zone",
+   "fieldtype": "Select",
+   "label": "User Default Time Zone",
+   "read_only_depends_on": "Is used to set the User's timezone when creating a new User."
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2021-03-16 02:40:26.846701",
+ "modified": "2021-07-28 01:39:33.588799",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

@@ -5,6 +5,7 @@ frappe.ui.form.on("System Settings", {
 			callback: function(data) {
 				frappe.all_timezones = data.message.timezones;
 				frm.set_df_property("time_zone", "options", frappe.all_timezones);
+				frm.set_df_property("user_default_time_zone", "options", frappe.all_timezones);
 
 				$.each(data.message.defaults, function(key, val) {
 					frm.set_value(key, val);
