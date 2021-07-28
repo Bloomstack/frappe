@@ -7,6 +7,7 @@ frappe.ui.form.ControlCheck = frappe.ui.form.ControlData.extend({
 					<span class="input-area"></span>
 					<span class="disp-area"></span>
 					<span class="label-area ${this.df.is_web_form ? "" : "small"}"></span>
+					<span class="help-area"></span>
 				</label>
 				<p class="help-box small text-muted"></p>
 			</div>
@@ -35,5 +36,8 @@ frappe.ui.form.ControlCheck = frappe.ui.form.ControlData.extend({
 		this.last_value = value;
 		this.set_mandatory(value);
 		this.set_disp_area(value);
+	},
+	get_popup_description_area: function() {
+		return ".help-area";
 	}
 });

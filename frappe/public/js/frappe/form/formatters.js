@@ -158,12 +158,7 @@ frappe.form.formatters = {
 		}
 	},
 	Datetime: function(value) {
-		if (value) {
-			return moment(frappe.datetime.convert_to_user_tz(value))
-				.format(frappe.boot.sysdefaults.date_format.toUpperCase() + ' ' + frappe.boot.sysdefaults.time_format);
-		} else {
-			return "";
-		}
+		return value ? frappe.datetime.str_to_user(frappe.datetime.convert_to_user_tz(value)) : "";
 	},
 	Text: function(value) {
 		if(value) {
