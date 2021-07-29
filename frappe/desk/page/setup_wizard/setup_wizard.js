@@ -389,7 +389,7 @@ frappe.setup.slides_settings = [
 			{ fieldtype: "Section Break" },
 			{ fieldname: "timezone", label: __("User's Default Time Zone"), reqd: 1, fieldtype: "Select" },
 			{ fieldtype: "Column Break" },
-			{ fieldname: "currency", label: __("Currency"), reqd:1, fieldtype: "Select" }
+			{ fieldname: "currency", label: __("Currency"), reqd: 1, fieldtype: "Select" }
 		],
 
 		onload: function(slide) {
