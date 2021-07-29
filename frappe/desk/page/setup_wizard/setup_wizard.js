@@ -385,7 +385,7 @@ frappe.setup.slides_settings = [
 		icon: "fa fa-flag",
 		// help: __("Select your Country, Time Zone and Currency"),
 		fields: [
-			{ fieldname: "country", label: __("Your Country"), reqd:1, fieldtype: "Select" },
+			{ fieldname: "country", label: __("Your Country"), reqd: 1, fieldtype: "Select" },
 			{ fieldtype: "Section Break" },
 			{ fieldname: "timezone", label: __("User's Default Time Zone"), reqd:1, fieldtype: "Select" },
 			{ fieldtype: "Column Break" },
