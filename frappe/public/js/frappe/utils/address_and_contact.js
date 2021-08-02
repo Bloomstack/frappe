@@ -4,11 +4,13 @@ $.extend(frappe.contacts, {
 	clear_address_and_contact: function (frm) {
 		frm.fields_dict['address_html'] && $(frm.fields_dict['address_html'].wrapper).html("");
 		frm.fields_dict['contact_html'] && $(frm.fields_dict['contact_html'].wrapper).html("");
-		frm.layout_for_address.fields_dict['address_html1'] && $(frm.fields_dict['address_html1'].wrapper).html("");
-		frm.layout_for_address.fields_dict['contact_html1'] && $(frm.fields_dict['contact_html1'].wrapper).html("");
+		if(frm.layout_for_address.fields_dict['address_html1'] && $(frm.fields_dict['address_html1'].wrapper)) {
+			frm.layout_for_address.fields_dict['address_html1'] && $(frm.fields_dict['address_html1'].wrapper).html("");
+		}
+		if(frm.layout_for_address.fields_dict['contact_html1'] && $(frm.fields_dict['contact_html1'].wrapper)) {
+			frm.layout_for_address.fields_dict['contact_html1'] && $(frm.fields_dict['contact_html1'].wrapper).html("");
+		}
 	},
-
-
 
 	paginate: function (total_items, pagination_class, html_class, box_class, pagination_desc_class) {
 		let per_page = 5;
@@ -62,13 +64,13 @@ $.extend(frappe.contacts, {
 
 		// render address
 		if (frm.fields_dict['address_html'] && "addr_list" in frm.doc.__onload) {
-			$(frm.fields_dict['address_html'].wrapper)
+			frappe.contacts.clear_address_and_contact(frm);
+			frm.layout_for_address.make();
+			$(frm.layout_for_address.fields_dict["address_html1"].wrapper)
+			.html(frappe.render_template("address_list", frm.doc.__onload))
 				.find(".btn-address").on("click", function () {
 					frappe.new_doc("Address");
 				});
-			frappe.contacts.clear_address_and_contact(frm);
-			frm.layout_for_address.make();
-			$(frm.layout_for_address.fields_dict["address_html1"].wrapper).html(frappe.render_template("address_list", frm.doc.__onload));
 
 			let $input =  frm.layout_for_address.fields_dict["search_address"].$input;
 			$input.on("input", function(e) {
@@ -84,7 +86,7 @@ $.extend(frappe.contacts, {
 
 		let no_of_addresses = frm.doc.__onload.addr_list.length;
 		frappe.contacts.paginate(no_of_addresses, "address_pagination", "address_html1", "address-box", "address_paginate_desc");
-		$(frm.fields_dict["address_html"].$wrapper).on('click', '.btn-address-link', function () {
+		$(frm.layout_for_address.fields_dict["address_html1"].$wrapper).on('click', '.btn-address-link', function () {
 			frappe.prompt({
 				label: "Link Address",
 				fieldname: "address",
@@ -116,7 +118,7 @@ $.extend(frappe.contacts, {
 			}, __("Select Address"));
 		});
 
-		$(frm.fields_dict["address_html"].$wrapper).on('click', '.address-box a.unlink_address', function () {
+		$(frm.layout_for_address.fields_dict["address_html1"].$wrapper).on('click', '.address-box a.unlink_address', function () {
 			var name = $(this).attr('data_address_name');
 			frappe.confirm(
 				`Are you sure you want to unlink this address with ${cur_frm.docname}?`,
@@ -137,7 +139,7 @@ $.extend(frappe.contacts, {
 			);
 		});
 
-		$(frm.fields_dict["address_html"].$wrapper).on('click', '.address-box a.delete_address', function () {
+		$(frm.layout_for_address.fields_dict["address_html1"].$wrapper).on('click', '.address-box a.delete_address', function () {
 			var name = $(this).attr('data_address_name');
 			frappe.confirm(
 				`If this address is linked to any other entity in the system, it will instead remove the address from ${cur_frm.docname}.<br><br>
@@ -178,12 +180,12 @@ $.extend(frappe.contacts, {
 
 		// render contact
 		if (frm.fields_dict['contact_html'] && "contact_list" in frm.doc.__onload) {
-			$(frm.fields_dict['contact_html'].wrapper)
+			frm.layout_for_contacts.make();
+			$(frm.layout_for_contacts.fields_dict["contact_html1"].wrapper)
+			.html(frappe.render_template("contact_list", frm.doc.__onload))
 				.find(".btn-contact").on("click", function () {
 					frappe.new_doc("Contact");
 				});
-			frm.layout_for_contacts.make();
-			$(frm.layout_for_contacts.fields_dict["contact_html1"].wrapper).html(frappe.render_template("contact_list", frm.doc.__onload));
 			let $input =  frm.layout_for_contacts.fields_dict["search_contact"].$input;
 
 			$input.on("input", function(e) {
@@ -199,7 +201,7 @@ $.extend(frappe.contacts, {
 
 		let no_of_contacts = frm.doc.__onload.contact_list.length;
 		frappe.contacts.paginate(no_of_contacts, "contact_pagination", "contact_html1", "contact-box", "contact_paginate_desc");
-		$(frm.fields_dict["contact_html"].$wrapper).on('click', '.btn-contact-link', function () {
+		$(frm.layout_for_contacts.fields_dict["contact_html1"].$wrapper).on('click', '.btn-contact-link', function () {
 			frappe.prompt({
 				label: "Link Contact",
 				fieldname: "contact",
@@ -231,7 +233,7 @@ $.extend(frappe.contacts, {
 			}, __("Select Contact"));
 		});
 
-		$(frm.fields_dict["contact_html"].$wrapper).on('click', '.contact-box a.unlink_contact', function () {
+		$(frm.layout_for_contacts.fields_dict["contact_html1"].$wrapper).on('click', '.contact-box a.unlink_contact', function () {
 			var name = $(this).attr('data_contact_name');
 			frappe.confirm(
 				`Are you sure you want to unlink this contact with ${cur_frm.docname}?`,
@@ -252,7 +254,7 @@ $.extend(frappe.contacts, {
 			);
 		});
 
-		$(frm.fields_dict["contact_html"].$wrapper).on('click', '.contact-box a.delete_contact', function () {
+		$(frm.layout_for_contacts.fields_dict["contact_html1"].$wrapper).on('click', '.contact-box a.delete_contact', function () {
 			var name = $(this).attr('data_contact_name');
 			frappe.confirm(
 				`If this contact is linked to any other entity in the system, it will instead remove the contact from ${cur_frm.docname}.<br><br>
