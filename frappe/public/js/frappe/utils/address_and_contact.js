@@ -182,7 +182,7 @@ $.extend(frappe.contacts, {
 		if (frm.fields_dict['contact_html'] && "contact_list" in frm.doc.__onload) {
 			frm.layout_for_contacts.make();
 			$(frm.layout_for_contacts.fields_dict["contact_html1"].wrapper)
-			.html(frappe.render_template("contact_list", frm.doc.__onload))
+				.html(frappe.render_template("contact_list", frm.doc.__onload))
 				.find(".btn-contact").on("click", function () {
 					frappe.new_doc("Contact");
 				});
