@@ -67,7 +67,7 @@ $.extend(frappe.contacts, {
 			frappe.contacts.clear_address_and_contact(frm);
 			frm.layout_for_address.make();
 			$(frm.layout_for_address.fields_dict["address_html1"].wrapper)
-			.html(frappe.render_template("address_list", frm.doc.__onload))
+				.html(frappe.render_template("address_list", frm.doc.__onload))
 				.find(".btn-address").on("click", function () {
 					frappe.new_doc("Address");
 				});
