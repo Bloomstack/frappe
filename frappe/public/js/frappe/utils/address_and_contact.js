@@ -4,7 +4,7 @@ $.extend(frappe.contacts, {
 	clear_address_and_contact: function (frm) {
 		frm.fields_dict['address_html'] && $(frm.fields_dict['address_html'].wrapper).html("");
 		frm.fields_dict['contact_html'] && $(frm.fields_dict['contact_html'].wrapper).html("");
-		if(frm.layout_for_address.fields_dict['address_html1'] && $(frm.fields_dict['address_html1'].wrapper)) {
+		if (frm.layout_for_address.fields_dict['address_html1'] && $(frm.fields_dict['address_html1'].wrapper)) {
 			frm.layout_for_address.fields_dict['address_html1'] && $(frm.fields_dict['address_html1'].wrapper).html("");
 		}
 		if(frm.layout_for_address.fields_dict['contact_html1'] && $(frm.fields_dict['contact_html1'].wrapper)) {
