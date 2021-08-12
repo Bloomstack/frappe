@@ -6,8 +6,11 @@
     <div class="header-info">
       <div class="row">
         <div class="col-md-4">
-          <img src="{{ featured_image }}"
-          alt="{{featured_blog.title}} - Cover Image">
+          {% if featured_image %}
+          <img src="{{ featured_image }}" alt="{{featured_blog.title}} - Cover Image">
+          {% else %} 
+          <img src="/assets/frappe/images/placeholder_blog.png" alt="{{featured_blog.title}} - Cover Image">
+          {% endif %}
         </div>
         <div class="col-md-8">  
           <div class="row">
