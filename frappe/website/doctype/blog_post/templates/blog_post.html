@@ -4,46 +4,45 @@
 	{% include "templates/includes/meta_block.html" %}
 {% endblock %}
 
+{% block style %}
+<link type="text/css" rel="stylesheet" href="/assets/frappe/css/blogdetail.css">
+{% endblock %}
+
 {% block page_content %}
-<div class="blog-container">
-	<article class="blog-content mb-3" itemscope itemtype="http://schema.org/BlogPosting">
-		<!-- begin blog content -->
-		<div class="blog-info">
-			<h1 itemprop="headline" class="blog-header">{{ title }}</h1>
-			<p class="text-muted small">
-			{{ frappe.format_date(published_on) }}
-			</p>
+<header class="header">
+</header>
+<div class="blog-container container">
+	<article class="blog-content mb-3">
+		<div class="col-md-6 header-info px-0">
+			<h1 class="blog-header">{{ subject }}</h1>
 		</div>
-		<p class="lead">
-			{{ description }}
+		<div class="feature_category_text">
+			{% if is_featuredblog %}
+				Feature Article
+			{% else %}
+				{{category.title}}
+			{% endif %}
+		</div>
+		<p class="blog_date">
+			{{ frappe.format_date(published_on) }}
 		</p>
 		<div itemprop="articleBody" class="longform blog-text mt-5">
 		{{ content }}
 		</div>
-		<!-- end blog content -->
 	</article>
 
 	{% if blogger_info %}
-	<hr class="my-5">
-	{% include "templates/includes/blog/blogger.html" %}
+  <hr class="my-5">
+		{% include "templates/includes/blog/blogger.html" %}
 	{% endif %}
 
 	<div class="blog-comments my-5">
 		{% include 'templates/includes/comments/comments.html' %}
 	</div>
+
 </div>
 <script>
 	frappe.ready(() => frappe.set_search_path("/blog"))
 </script>
 {% endblock %}
 
-{% block style %}
-<style>
-.blog-container {
-	max-width: 720px;
-	margin: 0 auto;
-	font-size: 1.2rem;
-}
-
-</style>
-{% endblock %}
