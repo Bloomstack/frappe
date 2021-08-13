@@ -56,8 +56,9 @@ header .header-info .col-md-8 {
 }
 
 .feature_category_text {
-  font: normal normal normal 14px/17px 'Lato', sans-serif;
-  color: #0077FF;
+  font: normal normal bold 14px/17px 'Lato', sans-serif;
+  color: #616161;
+  text-transform: uppercase;
 }
 
 .blog_date {
