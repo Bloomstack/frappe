@@ -14,7 +14,7 @@
 	<div class="content">
 		<div class="container">
 			<article class="blog-content mb-3">
-				<div class="col-md-6 header-info px-0">
+				<div class="col-md-12 header-info px-0">
 					<h1 class="blog-header">{{ subject }}</h1>
 				</div>
 				<div class="feature_category_text">
@@ -31,12 +31,12 @@
 					{{ content }}
 				</div>
 			</article>
-			
+
 			{% if blogger_info %}
 			<hr class="my-5">
 			{% include "templates/includes/blog/blogger.html" %}
 			{% endif %}
-			
+
 			<div class="blog-comments my-5">
 				{% include 'templates/includes/comments/comments.html' %}
 			</div>
