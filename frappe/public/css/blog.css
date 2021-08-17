@@ -58,7 +58,7 @@ header .header-info .col-md-8 {
 .feature_category_text {
   font: normal normal bold 14px/17px 'Lato', sans-serif;
   color: #616161;
-  text-transform: uppercase;
+  text-transform: capitalize;
 }
 
 .blog_date {

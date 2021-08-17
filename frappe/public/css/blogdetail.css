@@ -53,7 +53,8 @@ p.blog_date {
 .feature_category_text {
     font: normal normal normal 14px/17px 'Lato', sans-serif;
     color: #616161;
-    text-transform: uppercase;
+    text-transform: capitalize;
+    margin: 20px 0 10px;
 }
 
 .media h5 a {
