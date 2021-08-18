@@ -31,11 +31,6 @@ header {
     padding: 50px 70px;
 }
 
-.blog-content img{
-    float: left;
-    margin-right: 35px;
-}
-
 .blog-container hr {
     border-top: 1px solid #8d99a6;
 }
