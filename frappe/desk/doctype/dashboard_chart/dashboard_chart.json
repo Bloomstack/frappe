@@ -22,6 +22,7 @@
   "group_by_based_on",
   "aggregate_function_based_on",
   "number_of_groups",
+  "show_others",
   "column_break_6",
   "is_public",
   "heatmap_year",
@@ -297,9 +298,16 @@
    "fieldname": "or_filters_section",
    "fieldtype": "Section Break",
    "label": "OR Filters Section"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.number_of_groups >0",
+   "fieldname": "show_others",
+   "fieldtype": "Check",
+   "label": "Show Others"
   }
  ],
- "modified": "2021-07-04 23:21:32.844514",
+ "modified": "2021-08-18 00:56:32.023290",
  "modified_by": "Administrator",
  "module": "Desk",
  "name": "Dashboard Chart",
