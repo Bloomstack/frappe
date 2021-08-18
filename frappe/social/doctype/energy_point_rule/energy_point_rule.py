@@ -44,7 +44,7 @@ class EnergyPointRule(Document):
 
 			try:
 				for user in users:
-					if not user or user == 'Administrator': continue
+					if not user or user in ['Administrator', 'Guest']: continue
 					create_energy_points_log(reference_doctype, reference_name, {
 						'points': points,
 						'user': user,
