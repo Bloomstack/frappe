@@ -291,7 +291,7 @@ def get_group_by_chart_config(chart, filters, or_filters):
 	doctype = chart.document_type
 
 	# don't include documents where Group By Based On has Null values 
-	filters.append([chart.document_type, chart.group_by_based_on, "!=",""])
+	filters.append([doctype, group_by_field, "!=", ""])
 	
 	data = frappe.db.get_list(
 		doctype,
