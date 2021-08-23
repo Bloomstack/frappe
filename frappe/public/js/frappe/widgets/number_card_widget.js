@@ -46,7 +46,6 @@ export default class NumberCardWidget extends Widget {
 				this.card_doc = card;
 				this.render_card();
 			}
-
 			this.set_events();
 		});
 	}

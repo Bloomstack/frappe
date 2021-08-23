@@ -169,5 +169,15 @@ frappe.report_utils = {
 			'numeric_fields': numeric_field_options,
 			'non_numeric_fields': non_numeric_field_options
 		};
+	},
+
+	get_result_of_fn(fn, values) {
+		const get_result = {
+			'Minimum': values => values.reduce((min, val) => Math.min(min, val), values[0]),
+			'Maximum': values => values.reduce((min, val) => Math.max(min, val), values[0]),
+			'Average': values => values.reduce((a, b) => a + b, 0) / values.length,
+			'Sum': values => values.reduce((a, b) => a + b, 0)
+		};
+		return get_result[fn](values);
 	}
 };
