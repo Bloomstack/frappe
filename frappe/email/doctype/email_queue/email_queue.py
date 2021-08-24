@@ -47,3 +47,12 @@ def send_now(name):
 def on_doctype_update():
 	"""Add index in `tabCommunication` for `(reference_doctype, reference_name)`"""
 	frappe.db.add_index('Email Queue', ('status', 'send_after', 'priority', 'creation'), 'index_bulk_flush')
+
+def expire_undelivered_emails():
+	"""Mark the Emails in Email Queue as 'Error' if the emails are not delivered within 24 hours"""
+	emails_to_expire = frappe.db.sql("""SELECT name FROM `tabEmail Queue` WHERE `status` in
+		('Not Sent', 'Sending', 'Partially Sent') AND `creation` < (NOW() - INTERVAL '24' HOUR)""", as_dict=1)
+	for email in emails_to_expire:
+		frappe.db.set_value("Email Queue", email.name, "status", "Error")
+		frappe.db.set_value("Email Queue", email.name, "error",
+			"Unable to send this Email for 24 hours, please contact your System Administrator.")
