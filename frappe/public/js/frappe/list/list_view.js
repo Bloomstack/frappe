@@ -350,7 +350,12 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				${__('Create a new {0}', [__(this.doctype)])}
 			</button></p>` : '';
 
+		const empty_state_image = '/assets/frappe/images/empty.png';
+
 		return `<div class="msg-box no-border">
+			<div>
+				<img src="${empty_state_image}" alt="Generic Empty State" class="null-state">
+			</div>
 			<p>${__('No {0} found', [__(this.doctype)])}</p>
 			${new_button}
 		</div>`;
