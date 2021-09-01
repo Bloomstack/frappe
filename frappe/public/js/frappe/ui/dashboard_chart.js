@@ -192,7 +192,7 @@ frappe.ui.DashboardChart = class DashboardChart {
 				handler: () => {
 					frappe.set_route('query-report', this.chart_doc.report_name);
 				}
-			})
+			});
 		}
 		this.set_chart_actions(actions);
 	}
