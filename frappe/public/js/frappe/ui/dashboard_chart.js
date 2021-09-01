@@ -410,4 +410,4 @@ frappe.ui.DashboardChart = class DashboardChart {
 			return Promise.resolve();
 		}
 	}
-}
+};
