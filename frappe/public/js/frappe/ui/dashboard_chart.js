@@ -1,4 +1,4 @@
-frappe.provide('ui')
+frappe.provide('ui');
 frappe.provide('frappe.dashboards');
 frappe.provide('frappe.dashboards.chart_sources');
 
