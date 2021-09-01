@@ -6,7 +6,7 @@ frappe.views.DashboardView = class DashboardView extends frappe.views.ListView {
 	}
 
 	setup_defaults() {
-		super.setup_defaults()
+		super.setup_defaults();
 		this.dashboard_settings = frappe.get_user_settings(this.doctype)['dashboard_settings'] || null;
 	}
 
