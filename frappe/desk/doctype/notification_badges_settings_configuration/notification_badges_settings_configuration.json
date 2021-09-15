@@ -1,0 +1,49 @@
+{
+ "creation": "2019-11-06 22:42:38.117992",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "filter_doctype",
+  "filter",
+  "column_break_3",
+  "html_4"
+ ],
+ "fields": [
+  {
+   "fieldname": "filter_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "DocType",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "filter",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Filter",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "html_4",
+   "fieldtype": "HTML",
+   "options": "<p><strong>Filter Examples</strong></p>\n<pre>{\"status\": \"Open\"}<br>\n<br>{\"status\": [\"in\", [\"Open\", \"Overdue\"]]}<br>\n<br>{\"status\": [\"not in\", [\"Completed\", \"Closed\"]],\n\"docstatus\": [\"&lt;\", 2]}\n</pre>"
+  }
+ ],
+ "istable": 1,
+ "modified": "2021-09-15 00:55:36.316195",
+ "modified_by": "Administrator",
+ "module": "Desk",
+ "name": "Notification Badges Settings Configuration",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
