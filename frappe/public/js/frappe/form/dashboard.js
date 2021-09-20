@@ -90,6 +90,24 @@ frappe.ui.form.Dashboard = Class.extend({
 		return progress_chart;
 	},
 
+	add_progress_chart: function(title, percent) {
+		var progress_chart = this.make_progress_chart(title);
+
+		if(!$.isArray(percent)) {
+			percent = this.format_percent(title, percent);
+		}
+
+		var progress = $('<ul class="progress_chart"></ul>').appendTo(progress_chart);
+		$.each(percent, function(i, opts) {
+			$(repl('<li style="width: %(width)s" \
+				title="%(title)s" class="%(progress_class)s">%(title)s</li>', opts)).appendTo(progress);
+		});
+
+		this.show();
+
+		return progress_chart;
+	},
+
 	show_progress: function(title, percent, message) {
 		this._progress_map = this._progress_map || {};
 		let progress_chart = this._progress_map[title];
