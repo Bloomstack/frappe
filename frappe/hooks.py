@@ -185,7 +185,8 @@ scheduler_events = {
 		"frappe.desk.page.backups.backups.delete_downloadable_backups",
 		"frappe.deferred_insert.save_to_db",
 		"frappe.desk.form.document_follow.send_hourly_updates",
-		"frappe.integrations.doctype.google_calendar.google_calendar.sync"
+		"frappe.integrations.doctype.google_calendar.google_calendar.sync",
+		"frappe.core.doctype.user.user.execute_bloomtrace_integration_request"
 	],
 	"daily": [
 		"frappe.email.queue.clear_outbox",

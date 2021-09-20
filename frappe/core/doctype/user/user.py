@@ -4,12 +4,13 @@
 from __future__ import unicode_literals, print_function
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint, flt, has_gravatar, format_datetime, now_datetime, get_formatted_email, today
+from frappe.utils import cint, flt, has_gravatar, format_datetime, now_datetime, get_formatted_email, today, cstr
 from frappe import throw, msgprint, _
 from frappe.utils.password import update_password as _update_password, check_password
 from frappe.desk.notifications import clear_notifications
 from frappe.desk.doctype.notification_settings.notification_settings import create_notification_settings
 from frappe.utils.user import get_system_managers
+from frappe.frappeclient import FrappeClient, AuthError
 from bs4 import BeautifulSoup
 import frappe.permissions
 import frappe.share
@@ -49,6 +50,14 @@ class User(Document):
 
 	def after_insert(self):
 		create_notification_settings(self.name)
+		self.update_bloomtrace_user()
+
+	def update_bloomtrace_user(self):
+		if frappe.get_conf().developer_mode or frappe.get_conf().disable_user_sync:
+			return
+
+		if self.user_type == "System User" and self.name not in ["Administrator", "Guest"]:
+			make_integration_request(self.doctype, self.name)
 
 	def validate(self):
 		self.check_demo()
@@ -1146,3 +1155,88 @@ def job_rename_owner_modified_by(table, old_name, new_name):
 		sql = """UPDATE `{}` SET {} WHERE {}""".format(
 			table, ",".join(field_sql), " OR ".join(field_where))
 		frappe.db.sql(sql, dict(new_name=new_name, old_name=old_name))
+
+def make_integration_request(doctype, docname, endpoint):
+	settings = frappe.get_cached_doc("Compliance Settings")
+	if not (frappe.conf.enable_bloomtrace and settings.is_compliance_enabled) or \
+		frappe.db.exists("Integration Request", {"reference_doctype": doctype, "reference_docname": docname, "endpoint": endpoint}):
+		return
+
+	doc = frappe.get_doc(doctype, docname)
+	company = settings.get("company", {"company": doc.company}) and settings.get("company", {"company": doc.company})[0]
+	fieldname = "push_{0}".format(frappe.scrub(endpoint))
+
+	if not company or not company.get(fieldname):
+		return
+
+	integration_request = frappe.get_doc({
+		"doctype": "Integration Request",
+		"integration_type": "Remote",
+		"integration_request_service": "BloomTrace",
+		"status": "Queued",
+		"reference_doctype": doctype,
+		"reference_docname": docname,
+		"endpoint": endpoint
+	}).save(ignore_permissions=True)
+
+def execute_bloomtrace_integration_request():
+	frappe_client = get_bloomtrace_client()
+	if not frappe_client:
+		return
+
+	site_url = frappe.utils.get_host_name()
+	pending_requests = frappe.get_all("Integration Request",
+		filters={
+			"status": ["IN", ["Queued", "Failed"]],
+			"reference_doctype": "User",
+			"integration_request_service": "BloomTrace"
+		},
+		order_by="creation ASC",
+		limit=50)
+
+	for request in pending_requests:
+		integration_request = frappe.get_doc("Integration Request", request.name)
+		user = frappe.get_doc("User", integration_request.reference_docname)
+		try:
+			insert_bloomstack_site_user(user, site_url, frappe_client)
+
+			integration_request.error = ""
+			integration_request.status = "Completed"
+		except Exception as e:
+			integration_request.error = cstr(frappe.get_traceback())
+			integration_request.status = "Failed"
+
+		integration_request.save(ignore_permissions=True)
+
+
+def insert_bloomstack_site_user(user, site_url, frappe_client):
+	bloomstack_site_user = make_bloomstack_site_user(user, site_url)
+	return frappe_client.insert(bloomstack_site_user)
+
+def make_bloomstack_site_user(user, site_url):
+	bloomstack_site_user = {
+		"doctype": "Bloomstack Site User",
+		"enabled": user.enabled,
+		"first_name": user.first_name,
+		"last_name": user.last_name,
+		"email": user.email,
+		"bloomstack_site": site_url
+	}
+	return bloomstack_site_user
+
+def get_bloomtrace_client():
+	url = frappe.conf.get("bloomtrace_server")
+	username = frappe.conf.get("bloomtrace_username")
+	password = frappe.conf.get("bloomtrace_password")
+
+	if not url:
+		return
+
+	try:
+		client = FrappeClient(url, username=username, password=password, verify=True)
+	except ConnectionError:
+		return
+	except AuthError:
+		return
+
+	return client
