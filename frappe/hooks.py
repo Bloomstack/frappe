@@ -185,7 +185,8 @@ scheduler_events = {
 		"frappe.desk.page.backups.backups.delete_downloadable_backups",
 		"frappe.deferred_insert.save_to_db",
 		"frappe.desk.form.document_follow.send_hourly_updates",
-		"frappe.integrations.doctype.google_calendar.google_calendar.sync"
+		"frappe.integrations.doctype.google_calendar.google_calendar.sync",
+		"frappe.core.doctype.user.user.execute_bloomtrace_integration_request"
 	],
 	"daily": [
 		"frappe.email.queue.clear_outbox",
@@ -264,7 +265,10 @@ setup_wizard_exception = [
 ]
 
 before_migrate = ['frappe.patches.v11_0.sync_user_permission_doctype_before_migrate.execute']
-after_migrate = ['frappe.website.doctype.website_theme.website_theme.generate_theme_files_if_not_exist']
+after_migrate = [
+	'frappe.website.doctype.website_theme.website_theme.generate_theme_files_if_not_exist',
+	'frappe.cognito.setup'
+]
 
 otp_methods = ['OTP App','Email','SMS']
 user_privacy_documents = [
