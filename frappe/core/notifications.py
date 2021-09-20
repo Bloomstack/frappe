@@ -3,9 +3,10 @@
 
 from __future__ import unicode_literals
 import frappe
+import json
 
 def get_notification_config():
-	return {
+	notifications = {
 		"for_doctype": {
 			"Error Log": {"seen": 0},
 			"Communication": {"status": "Open", "communication_type": "Communication"},
@@ -13,8 +14,15 @@ def get_notification_config():
 			"Event": "frappe.core.notifications.get_todays_events",
 			"Error Snapshot": {"seen": 0, "parent_error_snapshot": None},
 			"Workflow Action": {"status": 'Open'}
-		},
+		}
 	}
+
+	if frappe.db.exists("Notification Badges Settings"):
+		settings = frappe.get_single("Notification Badges Settings")
+		for config in settings.configuration:
+			notifications["for_doctype"][config.filter_doctype] = json.loads(config.filter)
+
+	return notifications
 
 def get_things_todo(as_list=False):
 	"""Returns a count of incomplete todos"""
