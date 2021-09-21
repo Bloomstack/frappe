@@ -84,7 +84,7 @@ def setup():
 	bloomstack_social_key.client_secret = config.get("client_secret")
 	bloomstack_social_key.base_url = config.get("base_url", "https://auth.bloomstack.com")
 	bloomstack_social_key.authorize_url = config.get("authorize_url", "/oauth2/authorize")
-	bloomstack_social_key.redirect_url = config.get("redirect_url", \
+	bloomstack_social_key.redirect_url = config.get("redirect_url",
 		"https://{}/api/method/frappe.integrations.oauth2_logins.custom/bloomstack".format(site_name))
 	bloomstack_social_key.access_token_url = config.get("access_token_url", "/oauth2/token")
 	bloomstack_social_key.api_endpoint = config.get("api_endpoint", "/oauth2/userInfo")
