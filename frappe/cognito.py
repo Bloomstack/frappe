@@ -88,7 +88,7 @@ def setup():
 		"https://{}/api/method/frappe.integrations.oauth2_logins.custom/bloomstack".format(site_name))
 	bloomstack_social_key.access_token_url = config.get("access_token_url", "/oauth2/token")
 	bloomstack_social_key.api_endpoint = config.get("api_endpoint", "/oauth2/userInfo")
-	bloomstack_social_key.auth_url_data = config.get("auth_url_data", \
+	bloomstack_social_key.auth_url_data = config.get("auth_url_data",
 		'{ "response_type": "code", "scope": "email openid profile" }')
 	bloomstack_social_key.user_id_property = config.get("user_id_property", "email")
 	bloomstack_social_key.enable_social_login = 0 if cint(config.get("disable", 0)) == 1 else 1
