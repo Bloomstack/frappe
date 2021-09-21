@@ -93,3 +93,6 @@ ul.tree-children {
 .tree-link.active ~ .balance-area {
   color: #36414C !important;
 }
+.tree-children .tree-node:not(.opened) {
+  border-bottom: 1px dotted grey;
+}
