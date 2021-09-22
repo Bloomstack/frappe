@@ -1171,3 +1171,10 @@ input[type="checkbox"]:focus {
 .user-progress-dialog .done-state .help-links a {
   margin: 0px 10px;
 }
+#page-desktop {
+  background-image: url("/assets/frappe/images/desk.png");
+  height: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}

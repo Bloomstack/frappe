@@ -4,7 +4,7 @@
 			class="btn-show-hide text-muted text-medium"
 			@click="show_hide_cards_dialog"
 		>
-			{{ __('Show / Hide Cards') }}
+			{{ __('Show / Hide Stacks') }}
 		</a>
 		<div
 			class="modules-section"
@@ -27,6 +27,7 @@ import DeskSection from './DeskSection.vue';
 import { generate_route } from './utils';
 
 export default {
+	name: 'Desktop',
 	components: {
 		DeskSection
 	},
@@ -145,7 +146,7 @@ export default {
 
 					let old_values = null;
 					const d = new frappe.ui.Dialog({
-						title: __('Show / Hide Cards'),
+						title: __('Show / Hide Stacks'),
 						fields: fields,
 						primary_action_label: __('Save'),
 						primary_action: (values) => {
