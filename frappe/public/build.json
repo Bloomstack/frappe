@@ -97,7 +97,12 @@
 		"public/less/filters.less",
 		"public/less/social.less",
 		"node_modules/frappe-charts/dist/frappe-charts.min.css",
-		"public/js/lib/summernote/summernote.min.css"
+		"public/js/lib/summernote/summernote.min.css",
+		"public/css/buttons.css",
+		"public/css/desk.css",
+		"public/css/login.css",
+		"public/css/mobile-fixes.css",
+		"public/css/tree.css"
 	],
 	"css/frappe-rtl.css": [
 		"public/css/bootstrap-rtl.css",
