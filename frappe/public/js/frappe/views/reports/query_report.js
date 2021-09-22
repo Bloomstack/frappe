@@ -299,7 +299,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			filters.prepared_report_name = query_params.prepared_report_name;
 		}
 
-		return new Promise(resolve => {
+		let queryPromise = new Promise(resolve => {
 			this.last_ajax = frappe.call({
 				method: 'frappe.desk.query_report.run',
 				type: 'GET',
@@ -361,6 +361,23 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			this.show_footer_message();
 			frappe.hide_progress();
 		});
+
+		this.toggle_message(false);
+		frappe.dom.freeze("<img src='/assets/frappe/images/bloomstack_loader_infinity.svg'>");
+
+		return queryPromise.then((result) => {
+			this.cleanup();
+			return result;
+		}).catch((err) => {
+			this.cleanup();
+			throw err;
+		});
+
+	}
+
+	cleanup() {
+		// unfreeze the screen when query is complete
+		while (frappe.dom.freeze_count > 0) frappe.dom.unfreeze();
 	}
 
 	get_query_params() {
