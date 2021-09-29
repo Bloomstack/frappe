@@ -17,6 +17,9 @@ export default class ChartWidget extends Widget {
 			label: this.label,
 			hidden: this.hidden,
 			width: this.width,
+			tooltipOptions:{
+				"formatTooltipY": x => "$" + x
+			}
 		};
 	}
 
@@ -698,6 +701,11 @@ export default class ChartWidget extends Widget {
 			axisOptions: {
 				xIsSeries: this.chart_doc.timeseries,
 				shortenYAxisNumbers: 1
+			},
+			tooltipOptions: {
+				"formatTooltipY":(x) => {
+					return format_currency(x)
+				}
 			}
 		};
 
