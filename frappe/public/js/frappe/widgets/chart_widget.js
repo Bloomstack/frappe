@@ -16,10 +16,7 @@ export default class ChartWidget extends Widget {
 			chart_name: this.chart_name,
 			label: this.label,
 			hidden: this.hidden,
-			width: this.width,
-			tooltipOptions:{
-				"formatTooltipY": x => "$" + x
-			}
+			width: this.width
 		};
 	}
 
