@@ -196,7 +196,7 @@ def get_chart_config(chart, filters, or_filters, timespan, timegrain, from_date,
 
 	result = get_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, or_filters, date_filters)
 
-	fieldname = chart.value_based_on or chart.aggregate_function_based_on or chart.group_by_based_on
+	fieldname = chart.value_based_on
 	chart_config = {
 		"_fieldtype": frappe.get_meta(doctype).get_field(fieldname).fieldtype if frappe.get_meta(doctype).get_field(fieldname) else None,
 		"labels": [get_period(r[0], timegrain) for r in result],
