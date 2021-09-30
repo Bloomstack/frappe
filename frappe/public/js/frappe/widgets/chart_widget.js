@@ -698,6 +698,15 @@ export default class ChartWidget extends Widget {
 			axisOptions: {
 				xIsSeries: this.chart_doc.timeseries,
 				shortenYAxisNumbers: 1
+			},
+			tooltipOptions: {
+				"formatTooltipY": (x) => {
+					if (this.data._fieldtype == "Currency") {
+						return format_currency(x);
+					} else {
+						return x;
+					}
+				}
 			}
 		};
 
