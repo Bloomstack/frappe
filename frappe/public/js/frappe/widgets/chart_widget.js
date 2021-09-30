@@ -700,12 +700,11 @@ export default class ChartWidget extends Widget {
 				shortenYAxisNumbers: 1
 			},
 			tooltipOptions: {
-				"formatTooltipY":(x) => {
-					if(this.data._fieldtype == "Currency") {
-						return format_currency(x)
-					}
-					else {
-						return x
+				"formatTooltipY": (x) => {
+					if (this.data._fieldtype == "Currency") {
+						return format_currency(x);
+					} else {
+						return x;
 					}
 				}
 			}
