@@ -701,7 +701,12 @@ export default class ChartWidget extends Widget {
 			},
 			tooltipOptions: {
 				"formatTooltipY":(x) => {
-					return format_currency(x)
+					if(this.data._fieldtype == "Currency") {
+						return format_currency(x)
+					}
+					else {
+						return x
+					}
 				}
 			}
 		};

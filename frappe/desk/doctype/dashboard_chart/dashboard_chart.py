@@ -196,7 +196,9 @@ def get_chart_config(chart, filters, or_filters, timespan, timegrain, from_date,
 
 	result = get_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, or_filters, date_filters)
 
+	fieldname = chart.value_based_on or chart.aggregate_function_based_on or chart.group_by_based_on
 	chart_config = {
+		"_fieldtype": frappe.get_meta(doctype).get_field(fieldname).fieldtype if frappe.get_meta(doctype).get_field(fieldname) else None,
 		"labels": [get_period(r[0], timegrain) for r in result],
 		"datasets": [{
 			"name": "{0} - {1}".format(getdate(from_date), getdate(to_date)),
@@ -317,7 +319,9 @@ def get_group_by_chart_config(chart, filters, or_filters):
 			else:
 				data = data[0: chart.number_of_groups]
 
+		fieldname = chart.aggregate_function_based_on
 		chart_config = {
+			"_fieldtype": frappe.get_meta(doctype).get_field(fieldname).fieldtype if frappe.get_meta(doctype).get_field(fieldname) else None,
 			"labels": [item['name'] if item['name'] else 'Not Specified' for item in data],
 			"datasets": [{
 				"name": chart.name,
