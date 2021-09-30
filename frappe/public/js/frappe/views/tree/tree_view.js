@@ -10,11 +10,21 @@ frappe.views.ListTreeView = class TreeView extends frappe.views.ListView {
 		this.view = 'Tree';
 	}
 
-	get_or_filters_for_args() {
-		return [
+	get_filter_for_args() {
+		// filters might have a fifth param called hidden,
+		// we don't want to pass that server side
+		return this.filter_area
+			? this.filter_area.get().map(filter => filter.slice(0, 4))
+			: [];
+	}
+
+	get_filters_for_args() {
+		let filters = this.get_filter_for_args();
+		filters.push(
 			[this.doctype, "is_group", "is", "set"],
 			[this.doctype, this.meta.nsm_parent_field, "is", "not set"]
-		];
+		);
+		return filters;
 	}
 
 	get_fields() {
