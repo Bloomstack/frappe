@@ -214,7 +214,7 @@ export default class NumberCardWidget extends Widget {
 		}, []);
 		const col = res.columns.find(col => col.fieldname == field);
 		this.number = frappe.report_utils.get_result_of_fn(this.card_doc.report_function, vals);
-		this.get_formatted_number(col);
+		this.formatted_number = this.number;
 	}
 
 	get_formatted_number(df) {
