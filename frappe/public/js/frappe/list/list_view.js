@@ -1397,6 +1397,51 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			};
 		};
 
+		const bulk_download = () => {
+			return {
+				label: __('Download'),
+				action: () =>{
+					let filters = {
+						doctype: doctype,
+						docnames: this.get_checked_items(),
+					}
+					let w = window.open(
+						 frappe.urllib.get_full_url(
+							"/api/method/frappe.core.doctype.file.file.download_bulk_files?"
+							+ "filters=" + JSON.stringify(filters)
+						 )
+					);
+					if (!w) {
+						frappe.msgprint(__("Please enable pop-ups")); return;
+					}
+				} ,
+				standard: true
+			};
+		};
+
+		const bulk_download_attachments = () => {
+			return {
+				label: __('Download Attachment'),
+				action: () =>{
+					let filters = {
+						doctype: doctype,
+						docnames: this.get_checked_items(),
+					}
+					let w = window.open(
+						frappe.urllib.get_full_url(
+							"/api/method/frappe.core.doctype.file.file.download_zip_files?"
+							+ "filters=" + JSON.stringify(filters)
+						)
+					);
+					if (!w) {
+						frappe.msgprint(__("Please enable pop-ups")); return;
+					}
+				} ,
+				standard: true
+			};
+		};
+
+
 		const bulk_cancel = () => {
 			return {
 				label: __('Cancel'),
@@ -1454,6 +1499,16 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		actions_menu_items.push(bulk_assignment());
 
 		actions_menu_items.push(bulk_assignment_rule());
+
+		// bulk download
+		if(doctype == "File") {
+			actions_menu_items.push(bulk_download());
+		}
+		else {
+			//bulk download Attachment
+			actions_menu_items.push(bulk_download_attachments());
+		}
+
 
 		// bulk printing
 		if (frappe.model.can_print(doctype)) {
@@ -1557,3 +1612,4 @@ frappe.get_list_view = (doctype) => {
 	let route = `List/${doctype}/List`;
 	return frappe.views.list_view[route];
 };
+
