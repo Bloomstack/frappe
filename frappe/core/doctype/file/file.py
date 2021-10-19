@@ -1013,7 +1013,6 @@ def download_bulk_files(filters):
 	docnames = filters.get('docnames')
 	output_filename = "{0}.zip".format(doctype)
 	output_path = frappe.get_site_path('private', 'files', output_filename)
-	file_url = [doc.get("file_url") for doc in docnames]
 
 	if not frappe.db.exists("File", output_filename):
 		input_files = []

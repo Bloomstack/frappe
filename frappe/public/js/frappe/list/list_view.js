@@ -1404,7 +1404,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					let filters = {
 						doctype: doctype,
 						docnames: this.get_checked_items(),
-					}
+					};
 					let w = window.open(
 						 frappe.urllib.get_full_url(
 							"/api/method/frappe.core.doctype.file.file.download_bulk_files?"
@@ -1414,7 +1414,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					if (!w) {
 						frappe.msgprint(__("Please enable pop-ups")); return;
 					}
-				} ,
+				},
 				standard: true
 			};
 		};
@@ -1426,7 +1426,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					let filters = {
 						doctype: doctype,
 						docnames: this.get_checked_items(),
-					}
+					};
 					let w = window.open(
 						frappe.urllib.get_full_url(
 							"/api/method/frappe.core.doctype.file.file.download_zip_files?"
@@ -1436,7 +1436,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					if (!w) {
 						frappe.msgprint(__("Please enable pop-ups")); return;
 					}
-				} ,
+				},
 				standard: true
 			};
 		};
@@ -1501,10 +1501,9 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		actions_menu_items.push(bulk_assignment_rule());
 
 		// bulk download
-		if(doctype == "File") {
+		if (doctype == "File") {
 			actions_menu_items.push(bulk_download());
-		}
-		else {
+		} else {
 			//bulk download Attachment
 			actions_menu_items.push(bulk_download_attachments());
 		}
