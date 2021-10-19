@@ -1406,7 +1406,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 						docnames: this.get_checked_items(),
 					};
 					let w = window.open(
-						 frappe.urllib.get_full_url(
+						frappe.urllib.get_full_url(
 							"/api/method/frappe.core.doctype.file.file.download_bulk_files?"
 							+ "filters=" + JSON.stringify(filters)
 						)
