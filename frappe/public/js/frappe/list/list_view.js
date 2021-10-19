@@ -1409,7 +1409,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 						 frappe.urllib.get_full_url(
 							"/api/method/frappe.core.doctype.file.file.download_bulk_files?"
 							+ "filters=" + JSON.stringify(filters)
-						 )
+						)
 					);
 					if (!w) {
 						frappe.msgprint(__("Please enable pop-ups")); return;
