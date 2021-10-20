@@ -950,16 +950,21 @@ def download_zip_files(filters):
 
 	doctype = filters.get('doctype')
 	docnames = filters.get('docnames')
-
+	label = filters.get('label')
 	output_filename = "{0}.zip".format(doctype)
 	output_path = frappe.get_site_path('private', 'files', output_filename)
 	if not frappe.db.exists("File", output_filename):
 		input_files = []
-		for docname in docnames:
-			attachments = get_attachments(doctype,docname['name'])
-			for d in attachments:
-				doc = frappe.get_doc("File", d.name)
+		if label == "Download":
+			for docname in docnames:
+				doc = frappe.get_doc("File", docname['name'])
 				input_files.append(doc.get_full_path())
+		else:
+			for docname in docnames:
+				attachments = get_attachments(doctype,docname['name'])
+				for d in attachments:
+					doc = frappe.get_doc("File", d.name)
+					input_files.append(doc.get_full_path())
 
 		#Creates a zip file containing all attachments
 		with zipfile.ZipFile(output_path, 'w') as output_zip:
@@ -998,36 +1003,3 @@ def update_existing_file_docs(doc):
 		else:
 			message = _("Files {0} have been made {1}.").format(" ".join(file_list), file_visibility)
 		frappe.msgprint(message)
-
-@frappe.whitelist()
-def download_bulk_files(filters):
-	"""Download selected files as zip.
-
-	Args:
-		filters (string): Stringified JSON objects doctype and docnames
-	"""
-	if isinstance(filters, string_types):
-		filters = json.loads(filters)
-
-	doctype = filters.get('doctype')
-	docnames = filters.get('docnames')
-	output_filename = "{0}.zip".format(doctype)
-	output_path = frappe.get_site_path('private', 'files', output_filename)
-
-	if not frappe.db.exists("File", output_filename):
-		input_files = []
-		for docname in docnames:
-			doc = frappe.get_doc("File", docname['name'])
-			input_files.append(doc.get_full_path())
-		#Creates a zip file containing all attachments
-		with zipfile.ZipFile(output_path, 'w') as output_zip:
-			for input_file in input_files:
-				output_zip.write(input_file, arcname=os.path.basename(input_file))
-
-	with open(output_path, 'rb') as fileobj:
-		filedata = fileobj.read()
-
-	frappe.local.response.filename = output_filename
-	frappe.local.response.filecontent = filedata
-	frappe.local.response.type = "download"
-

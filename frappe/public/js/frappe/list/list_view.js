@@ -1397,35 +1397,14 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			};
 		};
 
-		const bulk_download = () => {
+		const bulk_download_files = (label_name) => {
 			return {
-				label: __('Download'),
+				label: __(label_name),
 				action: () =>{
 					let filters = {
 						doctype: doctype,
 						docnames: this.get_checked_items(),
-					};
-					let w = window.open(
-						frappe.urllib.get_full_url(
-							"/api/method/frappe.core.doctype.file.file.download_bulk_files?"
-							+ "filters=" + JSON.stringify(filters)
-						)
-					);
-					if (!w) {
-						frappe.msgprint(__("Please enable pop-ups")); return;
-					}
-				},
-				standard: true
-			};
-		};
-
-		const bulk_download_attachments = () => {
-			return {
-				label: __('Download Attachment'),
-				action: () =>{
-					let filters = {
-						doctype: doctype,
-						docnames: this.get_checked_items(),
+						label: label_name
 					};
 					let w = window.open(
 						frappe.urllib.get_full_url(
@@ -1502,10 +1481,10 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		// bulk download
 		if (doctype == "File") {
-			actions_menu_items.push(bulk_download());
+			actions_menu_items.push(bulk_download_files("Download"));
 		} else {
 			//bulk download Attachment
-			actions_menu_items.push(bulk_download_attachments());
+			actions_menu_items.push(bulk_download_files("Download Attachment"));
 		}
 
 
