@@ -658,8 +658,8 @@ export default class ChartWidget extends Widget {
 			let is_child = frappe.get_meta(this.chart_doc.document_type).istable;
 			let name;
 			if (is_child) {
-				let doc = frappe.get_doc("DocField", {"fieldtype": "Table", "options": this.chart_doc.document_type})
-				name = doc.parent ? doc.parent : ""
+				let doc = frappe.get_doc("DocField", {"fieldtype": "Table", "options": this.chart_doc.document_type});
+				name = doc.parent ? doc.parent : "";
 			} else {
 				name = is_document_type ? this.chart_doc.document_type : this.chart_doc.report_name;
 			}
