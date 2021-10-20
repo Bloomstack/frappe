@@ -654,27 +654,35 @@ export default class ChartWidget extends Widget {
 
 	set_route(chart_label) {
 		const is_document_type = this.chart_doc.type !== 'Report';
-		const name = is_document_type ? this.chart_doc.document_type : this.chart_doc.report_name;
-		const route = frappe.utils.generate_route({
-			name: name,
-			type: is_document_type ? 'doctype' : 'report',
-			is_query_report: !is_document_type,
+		frappe.model.with_doctype(this.chart_doc.document_type, () => {
+			let is_child = frappe.get_meta(this.chart_doc.document_type).istable;
+			let name;
+			if (is_child) {
+				let doc = frappe.get_doc("DocField", {"fieldtype": "Table", "options": this.chart_doc.document_type})
+				name = doc.parent ? doc.parent : ""
+			} else {
+				name = is_document_type ? this.chart_doc.document_type : this.chart_doc.report_name;
+			}
+			const route = frappe.utils.generate_route({
+				name: name,
+				type: is_document_type ? 'doctype' : 'report',
+				is_query_report: !is_document_type,
+			});
+			if (is_document_type) {
+				const filters = JSON.parse(this.chart_doc.filters_json);
+				frappe.route_options = filters.reduce((acc, filter) => {
+					return Object.assign(acc, {
+						[`${filter[0]}.${filter[1]}`]: [filter[2], filter[3]]
+					});
+				}, {});
+			}
+
+			if (this.chart_doc.group_by_based_on) {
+				frappe.route_options[this.chart_doc.group_by_based_on] = chart_label;
+			}
+
+			frappe.set_route(route);
 		});
-
-		if (is_document_type) {
-			const filters = JSON.parse(this.chart_doc.filters_json);
-			frappe.route_options = filters.reduce((acc, filter) => {
-				return Object.assign(acc, {
-					[`${filter[0]}.${filter[1]}`]: [filter[2], filter[3]]
-				});
-			}, {});
-		}
-
-		if (this.chart_doc.group_by_based_on) {
-			frappe.route_options[this.chart_doc.group_by_based_on] = chart_label;
-		}
-
-		frappe.set_route(route);
 	}
 
 	get_chart_args() {
