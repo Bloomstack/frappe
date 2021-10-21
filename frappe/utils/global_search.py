@@ -11,6 +11,7 @@ import os
 from bs4 import BeautifulSoup
 from frappe.utils import cint, strip_html_tags
 from frappe.model.base_document import get_controller
+from frappe.utils.html_utils import unescape_html
 from six import text_type
 
 def setup_global_search_table():

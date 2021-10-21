@@ -225,7 +225,7 @@ class ParallelTestWithOrchestrator(ParallelTestRunner):
 		- test-completed (<build_id>, <instance_id>)
 	'''
 	def __init__(self, app, site, with_coverage=False):
-		self.orchestrator_url = os.environ.get('ORCHESTRATOR_URL')
+		self.orchestrator_url ="https://github.com/frappe/test-orchestrator"
 		if not self.orchestrator_url:
 			click.echo('ORCHESTRATOR_URL environment variable not found!')
 			click.echo('Pass public URL after hosting https://github.com/frappe/test-orchestrator')
