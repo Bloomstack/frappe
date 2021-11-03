@@ -132,11 +132,13 @@ def make_integration_request(doctype, docname, service=None, status="Queued", en
 
 	return integration_request
 
-def update_integration_request(integration_request, status=None, response=None, error=None):
+def update_integration_request(integration_request, status=None, endpoint=None, error=None, response=None):
+	if status:
+		integration_request.status = status
+	if endpoint:
+		integration_request.endpoint = endpoint
 	if response:
-		integration_request.status = "Completed"
 		integration_request.output = response
-	elif error:
-		integration_request.status = "Failed"
+	if error:
 		integration_request.error = error
 	integration_request.save(ignore_permissions=True)
