@@ -424,13 +424,16 @@ def send_one(email, smtpserver=None, auto_commit=True, now=False, from_test=Fals
 				recipient.status = "Error"
 				continue
 
-			message = prepare_message(email, recipient.recipient, recipients_list)
-			if not frappe.flags.in_test:
-				smtpserver.sess.sendmail(email.sender, recipient.recipient, message)
+			if recipient.recipient.lower().strip() in ["guest <guest@example.com>", "administrator <admin@digithinkit.com>"]:
+				recipient.status = "Error"
+			else:
+				message = prepare_message(email, recipient.recipient, recipients_list)
+				if not frappe.flags.in_test:
+					smtpserver.sess.sendmail(email.sender, recipient.recipient, message)
 
-			recipient.status = "Sent"
-			frappe.db.sql("""update `tabEmail Queue Recipient` set status='Sent', modified=%s where name=%s""",
-				(now_datetime(), recipient.name), auto_commit=auto_commit)
+				recipient.status = "Sent"
+				frappe.db.sql("""update `tabEmail Queue Recipient` set status='Sent', modified=%s where name=%s""",
+					(now_datetime(), recipient.name), auto_commit=auto_commit)
 
 		email_sent_to_any_recipient = any("Sent" == s.status for s in recipients_list)
 		email_sent_to_all_recipients = all("Sent" == s.status for s in recipients_list)

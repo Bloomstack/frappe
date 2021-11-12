@@ -113,3 +113,32 @@ def create_payment_gateway(gateway, settings=None, controller=None):
 def json_handler(obj):
 	if isinstance(obj, (datetime.date, datetime.timedelta, datetime.datetime)):
 		return text_type(obj)
+
+
+def make_integration_request(doctype, docname, service=None, status="Queued", endpoint=None, error=None, output=None):
+	integration_request = frappe.get_doc({
+		"doctype": "Integration Request",
+		"integration_type": "Remote",
+		"integration_request_service": service,
+		"status": status,
+		"reference_doctype": doctype,
+		"reference_docname": docname,
+		"endpoint": endpoint,
+		"error": error,
+		"output": output
+	})
+	integration_request.insert(ignore_permissions=True)
+	frappe.db.commit()
+
+	return integration_request
+
+def update_integration_request(integration_request, status=None, endpoint=None, error=None, response=None):
+	if status:
+		integration_request.status = status
+	if endpoint:
+		integration_request.endpoint = endpoint
+	if response:
+		integration_request.output = response
+	if error:
+		integration_request.error = error
+	integration_request.save(ignore_permissions=True)

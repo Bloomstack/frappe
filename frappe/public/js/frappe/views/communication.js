@@ -8,7 +8,15 @@ frappe.views.CommunicationComposer = Class.extend({
 	init: function(opts) {
 		$.extend(this, opts);
 		let me = this;
-		me.make();
+		frappe.call({
+			method: 'frappe.core.doctype.system_settings.system_settings.get_system_settings',
+			callback: function(res) {
+			if(res && res.message) {
+				me.system_settings = res.message;
+			}
+			me.make();
+			}
+		});
 	},
 	make: function() {
 		var me = this;
@@ -131,9 +139,9 @@ frappe.views.CommunicationComposer = Class.extend({
 		this.dialog.set_value("recipients", this.recipients || '');
 		this.dialog.set_value("cc", this.cc || '');
 		this.dialog.set_value("bcc", this.bcc || '');
-		this.dialog.set_value("attach_document_print", this.frm.meta.attach_document_print);
-		this.dialog.set_value("send_me_a_copy", this.frm.meta.send_me_a_copy);
-		this.dialog.set_value("send_read_receipt", this.frm.meta.send_read_receipt);
+		this.dialog.set_value("attach_document_print", this.frm ? this.frm.meta.attach_document_print : this.system_settings.attach_document_print);
+		this.dialog.set_value("send_me_a_copy", this.frm ? this.frm.meta.send_me_a_copy : this.system_settings.send_me_a_copy);
+		this.dialog.set_value("send_read_receipt", this.frm ? this.frm.meta.send_read_receipt : this.system_settings.send_read_receipt);
 
 		if(this.dialog.fields_dict.sender) {
 			this.dialog.fields_dict.sender.set_value(this.sender || '');
