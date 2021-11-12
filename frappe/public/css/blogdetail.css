@@ -1,0 +1,84 @@
+main.container {
+    max-width: unset!important;
+    padding:0!important;
+}
+
+ol.breadcrumb {
+    display: none;
+}
+
+.blog-container {
+    position: relative;
+}
+
+header {
+    background: #C2C2C2 0% 0% no-repeat padding-box;
+    height: 580px;
+    position: absolute;
+    width: 100%;
+    z-index: -9;
+}
+
+.blog-container .content {
+    padding-top: 60px;
+}
+
+.blog-container .container {
+    background: #FFFFFF 0% 0% no-repeat padding-box;
+    box-shadow: 0px 6px 6px #00000029;
+    border: 1px solid #C1C1C1;
+    border-radius: 40px;
+    padding: 50px 70px;
+}
+
+.blog-container hr {
+    border-top: 1px solid #8d99a6;
+}
+
+h1.blog-header {
+    font: normal normal normal 53px/63px 'Lato', sans-serif;
+    color: #373737;
+}
+
+p.blog_date {
+    font: normal normal 300 14px/17px 'Lato', sans-serif;
+    color: #616161;
+}
+
+.feature_category_text {
+    font: normal normal normal 14px/17px 'Lato', sans-serif;
+    color: #616161;
+    text-transform: capitalize;
+    margin: 20px 0 10px;
+}
+
+.media h5 a {
+    font: normal normal bold 24px/29px 'Lato', sans-serif;
+    color: #222A3D;
+}
+
+.media p {
+    font: normal normal normal 14px/17px 'Lato', sans-serif;
+    color: #222A3D;
+}
+
+.blog-comments .comment-header {
+    font: normal normal bold 18px/22px 'Lato', sans-serif;
+    color: #222A3D;
+}
+
+.comment-row span.font-weight-bold {
+    font: normal normal bold 18px/22px 'Lato',sans-serif;
+    color: #222A3D;
+}
+
+.comment-row .media-body .text-muted p {
+    font: normal normal normal 20px/24px 'Lato', sans-serif;
+    color: #515A6E;
+}
+
+#comment-form input,
+#comment-form textarea {
+    border: 1px solid #929AAC;
+    border-radius: 10px;
+}

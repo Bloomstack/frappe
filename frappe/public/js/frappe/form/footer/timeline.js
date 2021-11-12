@@ -250,6 +250,7 @@ frappe.ui.form.Timeline = class Timeline {
 	render_timeline_item(c) {
 		var me = this;
 		this.prepare_timeline_item(c);
+		let $shadow = null;
 		var $timeline_item = $(frappe.render_template("timeline_item", {data:c, frm:this.frm}))
 			.appendTo(me.list)
 			.on("click", ".delete-comment", function() {
@@ -271,7 +272,7 @@ frappe.ui.form.Timeline = class Timeline {
 					const $edit_btn = $(this);
 					const $timeline_content = $timeline_item.find('.timeline-item-content');
 					const $timeline_edit = $timeline_item.find('.timeline-item-edit');
-					const content = $timeline_content.html();
+					const content = $shadow ? $shadow.innerHTML : $timeline_content.html();
 
 					// update state
 					$edit_btn
@@ -306,8 +307,8 @@ frappe.ui.form.Timeline = class Timeline {
 		let el = $timeline_item.find(".timeline-item-content-html");
 
 		if (el && el.length && el[0]) {
-			let shadow = el[0].attachShadow({mode: 'open'});
-			shadow.innerHTML = c.content_html;
+			$shadow = el[0].attachShadow({mode: 'open'});
+			$shadow.innerHTML = c.content_html;
 		}
 
 		if(c.communication_type=="Communication" && c.communication_medium==="Email") {

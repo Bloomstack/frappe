@@ -7,7 +7,7 @@ $.extend(frappe.model, {
 	new_names: {},
 	new_name_count: {},
 
-	get_new_doc: function(doctype, parent_doc, parentfield, with_mandatory_children) {
+	get_new_doc: function(doctype, parent_doc, parentfield, with_mandatory_children, opts) {
 		frappe.provide("locals." + doctype);
 		var doc = {
 			docstatus: 0,
@@ -15,7 +15,8 @@ $.extend(frappe.model, {
 			name: frappe.model.get_new_name(doctype),
 			__islocal: 1,
 			__unsaved: 1,
-			owner: frappe.session.user
+			owner: frappe.session.user,
+			prev_doc: opts
 		};
 		frappe.model.set_default_values(doc, parent_doc);
 
@@ -312,6 +313,7 @@ $.extend(frappe.model, {
 					if(opts.run_link_triggers) {
 						frappe.get_doc(r.message.doctype, r.message.name).__run_link_triggers = true;
 					}
+					frappe.get_doc(r.message.doctype, r.message.name).prev_doc = {"prev_docname": opts.frm.doc.name, "prev_doctype": opts.frm.doc.doctype};
 					frappe.set_route("Form", r.message.doctype, r.message.name);
 				}
 			}

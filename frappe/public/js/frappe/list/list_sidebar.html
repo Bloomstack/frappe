@@ -26,12 +26,16 @@
 	<li class="divider"></li>
 	<li class="list-link" data-view="List">
 		<a href="#List/{%= doctype %}/List">{%= __("List") %}</a></li>
+	<li class="list-link" data-view="Dashboard">
+		<a href="#List/{%= doctype %}/Dashboard">{%= __("Dashboard") %}</a></li>
 	<li class="hide list-link" data-view="Image">
 		<a href="#List/{%= doctype %}/Image">{%= __("Images") %}</a></li>
 	<li class="hide list-link" data-view="Gantt">
 		<a href="#List/{%= doctype %}/Gantt">{%= __("Gantt") %}</a></li>
 	<li class="hide tree-link">
 		<a href="#Tree/{%= doctype %}">{%= __("Tree") %}</a></li>
+	<li class="hide list-link tree-list-link" data-view="List Tree">
+		<a href="#List/{%= doctype %}/ListTree">{%= __("List Tree") %}</a></li>
 	<li class="hide list-link" data-view="Calendar">
 		<a href="#List/{%= doctype %}/Calendar">{%= __("Calendar") %}</a></li>
 	<li class="hide list-link" data-view="Kanban">
@@ -53,9 +57,6 @@
 			</ul>
 		</div>
 	</li>
-	{% if(frappe.help.has_help(doctype)) { %}
-	<li><a class="help-link list-link" data-doctype="{{ doctype }}">{{ __("Help") }}</a></li>
-	{% } %}
 </ul>
 <ul class="list-unstyled sidebar-menu list-group-by">
 </ul>

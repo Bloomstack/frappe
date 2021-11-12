@@ -8,6 +8,13 @@ frappe.ui.form.Share = Class.extend({
 		$.extend(this, opts);
 	},
 	refresh: function() {
+		if (this.frm.doc.__islocal) {
+			this.parent.toggle(false);
+			this.frm.sidebar.sidebar.find(".form-share").toggle(false);
+			return;
+		}
+		this.frm.sidebar.sidebar.find(".form-share").toggle(true);
+		this.parent.toggle(true);
 		this.render_sidebar();
 	},
 	render_sidebar: function() {

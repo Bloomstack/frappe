@@ -43,6 +43,10 @@
   "report_hide",
   "remember_last_selected_value",
   "ignore_xss_filter",
+  "property_depends_on_section",
+  "mandatory_depends_on",
+  "column_break_38",
+  "read_only_depends_on",
   "display",
   "in_filter",
   "no_copy",
@@ -431,11 +435,32 @@
    "fieldtype": "Select",
    "label": "Display Precision",
    "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
+  },
+  {
+   "fieldname": "mandatory_depends_on",
+   "fieldtype": "Code",
+   "label": "Mandatory Depends On",
+   "options": "JS"
+  },
+  {
+   "fieldname": "read_only_depends_on",
+   "fieldtype": "Code",
+   "label": "Read Only Depends On",
+   "options": "JS"
+  },
+  {
+   "fieldname": "property_depends_on_section",
+   "fieldtype": "Section Break",
+   "label": "Property Depends On"
+  },
+  {
+   "fieldname": "column_break_38",
+   "fieldtype": "Column Break"
   }
  ],
  "idx": 1,
  "istable": 1,
- "modified": "2021-05-11 01:26:53.090031",
+ "modified": "2021-11-12 01:26:53.090031",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

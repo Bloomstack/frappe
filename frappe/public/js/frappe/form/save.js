@@ -19,14 +19,17 @@ frappe.ui.form.save = function (frm, action, callback, btn) {
 
 	var save = function () {
 		remove_empty_rows();
-
 		$(frm.wrapper).addClass('validated-form');
 		if (check_mandatory()) {
+			if (frm.doc.__islocal) {
+				frm.doc.__rollover_attachments = frappe.model.docinfo[frm.doctype][frm.doc.name]["__rollover_attachments"];
+			}
 			_call({
 				method: "frappe.desk.form.save.savedocs",
 				args: { doc: frm.doc, action: action },
 				callback: function (r) {
 					$(document).trigger("save", [frm.doc]);
+					frm.sidebar.reload_docinfo();
 					callback(r);
 				},
 				error: function (r) {

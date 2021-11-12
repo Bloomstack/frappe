@@ -90,6 +90,7 @@ def update_global_settings(args):
 
 def run_post_setup_complete(args):
 	disable_future_access()
+	sync_dashboards()
 	frappe.db.commit()
 	frappe.clear_cache()
 
@@ -141,7 +142,8 @@ def update_system_settings(args):
 	system_settings.update({
 		"country": args.get("country"),
 		"language": get_language_code(args.get("language")),
-		"time_zone": args.get("timezone"),
+		"time_zone": "Etc/UTC", # System Timezone will always be UTC
+		"user_default_time_zone": args.get("timezone"),
 		"float_precision": 3,
 		'date_format': frappe.db.get_value("Country", args.get("country"), "date_format"),
 		'number_format': number_format,
@@ -239,6 +241,10 @@ def disable_future_access():
 		page.flags.do_not_update_json = True
 		page.flags.ignore_permissions = True
 		page.save()
+
+def sync_dashboards():
+	from frappe.utils.dashboard import sync_dashboards
+	sync_dashboards()
 
 @frappe.whitelist()
 def load_messages(language):

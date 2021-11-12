@@ -4,12 +4,20 @@
 from __future__ import unicode_literals
 import frappe, json
 from frappe.desk.form.load import run_onload
+from frappe.client import attach_file
 
 @frappe.whitelist()
 def savedocs(doc, action):
 	"""save / submit / update doclist"""
 	try:
-		doc = frappe.get_doc(json.loads(doc))
+		doc = json.loads(doc)
+
+		__unsaved_attachments = doc.pop("__unsaved_attachments", [])
+		__rollover_attachments = []
+		if doc.get("__rollover_attachments") and doc.get("__rollover_attachments").get("fileid"):
+			__rollover_attachments = doc.get("__rollover_attachments").get("fileid")
+			doc.pop("__rollover_attachments")
+		doc = frappe.get_doc(doc)
 		set_local_name(doc)
 
 		# action
@@ -27,7 +35,10 @@ def savedocs(doc, action):
 
 		# update recent documents
 		run_onload(doc)
+		save_attachments(doc, __unsaved_attachments)
+		doc.load_from_db()
 		send_updated_docs(doc)
+		attach_rollover_attachments(doc, __rollover_attachments)
 	except Exception:
 		frappe.errprint(frappe.utils.get_traceback())
 		raise
@@ -69,3 +80,23 @@ def set_local_name(doc):
 
 	if doc.get("__newname"):
 		doc.name = doc.get("__newname")
+
+def save_attachments(doc, __unsaved_attachments):
+	for attachment in __unsaved_attachments:
+		attach_file(
+			filename=attachment.get("attachment", {}).get("name"),
+			filedata=attachment.get("attachment", {}).get("dataurl"),
+			doctype=doc.doctype,
+			docname=doc.name,
+			docfield=attachment.get("fieldname"),
+			is_private=attachment.get("attachment", {}).get("is_private"),
+			decode_base64=True
+		)
+
+def attach_rollover_attachments(doc, attachments):
+	for attachment in attachments:
+		filedoc = frappe.get_doc("File", attachment)
+		new_filedoc = frappe.copy_doc(filedoc, ignore_no_copy=True)
+		new_filedoc.attached_to_doctype = doc.doctype
+		new_filedoc.attached_to_name = doc.name
+		new_filedoc.save(ignore_permissions=True)

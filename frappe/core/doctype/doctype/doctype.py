@@ -920,7 +920,7 @@ def validate_fields(meta):
 
 	def check_illegal_depends_on_conditions(docfield):
 		''' assignment operation should not be allowed in the depends on condition.'''
-		depends_on_fields = ["depends_on", "collapsible_depends_on"]
+		depends_on_fields = ["depends_on", "collapsible_depends_on", "mandatory_depends_on", "read_only_depends_on"]
 		for field in depends_on_fields:
 			depends_on = docfield.get(field, None)
 			if depends_on and ("=" in depends_on) and \
@@ -1007,8 +1007,7 @@ def validate_permissions_for_doctype(doctype, for_remove=False):
 	for perm in doctype.get("permissions"):
 		perm.db_update()
 
-	clear_permissions_cache(doctype.name)
-
+	frappe.enqueue("frappe.core.doctype.doctype.doctype.clear_permissions_cache", doctype=doctype.name)
 
 def clear_permissions_cache(doctype):
 	frappe.clear_cache(doctype=doctype)

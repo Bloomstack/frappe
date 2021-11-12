@@ -38,6 +38,10 @@
   "allow_on_submit",
   "report_hide",
   "remember_last_selected_value",
+  "property_depends_on_section",
+  "mandatory_depends_on",
+  "column_break_33",
+  "read_only_depends_on",
   "display",
   "default",
   "in_filter",
@@ -364,11 +368,32 @@
    "fieldtype": "Select",
    "label": "Display Precision",
    "options": "\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
+  },
+  {
+   "fieldname": "property_depends_on_section",
+   "fieldtype": "Section Break",
+   "label": "Property Depends On"
+  },
+  {
+   "fieldname": "mandatory_depends_on",
+   "fieldtype": "Code",
+   "label": "Mandatory Depends On",
+   "options": "JS"
+  },
+  {
+   "fieldname": "column_break_33",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "read_only_depends_on",
+   "fieldtype": "Code",
+   "label": "Read Only Depends On",
+   "options": "JS"
   }
  ],
  "idx": 1,
  "istable": 1,
- "modified": "2021-05-11 00:55:57.536821",
+ "modified": "2021-11-12 00:55:57.536821",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form Field",

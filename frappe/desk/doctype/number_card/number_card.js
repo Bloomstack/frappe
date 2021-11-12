@@ -7,6 +7,7 @@ frappe.ui.form.on('Number Card', {
 			frm.disable_form();
 		}
 		frm.set_df_property("filters_section", "hidden", 1);
+		frm.set_df_property("or_filters_section", "hidden", 1);
 		frm.set_df_property("dynamic_filters_section", "hidden", 1);
 		frm.trigger('set_options');
 
@@ -18,6 +19,14 @@ frappe.ui.form.on('Number Card', {
 			frm.trigger('set_report_filters');
 		}
 
+		if (!frappe.boot.developer_mode) {
+			frm.set_df_property("is_standard", "read_only", 1);
+		}
+
+		if (!frm.is_new()) {
+			frm.trigger('create_add_to_dashboard_button');
+		}
+
 		if (frm.doc.type == 'Custom') {
 			if (!frappe.boot.developer_mode) {
 				frm.disable_form();
@@ -27,7 +36,6 @@ frappe.ui.form.on('Number Card', {
 			frm.trigger('set_method_description');
 			frm.trigger('render_filters_table');
 		}
-		frm.trigger('create_add_to_dashboard_button');
 	},
 
 	create_add_to_dashboard_button: function(frm) {
@@ -118,6 +126,7 @@ frappe.ui.form.on('Number Card', {
 	report_name: function(frm) {
 		frm.filters = [];
 		frm.set_value('filters_json', '{}');
+		frm.set_value('or_filters_json', '{}');
 		frm.set_value('dynamic_filters_json', '{}');
 		frm.set_df_property('report_field', 'options', []);
 		frm.trigger('set_report_filters');
@@ -139,6 +148,7 @@ frappe.ui.form.on('Number Card', {
 			};
 		});
 		frm.set_value('filters_json', '[]');
+		frm.set_value('or_filters_json', '[]');
 		frm.set_value('dynamic_filters_json', '[]');
 		frm.set_value('aggregate_function_based_on', '');
 		frm.trigger('set_options');
@@ -216,6 +226,11 @@ frappe.ui.form.on('Number Card', {
 	},
 
 	render_filters_table: function(frm) {
+		frm.trigger("render_and_filters_table");
+		frm.trigger("render_or_filters_table");
+	},
+
+	render_and_filters_table: function(frm) {
 		frm.set_df_property("filters_section", "hidden", 0);
 		let is_document_type = frm.doc.type == 'Document Type';
 		let is_dynamic_filter = f => ['Date', 'DateRange'].includes(f.fieldtype) && f.default;
@@ -289,13 +304,13 @@ frappe.ui.form.on('Number Card', {
 
 		if (!filters_set) {
 			const filter_row = $(`<tr><td colspan="3" class="text-muted text-center">
-				${__("Click to Set Filters")}</td></tr>`);
+				${__("Click to Set AND Filters")}</td></tr>`);
 			table.find('tbody').append(filter_row);
 		}
 
 		table.on('click', () => {
 			let dialog = new frappe.ui.Dialog({
-				title: __('Set Filters'),
+				title: __('Set AND Filters'),
 				fields: fields.filter(f => !is_dynamic_filter(f)),
 				primary_action: function() {
 					let values = this.get_values();
@@ -332,6 +347,92 @@ frappe.ui.form.on('Number Card', {
 						&& frappe.query_reports[frm.doc.report_name].onload(frappe.query_report);
 			}
 
+			dialog.set_values(filters);
+		});
+
+	},
+
+	render_or_filters_table: function(frm) {
+		frm.set_df_property("or_filters_section", "hidden", 0);
+		let is_document_type = frm.doc.type == 'Document Type';
+		let is_dynamic_filter = f => ['Date', 'DateRange'].includes(f.fieldtype) && f.default;
+
+		let wrapper = $(frm.get_field('or_filters_json').wrapper).empty();
+		let table = $(`<table class="table table-bordered" style="cursor:pointer; margin:0px;">
+			<thead>
+				<tr>
+					<th style="width: 20%">${__('Filter')}</th>
+					<th style="width: 20%">${__('Condition')}</th>
+					<th>${__('Value')}</th>
+				</tr>
+			</thead>
+			<tbody></tbody>
+		</table>`).appendTo(wrapper);
+		$(`<p class="text-muted small">${__("Click table to edit")}</p>`).appendTo(wrapper);
+
+		let filters = JSON.parse(frm.doc.or_filters_json || '[]');
+		let filters_set = false;
+		let fields = [];
+
+		if (is_document_type) {
+			fields = [
+				{
+					fieldtype: 'HTML',
+					fieldname: 'filter_area',
+				}
+			];
+
+			if (filters.length) {
+				filters.forEach(filter => {
+					const filter_row =
+						$(`<tr>
+							<td>${filter[1]}</td>
+							<td>${filter[2] || ""}</td>
+							<td>${filter[3]}</td>
+						</tr>`);
+
+					table.find('tbody').append(filter_row);
+				});
+				filters_set = true;
+			}
+		}
+
+		if (!filters_set) {
+			const filter_row = $(`<tr><td colspan="3" class="text-muted text-center">
+				${__("Click to Set OR Filters")}</td></tr>`);
+			table.find('tbody').append(filter_row);
+		}
+
+		table.on('click', () => {
+			let dialog = new frappe.ui.Dialog({
+				title: __('Set OR Filters'),
+				fields: fields.filter(f => !is_dynamic_filter(f)),
+				primary_action: function() {
+					let values = this.get_values();
+					if (values) {
+						this.hide();
+						if (is_document_type) {
+							let filters = frm.or_filter_group.get_filters();
+							frm.set_value('or_filters_json', JSON.stringify(filters));
+						} else {
+							frm.set_value('or_filters_json', JSON.stringify(values));
+						}
+						frm.trigger('render_filters_table');
+					}
+				},
+				primary_action_label: "Set"
+			});
+
+			if (is_document_type) {
+				frm.or_filter_group = new frappe.ui.FilterGroup({
+					parent: dialog.get_field('filter_area').$wrapper,
+					doctype: frm.doc.document_type,
+					on_change: () => {},
+				});
+				filters && frm.or_filter_group.add_filters_to_filter_group(filters);
+			}
+
+			dialog.show();
 			dialog.set_values(filters);
 		});
 

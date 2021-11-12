@@ -14,6 +14,11 @@ frappe.ui.form.DocumentFollow = class DocumentFollow {
 	}
 
 	refresh() {
+		if (this.frm.doc.__islocal) {
+			this.parent.toggle(false);
+			return;
+		}
+		this.parent.toggle(true);
 		this.set_followers();
 		this.render_sidebar();
 	}

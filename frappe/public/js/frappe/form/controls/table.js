@@ -11,15 +11,11 @@ frappe.ui.form.ControlTable = frappe.ui.form.Control.extend({
 			perm: this.perm || (this.frm && this.frm.perm) || this.df.perm,
 			parent: this.wrapper
 		});
+
 		if(this.frm) {
 			this.frm.grids[this.frm.grids.length] = this;
 		}
 
-		// description
-		if(this.df.description) {
-			$('<p class="text-muted small">' + __(this.df.description) + '</p>')
-				.appendTo(this.wrapper);
-		}
 		this.$wrapper.on('paste',':text', function(e) {
 			var cur_table_field =$(e.target).closest('div [data-fieldtype="Table"]').data('fieldname');
 			var cur_field = $(e.target).data('fieldname');
@@ -91,6 +87,7 @@ frappe.ui.form.ControlTable = frappe.ui.form.Control.extend({
 	},
 	refresh_input: function() {
 		this.grid.refresh();
+		this.set_description();
 	},
 	get_value: function() {
 		if(this.grid) {
@@ -105,5 +102,15 @@ frappe.ui.form.ControlTable = frappe.ui.form.Control.extend({
 	},
 	check_all_rows() {
 		this.$wrapper.find('.grid-row-check')[0].click();
+	},
+	set_description(description) {
+		if (description) {
+			$('<p class="text-muted small">' + __(description) + '</p>')
+				.appendTo(this.wrapper);
+		}
+
+		if (this.df.description) {
+			this.set_popup_description();
+		}
 	}
 });

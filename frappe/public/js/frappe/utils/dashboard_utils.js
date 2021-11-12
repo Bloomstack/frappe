@@ -170,8 +170,8 @@ frappe.dashboard_utils = {
 	},
 
 	get_all_filters(doc) {
-		let filters = JSON.parse(doc.filters_json || "null");
-		let dynamic_filters = JSON.parse(doc.dynamic_filters_json || "null");
+		let filters = JSON.parse(doc.filters_json || "null") || {};
+		let dynamic_filters = JSON.parse(doc.dynamic_filters_json || "null") || {};
 
 		if (!dynamic_filters) {
 			return filters;
@@ -199,6 +199,10 @@ frappe.dashboard_utils = {
 		}
 
 		return filters;
+	},
+
+	get_or_filters(doc) {
+		return JSON.parse(doc.or_filters_json || "null") || {};
 	},
 
 	get_dashboard_link_field() {

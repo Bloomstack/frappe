@@ -9,7 +9,7 @@ import frappe
 import os
 from frappe import _
 from frappe.model.document import Document
-from frappe.integrations.offsite_backup_utils import get_latest_backup_file, send_email, validate_file_size
+from frappe.integrations.offsite_backup_utils import get_latest_backup_file, send_email, validate_file_size, get_chunk_site
 from frappe.integrations.utils import make_post_request
 from frappe.utils import (cint, get_request_site_address,
 	get_files_path, get_backups_path, get_url, encode)
@@ -95,9 +95,12 @@ def backup_to_dropbox(upload_db_backup=True):
 		if frappe.flags.create_new_backup:
 			backup = new_backup(ignore_files=True)
 			filename = os.path.join(get_backups_path(), os.path.basename(backup.backup_path_db))
+			site_config = os.path.join(get_backups_path(), os.path.basename(backup.site_config_backup_path))
 		else:
-			filename = get_latest_backup_file()
+			filename, site_config = get_latest_backup_file()
+
 		upload_file_to_dropbox(filename, "/database", dropbox_client)
+		upload_file_to_dropbox(site_config, "/database", dropbox_client)
 
 		# delete older databases
 		if dropbox_settings['no_of_backups']:
@@ -162,8 +165,9 @@ def upload_file_to_dropbox(filename, folder, dropbox_client):
 		return
 
 	create_folder_if_not_exists(folder, dropbox_client)
-	chunk_size = 15 * 1024 * 1024
 	file_size = os.path.getsize(encode(filename))
+	chunk_size = get_chunk_site(file_size)
+
 	mode = (dropbox.files.WriteMode.overwrite)
 
 	f = open(encode(filename), 'rb')

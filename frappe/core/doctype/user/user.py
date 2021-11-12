@@ -6,7 +6,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import cint, flt, has_gravatar, format_datetime, now_datetime, get_formatted_email, today
 from frappe import throw, msgprint, _
-from frappe.utils.password import update_password as _update_password
+from frappe.utils.password import update_password as _update_password, check_password
 from frappe.desk.notifications import clear_notifications
 from frappe.desk.doctype.notification_settings.notification_settings import create_notification_settings
 from frappe.utils.user import get_system_managers
@@ -49,6 +49,7 @@ class User(Document):
 
 	def after_insert(self):
 		create_notification_settings(self.name)
+		frappe.cache().delete_key('enabled_users')
 
 	def validate(self):
 		self.check_demo()
@@ -75,6 +76,7 @@ class User(Document):
 		ask_pass_update()
 		self.validate_roles()
 		self.validate_user_image()
+		self.set_time_zone()
 
 		if self.language == "Loading...":
 			self.language = None
@@ -92,15 +94,27 @@ class User(Document):
 		if self.user_image and len(self.user_image) > 2000:
 			frappe.throw(_("Not a valid User Image."))
 
+	def set_time_zone(self):
+		from frappe.utils import get_time_zone
+
+		if not self.time_zone:
+			self.time_zone = get_time_zone()
+
 	def on_update(self):
 		# clear new password
 		self.share_with_self()
 		clear_notifications(user=self.name)
 		frappe.clear_cache(user=self.name)
-		self.send_password_notification(self.__new_password)
+		if not self.flags.email_sent:
+			self.send_password_notification(self.__new_password)
 		create_contact(self, ignore_mandatory=True)
 		if self.name not in ('Administrator', 'Guest') and not self.user_image:
 			frappe.enqueue('frappe.core.doctype.user.user.update_gravatar', name=self.name)
+		if self.has_value_changed('enabled'):
+			frappe.cache().delete_key('enabled_users')
+
+		if self.time_zone:
+			frappe.defaults.set_default("time_zone", self.time_zone, self.name)
 
 	def has_website_permission(self, ptype, user, verbose=False):
 		"""Returns true if current user is the session user"""
@@ -159,10 +173,15 @@ class User(Document):
 
 	def set_system_user(self):
 		'''Set as System User if any of the given roles has desk_access'''
+		old_user_type = self.user_type
+
 		if self.has_desk_access() or self.name == 'Administrator':
 			self.user_type = 'System User'
 		else:
 			self.user_type = 'Website User'
+
+		if self.user_type != old_user_type:
+			msgprint(_("User Type changed from {0} to {1}").format(old_user_type, self.user_type), title=_('Warning'), indicator='red')
 
 	def has_desk_access(self):
 		'''Return true if any of the set roles has desk access'''
@@ -343,6 +362,8 @@ class User(Document):
 			set `user`=null
 			where `user`=%s""", (self.name))
 
+		frappe.cache().delete_key('enabled_users')
+
 
 	def before_rename(self, old_name, new_name, merge=False):
 		self.check_demo()
@@ -361,29 +382,21 @@ class User(Document):
 		validate_email_address(email.strip(), True)
 
 	def after_rename(self, old_name, new_name, merge=False):
-		tables = frappe.db.get_tables()
-		for tab in tables:
-			desc = frappe.db.get_table_columns_description(tab)
-			has_fields = []
-			for d in desc:
-				if d.get('name') in ['owner', 'modified_by']:
-					has_fields.append(d.get('name'))
-			for field in has_fields:
-				frappe.db.sql("""UPDATE `%s`
-					SET `%s` = %s
-					WHERE `%s` = %s""" %
-					(tab, field, '%s', field, '%s'), (new_name, old_name))
-
 		if frappe.db.exists("Chat Profile", old_name):
-			frappe.rename_doc("Chat Profile", old_name, new_name, force=True)
+			frappe.rename_doc("Chat Profile", old_name, new_name, force=True, ignore_permissions=True)
 
 		if frappe.db.exists("Notification Settings", old_name):
-			frappe.rename_doc("Notification Settings", old_name, new_name, force=True)
+			frappe.rename_doc("Notification Settings", old_name, new_name, force=True, ignore_permissions=True)
 
 		# set email
 		frappe.db.sql("""UPDATE `tabUser`
 			SET email = %s
 			WHERE name = %s""", (new_name, new_name))
+
+		# Enqueue owner and modified by job per table
+		tables = frappe.db.get_tables()
+		for tab in tables:
+			frappe.enqueue("frappe.core.doctype.user.user.job_rename_owner_modified_by", timeout=300, table=tab, old_name=old_name, new_name=new_name)
 
 	def append_roles(self, *roles):
 		"""Add roles to user"""
@@ -511,6 +524,25 @@ class User(Document):
 			return
 
 		return [i.strip() for i in self.restrict_ip.split(",")]
+
+	@classmethod
+	def find_by_credentials(cls, user_name, password, validate_password=True):
+		"""Find the user by credentials."""
+		login_with_mobile = cint(frappe.db.get_value("System Settings", "System Settings", "allow_login_using_mobile_number"))
+		filter = {"mobile_no": user_name} if login_with_mobile else {"name": user_name}
+
+		user = frappe.db.get_value("User", filters=filter, fieldname=['name', 'enabled'], as_dict=True) or {}
+		if not user:
+			return
+
+		user['is_authenticated'] = True
+		if validate_password:
+			try:
+				check_password(user_name, password)
+			except frappe.AuthenticationError:
+				user['is_authenticated'] = False
+
+		return user
 
 @frappe.whitelist()
 def get_timezones():
@@ -1097,3 +1129,42 @@ def generate_keys(user):
 
 		return {"api_secret": api_secret}
 	frappe.throw(frappe._("Not Permitted"), frappe.PermissionError)
+
+def job_rename_owner_modified_by(table, old_name, new_name):
+	"""Renames doctype's owner and modified_by fields in a background job"""
+
+	# Find out which fields are valid per table
+	desc = frappe.db.get_table_columns_description(table)
+	has_fields = []
+	for d in desc:
+		if d.get('name') in ['owner', 'modified_by']:
+			has_fields.append(d.get('name'))
+
+	# builds field update queries like:
+	# UPDATE `tabSome Doctype`
+	# 	SET `owner` = IF(`owner` = <old name>, <new name>, `owner`),
+	# 		`modified_by` = IF(`modified_by` = <old name>, <new name>, `modified_by`)
+	#	WHERE
+	#		`owner` = <old name> OR
+	#		`modified_by` = <old name>
+	# To avoid double update queries per doctype.
+	field_sql = []
+	field_where = []
+	for field in has_fields:
+		field_sql.append(
+			"`{field}` = IF(`{field}` = %(old_name)s, %(new_name)s, `{field}`)".format(field=field))
+		field_where.append(
+			"`{field}` = %(old_name)s".format(field=field))
+
+	# Finally update only if desired fields were found
+	if has_fields:
+		sql = """UPDATE `{}` SET {} WHERE {}""".format(
+			table, ",".join(field_sql), " OR ".join(field_where))
+		frappe.db.sql(sql, dict(new_name=new_name, old_name=old_name))
+
+def get_enabled_users():
+	def _get_enabled_users():
+		enabled_users = [d.name for d in frappe.get_all("User", filters={"enabled": "1"})]
+		return enabled_users
+
+	return frappe.cache().get_value("enabled_users", _get_enabled_users)

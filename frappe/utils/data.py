@@ -158,6 +158,18 @@ def convert_utc_to_user_timezone(utc_timestamp):
 	except UnknownTimeZoneError:
 		return utcnow
 
+def convert_to_user_timezone(timestamp):
+	from pytz import timezone, UnknownTimeZoneError
+
+	system_tz = frappe.db.get_single_value("System Settings", "time_zone")
+	user_tz = frappe.db.get_value("User", frappe.session.user, "time_zone")
+
+	timestamp = timezone(system_tz).localize(timestamp)
+	try:
+		return timestamp.astimezone(timezone(user_tz))
+	except UnknownTimeZoneError:
+		return timestamp
+
 def now():
 	"""return current datetime as yyyy-mm-dd hh:mm:ss"""
 	if frappe.flags.current_date:
@@ -285,11 +297,15 @@ def format_time(txt):
 		formatted_time = get_time(txt).strftime("%H:%M:%S")
 	return formatted_time
 
-def format_datetime(datetime_string, format_string=None):
+def format_datetime(datetime_string, format_string=None, convert_to_user_tz=False):
 	if not datetime_string:
 		return
 
 	datetime = get_datetime(datetime_string)
+
+	if convert_to_user_tz:
+		datetime = convert_to_user_timezone(datetime)
+
 	if not format_string:
 		format_string = get_user_format().replace("mm", "MM") + " HH:mm:ss"
 
@@ -332,11 +348,25 @@ def flt(s, precision=None):
 
 	return num
 
-def cint(s):
-	"""Convert to integer"""
-	try: num = int(float(s))
-	except: num = 0
-	return num
+def cint(s, default=0):
+	"""Convert to integer
+
+		:param s: Number in string or other numeric format.
+		:returns: Converted number in python integer type.
+
+		Returns default if input can not be converted to integer.
+
+		Examples:
+		>>> cint("100")
+		100
+		>>> cint("a")
+		0
+
+	"""
+	try:
+		return int(float(s))
+	except Exception:
+		return default
 
 def floor(s):
 	"""

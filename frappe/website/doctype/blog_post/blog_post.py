@@ -62,6 +62,9 @@ class BlogPost(WebsiteGenerator):
 
 		context.content = get_html_content_based_on_type(self, 'content', self.content_type)
 		context.description = self.blog_intro or strip_html_tags(context.content[:140])
+		context.subject = self.title
+		if self.name == frappe.db.get_single_value('Website Settings', 'featured_blog'):
+			context.is_featuredblog = True
 
 		context.metatags = {
 			"name": self.title,
@@ -97,6 +100,8 @@ def get_list_context(context=None):
 	featured_blog = None
 	if website_settings.featured_blog:
 		featured_blog = frappe.get_doc("Blog Post", website_settings.featured_blog).as_dict()
+		featured_blog.content = get_html_content_based_on_type(featured_blog, 'content', featured_blog.content_type)
+		cover_image = find_first_image(featured_blog.content)
 	list_context = frappe._dict(
 		template = "templates/includes/blog/blog.html",
 		get_list = get_blog_list,
@@ -106,7 +111,7 @@ def get_list_context(context=None):
 		title = _('Blog'),
 		page_heading_template = frappe.get_hooks('blogs_page_heading_template') or 'website/doctype/blog_post/templates/blog_post_header.html',
 		featured_blog = featured_blog,
-		background_image = website_settings.blog_header or None
+		featured_image = cover_image
 	)
 
 	category = sanitize_html(frappe.local.form_dict.blog_category or frappe.local.form_dict.category)

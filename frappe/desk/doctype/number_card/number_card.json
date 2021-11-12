@@ -9,15 +9,15 @@
   "module",
   "label",
   "type",
+  "document_type",
+  "column_break_2",
+  "is_public",
   "report_name",
+  "report_field",
+  "report_function",
   "method",
   "function",
   "aggregate_function_based_on",
-  "column_break_2",
-  "document_type",
-  "report_field",
-  "report_function",
-  "is_public",
   "script_section",
   "script",
   "custom_configuration_section",
@@ -27,6 +27,8 @@
   "stats_time_interval",
   "filters_section",
   "filters_json",
+  "or_filters_section",
+  "or_filters_json",
   "dynamic_filters_section",
   "dynamic_filters_json",
   "section_break_16",
@@ -79,7 +81,7 @@
   {
    "fieldname": "filters_section",
    "fieldtype": "Section Break",
-   "label": "Filters Section"
+   "label": "AND Filters Section"
   },
   {
    "default": "0",
@@ -191,9 +193,20 @@
    "fieldname": "script",
    "fieldtype": "Code",
    "label": "Script"
+  },
+  {
+   "fieldname": "or_filters_json",
+   "fieldtype": "Code",
+   "label": "OR Filters JSON",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "or_filters_section",
+   "fieldtype": "Section Break",
+   "label": "OR Filters Section"
   }
  ],
- "modified": "2021-03-17 02:49:08.024214",
+ "modified": "2021-07-05 03:20:14.710865",
  "modified_by": "Administrator",
  "module": "Desk",
  "name": "Number Card",

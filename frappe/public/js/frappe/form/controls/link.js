@@ -33,6 +33,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 
 				if(!me.$input.val()) {
 					me.reset_value();
+					me.reset_fetch_values(me.df, me.docname);
 					me.$input.val("").trigger("input");
 				}
 			}, 500);
@@ -69,30 +70,25 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 	},
 	set_formatted_input: function (value) {
 		this._super();
+		if (!value) return;
 		let doctype = this.get_options();
-		if (value) {
-			if (frappe.get_link_title(doctype, value)) {
-				this.set_data_value(frappe.get_link_title(doctype, value), value);
-			} else {
-				this.set_data_value(value, value);
-			}
-		}
+		this.set_data_value(frappe.get_link_title(doctype, value) || value, value);
 	},
 	set_data_value: function(link_display, value) {
 		if (!this.$input) {
 			return;
 		}
-		let doctype = this.get_options();
+
 		this.$input.val(__(link_display));
-		this.label = __(link_display);
 		this.data_value = value;
-		frappe.add_link_title(doctype, value, this.label);
 	},
 	parse_validate_and_set_in_model: function(value, label, e) {
-		if (this.parse) {
-			value = this.parse(value, label);
+		if (this.parse) value = this.parse(value, label);
+		if (label) {
+			this.label = label;
+			frappe.add_link_title(this.doctype, value, label);
 		}
-		this.label = label;
+
 		return this.validate_and_set_in_model(value, e);
 	},
 	validate_and_set_in_model: function(value, e) {
@@ -308,9 +304,8 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			}
 			let value = me.get_input_value();
 			let label = me.get_label_value();
-			let last_label = me.label;
 
-			if (value !== me.last_value || last_label !== label) {
+			if (value !== me.last_value || me.label !== label) {
 				me.parse_validate_and_set_in_model(value, label);
 			}
 		});
@@ -361,6 +356,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			var o = e.originalEvent;
 			if(o.text.value.indexOf("__link_option") !== -1) {
 				me.reset_value();
+				me.reset_fetch_values(me.df, me.docname);
 			}
 		});
 	},
@@ -539,6 +535,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 							resolve(r.valid_value);
 						} else {
 							me.reset_value();
+							me.reset_fetch_values(df, docname);
 							resolve("");
 						}
 					}
@@ -546,6 +543,7 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			});
 		} else {
 			me.reset_value();
+			me.reset_fetch_values(df, docname);
 		}
 	},
 	set_fetch_values: function(df, docname, fetch_values) {
@@ -553,6 +551,13 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 		for(var i=0; i < fl.length; i++) {
 			frappe.model.set_value(df.parent, docname, fl[i], fetch_values[i], df.fieldtype);
 		}
+	},
+	reset_fetch_values: function(df, docname) {
+		let fields = this.frm && this.frm.fetch_dict && this.frm.fetch_dict[df.fieldname] ? this.frm.fetch_dict[df.fieldname].fields : [];
+
+		fields.forEach(field => {
+			frappe.model.set_value(df.parent, docname, field, null, df.fieldtype);
+		});
 	}
 });
 

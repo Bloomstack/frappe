@@ -55,7 +55,12 @@ frappe.ui.form.on('User', {
 		}
 	},
 	refresh: function(frm) {
-		var doc = frm.doc;
+		let doc = frm.doc;
+
+		if (frm.is_new()) {
+			frm.set_value("time_zone", frappe.sys_defaults.user_default_time_zone);
+		}
+
 		if(!frm.is_new() && !frm.roles_editor && frm.can_edit_roles) {
 			frm.reload_doc();
 			return;
@@ -193,18 +198,24 @@ frappe.ui.form.on('User', {
 			}
 		});
 	},
-	generate_keys: function(frm){
+	generate_keys: function(frm) {
 		frappe.call({
 			method: 'frappe.core.doctype.user.user.generate_keys',
 			args: {
 				user: frm.doc.name
 			},
-			callback: function(r){
-				if(r.message){
+			callback: function(r) {
+				if (r.message) {
 					frappe.msgprint(__("Save API Secret: ") + r.message.api_secret);
 				}
 			}
 		});
+	},
+	after_save: function(frm) {
+		if (frappe.boot.time_zone && frappe.boot.time_zone.user_time_zone !== frm.doc.time_zone) {
+			// Clear cache after saving to refresh the values of time_zone
+			frappe.ui.toolbar.clear_cache();
+		}
 	}
 });
 

@@ -8,6 +8,16 @@ frappe.ui.form.Review = class Review {
 		this.parent = parent;
 		this.frm = frm;
 		this.points = frappe.boot.points;
+		this.refresh();
+	}
+	refresh() {
+		if (this.frm.doc.__islocal) {
+			this.parent.toggle(false);
+			this.frm.sidebar.sidebar.find(".form-reviews").toggle(false);
+			return;
+		}
+		this.frm.sidebar.sidebar.find(".form-reviews").toggle(true);
+		this.parent.toggle(true);
 		this.make_review_container();
 		this.add_review_button();
 		this.update_reviewers();

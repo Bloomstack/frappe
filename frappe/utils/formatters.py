@@ -46,7 +46,7 @@ def format_value(value, df=None, doc=None, currency=None, translated=False):
 		return formatdate(value)
 
 	elif df.get("fieldtype")=="Datetime":
-		return format_datetime(value)
+		return format_datetime(value, convert_to_user_tz=True)
 
 	elif df.get("fieldtype")=="Time":
 		return format_time(value)
@@ -89,5 +89,20 @@ def format_value(value, df=None, doc=None, currency=None, translated=False):
 		link_field = [df for df in meta.fields if df.fieldtype == 'Link'][0]
 		values = [v.get(link_field.fieldname, 'asdf') for v in value]
 		return ', '.join(values)
+
+	elif df.get("fieldtype") in ["Link", "Dynamic Link"]:
+		if not doc or not doc.get("__link_titles") or not df.options:
+			return value
+
+		doctype = df.options
+		if df.get("fieldtype") == "Dynamic Link":
+			if not df.parent:
+				return value
+
+			meta = frappe.get_meta(df.parent)
+			_field = meta.get_field(df.options)
+			doctype = _field.options
+
+		return doc.__link_titles.get("{0}::{1}".format(doctype, value), value)
 
 	return value

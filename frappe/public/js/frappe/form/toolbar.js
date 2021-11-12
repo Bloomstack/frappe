@@ -41,6 +41,12 @@ frappe.ui.form.Toolbar = Class.extend({
 			var title = this.frm.docname;
 		}
 
+		this.page.$sub_title_area.css("cursor", "copy");
+		this.page.$sub_title_area.on('click', (event) => {
+			event.stopImmediatePropagation();
+			frappe.utils.copy_to_clipboard(this.frm.docname);
+		});
+
 		var me = this;
 		title = __(title);
 		this.page.set_title(title);
@@ -52,6 +58,7 @@ frappe.ui.form.Toolbar = Class.extend({
 
 		this.set_indicator();
 	},
+
 	is_title_editable: function() {
 		let title_field = this.frm.meta.title_field;
 		let doc_field = this.frm.get_docfield(title_field);

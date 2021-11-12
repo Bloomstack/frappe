@@ -1,4 +1,4 @@
-frappe.provide('ui')
+frappe.provide('ui');
 frappe.provide('frappe.dashboards');
 frappe.provide('frappe.dashboards.chart_sources');
 
@@ -192,7 +192,7 @@ frappe.ui.DashboardChart = class DashboardChart {
 				handler: () => {
 					frappe.set_route('query-report', this.chart_doc.report_name);
 				}
-			})
+			});
 		}
 		this.set_chart_actions(actions);
 	}
@@ -385,6 +385,7 @@ frappe.ui.DashboardChart = class DashboardChart {
 
 	prepare_chart_object() {
 		this.filters = this.filters || JSON.parse(this.chart_doc.filters_json || '[]');
+		this.or_filters = this.or_filters || JSON.parse(this.chart_doc.or_filters_json || '[]');
 	}
 
 	get_settings() {
@@ -409,4 +410,4 @@ frappe.ui.DashboardChart = class DashboardChart {
 			return Promise.resolve();
 		}
 	}
-}
+};

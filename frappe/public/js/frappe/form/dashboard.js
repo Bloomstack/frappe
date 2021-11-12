@@ -285,7 +285,7 @@ frappe.ui.form.Dashboard = Class.extend({
 
 		// bind new
 		this.transactions_area.find('.btn-new').on('click', function() {
-			me.frm.make_new($(this).attr('data-doctype'));
+			me.frm.make_new($(this).attr('data-doctype'), {"prev_docname": me.frm.doc.name, "prev_doctype": me.frm.doc.doctype});
 		});
 
 		this.data_rendered = true;
