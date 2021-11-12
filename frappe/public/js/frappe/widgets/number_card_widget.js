@@ -46,7 +46,6 @@ export default class NumberCardWidget extends Widget {
 				this.card_doc = card;
 				this.render_card();
 			}
-
 			this.set_events();
 		});
 	}
@@ -67,30 +66,38 @@ export default class NumberCardWidget extends Widget {
 
 	set_events() {
 		$(this.body).click(() => {
-			if (this.in_customize_mode || this.card_doc.type == 'Custom') return;
+			if (this.in_customize_mode || this.card_doc.type == 'Custom' || this.card_doc.type == 'Script') return;
 			this.set_route();
 		});
 	}
 
 	set_route() {
 		const is_document_type = this.card_doc.type !== 'Report';
-		const name = is_document_type ? this.card_doc.document_type : this.card_doc.report_name;
-		const route = frappe.utils.generate_route({
-			name: name,
-			type: is_document_type ? 'doctype' : 'report',
-			is_query_report: !is_document_type,
+		frappe.model.with_doctype(this.card_doc.document_type, () => {
+			let is_child = frappe.get_meta(this.card_doc.document_type).istable;
+			let name;
+			if (is_child) {
+				let doc = frappe.get_doc("DocField", {"fieldtype": "Table", "options": this.card_doc.document_type});
+				name = doc.parent ? doc.parent : "";
+			} else {
+				name = is_document_type ? this.card_doc.document_type : this.card_doc.report_name;
+			}
+			const route = frappe.utils.generate_route({
+				name: name,
+				type: is_document_type ? 'doctype' : 'report',
+				is_query_report: !is_document_type,
+			});
+			if (is_document_type) {
+				const filters = JSON.parse(this.card_doc.filters_json);
+				frappe.route_options = filters.reduce((acc, filter) => {
+					return Object.assign(acc, {
+						[`${filter[0]}.${filter[1]}`]: [filter[2], filter[3]]
+					});
+				}, {});
+			}
+
+			frappe.set_route(route);
 		});
-
-		if (is_document_type) {
-			const filters = JSON.parse(this.card_doc.filters_json);
-			frappe.route_options = filters.reduce((acc, filter) => {
-				return Object.assign(acc, {
-					[`${filter[0]}.${filter[1]}`]: [filter[2], filter[3]]
-				});
-			}, {});
-		}
-
-		frappe.set_route(route);
 	}
 
 	set_doc_args() {
@@ -106,11 +113,13 @@ export default class NumberCardWidget extends Widget {
 
 	get_settings(type) {
 		this.filters = this.get_filters();
+		this.or_filters = this.get_or_filters();
 		const settings_map = {
 			'Custom': {
 				method: this.card_doc.method,
 				args: {
-					filters: this.filters
+					filters: this.filters,
+					or_filters: this.or_filters
 				},
 				get_number: res => this.get_number_for_custom_card(res),
 			},
@@ -128,6 +137,7 @@ export default class NumberCardWidget extends Widget {
 				args: {
 					doc: this.card_doc,
 					filters: this.filters,
+					or_filters: this.or_filters
 				},
 				get_number: res => this.get_number_for_doctype_card(res),
 			},
@@ -136,6 +146,7 @@ export default class NumberCardWidget extends Widget {
 				args: {
 					doc: this.card_doc,
 					filters: this.filters,
+					or_filters: this.or_filters
 				},
 				get_number: res => this.get_number_for_doctype_card(res),
 			}
@@ -146,6 +157,10 @@ export default class NumberCardWidget extends Widget {
 	get_filters() {
 		const filters = frappe.dashboard_utils.get_all_filters(this.card_doc);
 		return filters;
+	}
+
+	get_or_filters() {
+		return frappe.dashboard_utils.get_or_filters(this.card_doc);
 	}
 
 	render_card() {
@@ -207,7 +222,7 @@ export default class NumberCardWidget extends Widget {
 		}, []);
 		const col = res.columns.find(col => col.fieldname == field);
 		this.number = frappe.report_utils.get_result_of_fn(this.card_doc.report_function, vals);
-		this.get_formatted_number(col);
+		this.formatted_number = this.number;
 	}
 
 	get_formatted_number(df) {
@@ -274,6 +289,7 @@ export default class NumberCardWidget extends Widget {
 		return frappe.xcall('frappe.desk.doctype.number_card.number_card.get_percentage_difference', {
 			doc: this.card_doc,
 			filters: this.filters,
+			or_filters: this.or_filters,
 			result: this.number
 		}).then(res => {
 			if (res !== undefined) {

@@ -108,6 +108,14 @@ frappe.ui.TagEditor = Class.extend({
 		}
 	},
 	refresh: function(user_tags) {
+		if (this.frm && this.frm.doc && this.frm.doc.__islocal) {
+			this.parent.toggle(false);
+			this.frm.sidebar.sidebar.find(".tags-section").toggle(false);
+			return;
+		}
+		if (this.frm && this.frm.sidebar) this.frm.sidebar.sidebar.find(".tags-section").toggle(true);
+		else this.list_sidebar.sidebar.find(".tags-section").toggle(true);
+		this.parent.toggle(true);
 		var me = this;
 		if (!this.initialized || !this.setup_complete || this.refreshing) return;
 

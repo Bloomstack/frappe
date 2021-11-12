@@ -1,36 +1,42 @@
 {%- set post = doc -%}
+{% if featured_blog and featured_blog.name != post.name %}
 <div class="web-list-item blog-list-item my-5 col-sm-12 col-md-6 col-lg-4">
-	<div class="title">
-		{% if post.cover_image %}
-		<img class="website-image-medium object-fit-cover image" src="{{ post.cover_image }}"
-			alt="{{post.title}} - Cover Image">
-		{% endif %}
-	</div>
-
-	<div>
-		{% if featured_blog %}
-			{% if featured_blog.name == post.name %}
-			<div class="text"><a href="/{{ post.route }}">FEATURED: {{ post.title }}</a></div>
+	<div class="box">
+		<div class="title">
+			{% if post.cover_image %}
+			<img src="{{ post.cover_image }}"alt="{{post.title}} - Cover Image">
 			{% else %}
-			<div class="text"><a href="/{{ post.route }}">{{ post.title }}</a></div>
+			<img src="/assets/frappe/images/placeholder_blog.png"alt="{{post.title}} - Cover Image">
 			{% endif %}
-		{% else %}
-		<div class="text"><a href="/{{ post.route }}">{{ post.title }}</a></div>
-		{% endif %}
-		<div class="detail">Category: {{ post.category.title }}</div>
-		<p class="post-description detail">{{ post.intro }}</p>
-	</div>
-	<div class="blogger-detail">
-		<a href="/blog?blogger={{ post.blogger }}">{{ post.full_name }}</a>
-		&middot;
-		{{ frappe.format_date(post.published_on) }}
-		{% if post.comments %}
-		&middot;
-		{% if post.comments == 1 %}
-		{{ _('1 comment') }}
-		{% else %}
-		{{ _('{0} comments').format(post.comments) }}
-		{% endif %}
-		{% endif %}
+		</div>
+
+		<div class="px-3">
+			<div class="row">
+
+				<div class="col-md-6 feature_category_text">
+					<p>{{post.category.title}}</p>
+				</div>
+				<div class="col-md-6 text-right blog_date">
+					{{ frappe.format_date(post.published_on) }}
+				</div>
+			</div>
+			<div class="blog_title"><a href="/{{ post.route }}">{{ post.title }}</a></div>
+			<p class="blog_content">{{ post.intro }}</p>
+		</div>
+		<!-- <div class="blogger-detail">
+			<a href="/blog?blogger={{ post.blogger }}">{{ post.full_name }}</a>
+			&middot;
+			{{ frappe.format_date(post.published_on) }}
+			{% if post.comments %}
+			&middot;
+			{% if post.comments == 1 %}
+			{{ _('1 comment') }}
+			{% else %}
+			{{ _('{0} comments').format(post.comments) }}
+			{% endif %}
+			{% endif %}
+		</div>
+		Might Need it later-->
 	</div>
 </div>
+{% endif %}

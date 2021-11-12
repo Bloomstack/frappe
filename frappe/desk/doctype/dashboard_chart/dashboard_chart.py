@@ -8,7 +8,7 @@ from frappe import _
 import datetime
 import json
 from frappe.utils.dashboard import cache_source
-from frappe.utils import nowdate, getdate, get_datetime, cint, now_datetime
+from frappe.utils import nowdate, getdate, get_datetime, cint, now_datetime, add_years
 from frappe.utils.dateutils import\
 	get_period, get_period_beginning, get_from_date_from_timespan, get_dates_from_timegrain
 from frappe.model.naming import append_number_if_name_exists
@@ -74,7 +74,7 @@ def has_permission(doc, ptype, user):
 
 @frappe.whitelist()
 @cache_source
-def get(chart_name = None, chart = None, no_cache = None, filters = None, from_date = None,
+def get(chart_name = None, chart = None, no_cache = None, filters = None, or_filters = None, from_date = None,
 	to_date = None, timespan = None, time_interval = None, heatmap_year=None, refresh = None):
 	if chart_name:
 		chart = frappe.get_doc('Dashboard Chart', chart_name)
@@ -100,15 +100,19 @@ def get(chart_name = None, chart = None, no_cache = None, filters = None, from_d
 	if not filters:
 		filters = []
 
+	or_filters = frappe.parse_json(or_filters) or frappe.parse_json(chart.or_filters_json)
+	if not or_filters:
+		or_filters = []
+
 	# don't include cancelled documents
 	filters.append([chart.document_type, 'docstatus', '<', 2, False])
 
 	if chart.chart_type == 'Group By':
-		chart_config = get_group_by_chart_config(chart, filters)
+		chart_config = get_group_by_chart_config(chart, filters, or_filters)
 	elif chart.type == 'Heatmap':
-		chart_config = get_heatmap_chart_config(chart, filters, heatmap_year)
+		chart_config = get_heatmap_chart_config(chart, filters, or_filters, heatmap_year)
 	else:
-		chart_config =  get_chart_config(chart, filters, timespan, timegrain, from_date, to_date)
+		chart_config = get_chart_config(chart, filters, or_filters, timespan, timegrain, from_date, to_date)
 
 	return chart_config
 
@@ -154,7 +158,7 @@ def add_chart_to_dashboard(args):
 	dashboard.save()
 	frappe.db.commit()
 
-def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
+def get_chart_config(chart, filters, or_filters, timespan, timegrain, from_date, to_date):
 	if not from_date:
 		from_date = get_from_date_from_timespan(to_date, timespan)
 		from_date = get_period_beginning(from_date, timegrain)
@@ -168,15 +172,18 @@ def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
 	from_date = from_date.strftime('%Y-%m-%d')
 	to_date = to_date
 
-	filters.append([doctype, datefield, '>=', from_date, False])
-	filters.append([doctype, datefield, '<=', to_date, False])
+	date_filters = [
+		[doctype, datefield, '>=', from_date, False],
+		[doctype, datefield, '<=', to_date, False]
+	]
 
 	if chart.chart_type == "Script" and chart.script:
 		doc = {
 			"chart": chart,
 			"aggregate_function": aggregate_function,
 			"value_field": value_field,
-			"filters": filters,
+			"filters": filters + date_filters,
+			"or_filters": or_filters,
 			"datefield": datefield,
 			"timegrain": timegrain,
 			"from_date": from_date,
@@ -186,33 +193,62 @@ def get_chart_config(chart, filters, timespan, timegrain, from_date, to_date):
 		safe_exec(chart.script, None, doc)
 
 		return doc.get("data")
-	else:
-		data = frappe.db.get_list(
-			doctype,
-			fields = [
-				'{} as _unit'.format(datefield),
-				'{aggregate_function}({value_field})'.format(aggregate_function=aggregate_function, value_field=value_field),
-			],
-			filters = filters,
-			group_by = '_unit',
-			order_by = '_unit asc',
-			as_list = True,
-			ignore_ifnull = True
-		)
 
-	result = get_result(data, timegrain, from_date, to_date)
+	result = get_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, or_filters, date_filters)
 
+	fieldname = chart.value_based_on
 	chart_config = {
+		"_fieldtype": frappe.get_meta(doctype).get_field(fieldname).fieldtype if frappe.get_meta(doctype).get_field(fieldname) else None,
 		"labels": [get_period(r[0], timegrain) for r in result],
 		"datasets": [{
-			"name": chart.name,
+			"name": "{0} - {1}".format(getdate(from_date), getdate(to_date)),
 			"values": [r[1] for r in result]
 		}]
 	}
 
+	if chart.show_previous_data:
+		previous_result = get_previous_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date,
+			to_date, filters, or_filters, date_filters)
+
+		chart_config["datasets"].append({
+			"name": "{0} - {1}".format(getdate(from_date), getdate(to_date)),
+			"values": [r[1] for r in previous_result]
+		})
+
 	return chart_config
 
-def get_heatmap_chart_config(chart, filters, heatmap_year):
+def get_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, or_filters, date_filters):
+	data = frappe.db.get_list(
+		doctype,
+		fields = [
+			'{} as _unit'.format(datefield),
+			'{aggregate_function}({value_field})'.format(aggregate_function=aggregate_function, value_field=value_field),
+		],
+		filters = filters + date_filters,
+		or_filters = or_filters,
+		group_by = '_unit',
+		order_by = '_unit asc',
+		as_list = True,
+		ignore_ifnull = True
+	)
+
+	return get_result(data, timegrain, from_date, to_date)
+
+def get_previous_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, or_filters, date_filters):
+	"""
+		Get corresponding data for previous year with the same timespan
+	"""
+	from_date = add_years(from_date, -1)
+	to_date = add_years(to_date, -1)
+
+	date_filters = [
+		[doctype, datefield, '>=', from_date, False],
+		[doctype, datefield, '<=', to_date, False]
+	]
+
+	return get_data(doctype, datefield, aggregate_function, value_field, timegrain, from_date, to_date, filters, or_filters, date_filters)
+
+def get_heatmap_chart_config(chart, filters, or_filters, heatmap_year):
 	aggregate_function = get_aggregate_function(chart.chart_type)
 	value_field = chart.value_based_on or '1'
 	doctype = chart.document_type
@@ -236,6 +272,7 @@ def get_heatmap_chart_config(chart, filters, heatmap_year):
 			'{aggregate_function}({value_field})'.format(aggregate_function=aggregate_function, value_field=value_field),
 		],
 		filters = filters,
+		or_filters = or_filters,
 		group_by = 'date({datefield})'.format(datefield=datefield),
 		as_list = 1,
 		order_by = '{datefield} asc'.format(datefield=datefield),
@@ -248,13 +285,16 @@ def get_heatmap_chart_config(chart, filters, heatmap_year):
 	}
 	return chart_config
 
-def get_group_by_chart_config(chart, filters):
+def get_group_by_chart_config(chart, filters, or_filters):
 
 	aggregate_function = get_aggregate_function(chart.group_by_type)
 	value_field = chart.aggregate_function_based_on or '1'
 	group_by_field = chart.group_by_based_on
 	doctype = chart.document_type
 
+	# don't include documents where Group By Based On has Null values 
+	filters.append([doctype, group_by_field, "!=", ""])
+	
 	data = frappe.db.get_list(
 		doctype,
 		fields = [
@@ -262,6 +302,7 @@ def get_group_by_chart_config(chart, filters):
 			'{aggregate_function}({value_field}) as count'.format(aggregate_function=aggregate_function, value_field=value_field),
 		],
 		filters = filters,
+		or_filters = or_filters,
 		group_by = group_by_field,
 		order_by = 'count desc',
 		ignore_ifnull = True
@@ -269,13 +310,18 @@ def get_group_by_chart_config(chart, filters):
 
 	if data:
 		if chart.number_of_groups and chart.number_of_groups < len(data):
-			other_count = 0
-			for i in range(chart.number_of_groups - 1, len(data)):
-				other_count += data[i]['count']
-			data = data[0: chart.number_of_groups - 1]
-			data.append({'name': 'Other', 'count': other_count})
+			if chart.number_of_groups > 0 and chart.show_others:
+				other_count = 0
+				for i in range(chart.number_of_groups - 1, len(data)):
+					other_count += data[i]['count']
+				data = data[0: chart.number_of_groups - 1]
+				data.append({'name': 'Other', 'count': other_count})
+			else:
+				data = data[0: chart.number_of_groups]
 
+		fieldname = chart.aggregate_function_based_on
 		chart_config = {
+			"_fieldtype": frappe.get_meta(doctype).get_field(fieldname).fieldtype if frappe.get_meta(doctype).get_field(fieldname) else None,
 			"labels": [item['name'] if item['name'] else 'Not Specified' for item in data],
 			"datasets": [{
 				"name": chart.name,
@@ -335,6 +381,7 @@ class DashboardChart(Document):
 			self.check_document_type()
 
 		self.validate_custom_options()
+		self.validate_filters()
 
 	def check_required_field(self):
 		if not self.document_type:
@@ -362,3 +409,10 @@ class DashboardChart(Document):
 				json.loads(self.custom_options)
 			except ValueError as error:
 				frappe.throw(_("Invalid json added in the custom options: {0}").format(error))
+
+	def validate_filters(self):
+		if not self.filters_json:
+			self.filters_json = "{}" if self.chart_type == "Report" else "[]"
+
+		if not self.or_filters_json:
+			self.or_filters_json = "{}" if self.chart_type == "Report" else "[]"

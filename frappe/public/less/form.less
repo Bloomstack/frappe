@@ -370,6 +370,15 @@ h6.uppercase, .h6.uppercase {
 	font-size: 12px;
 }
 
+.contact-box {
+	background-color: @light-bg;
+	padding: 0px 15px;
+	margin: 15px 0px;
+	border: 1px solid @border-color;
+	border-radius: 3px;
+	font-size: 12px;
+}
+
 .timeline {
 	margin: 30px 0px;
 
@@ -1026,3 +1035,93 @@ body[data-route^="Form/Communication"] textarea[data-fieldname="subject"] {
 .table-preview {
 	margin-top: 12px;
 }
+
+.frappe-control[data-fieldname="address_html"] {
+.address-box {
+	display:none;
+  }
+  
+   .address-box.active{
+   display: block;
+  } 
+
+  .address_pagination {
+	color: black;
+	padding: 10px 0;
+	max-width:100%;
+	display: inline-block;
+	width: 50%;
+  }
+  .address_paginate_desc {
+	display: inline-block;
+	width: 50%;
+  }
+}
+
+.frappe-control[data-fieldname="contact_html"] {
+	.contact-box {
+		display:none;
+	  }
+	  
+	   .contact-box.active{
+	   display: block;
+	  } 
+	
+	  .contact_pagination {
+		color: black;
+		padding: 10px 0;
+		max-width:100%;
+		display: inline-block;
+		width: 50%;
+	  }
+	  .contact_paginate_desc {
+		display: inline-block;
+		width: 50%;
+	  }
+	}
+
+  .page_number {
+    width: 30px;
+    height: 30px;
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    display: inline-block;
+    border: 1px solid #f0f4f7;
+	cursor: pointer;
+	background-color: #f0f4f7;
+  }
+
+  .page_number:hover {
+	  background-color: #cfdce5;
+  }
+
+  .page_number:first-child {
+	border-top-left-radius: 3px;
+	border-bottom-left-radius: 3px;
+  }
+  
+  .page_number:last-child {
+	border-top-right-radius: 3px;
+	border-bottom-right-radius: 3px;
+  }
+
+  .page_number.active{
+	background:hsl(212, 13%, 50%);
+	color: #fff;
+	border-color: #707f90;
+  }
+
+  div[data-fieldname="address_html"] .row.form-section,
+  div[data-fieldname="address_html"] .row.form-section .form-column.col-sm-12,
+  div[data-fieldname="contact_html"] .row.form-section,
+  div[data-fieldname="contact_html"] .row.form-section .form-column.col-sm-12 {
+	padding: 0;
+  }
+
+  div[data-fieldname="address_html"] div[data-fieldname="search_address"],
+  div[data-fieldname="contact_html"] div[data-fieldname="search_contact"] {
+	max-width: unset!important;
+	padding-right: 0!important;
+  } 
+

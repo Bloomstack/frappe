@@ -110,9 +110,7 @@
   {
    "fieldname": "phone",
    "fieldtype": "Data",
-   "label": "Phone",
-   "options": "Phone",
-   "reqd": 1
+   "label": "Phone"
   },
   {
    "fieldname": "fax",
@@ -172,7 +170,7 @@
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
- "modified": "2021-06-15 08:57:55.857908",
+ "modified": "2021-09-01 08:14:52.587813",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",

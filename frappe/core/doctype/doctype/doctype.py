@@ -1007,8 +1007,7 @@ def validate_permissions_for_doctype(doctype, for_remove=False):
 	for perm in doctype.get("permissions"):
 		perm.db_update()
 
-	clear_permissions_cache(doctype.name)
-
+	frappe.enqueue("frappe.core.doctype.doctype.doctype.clear_permissions_cache", doctype=doctype.name)
 
 def clear_permissions_cache(doctype):
 	frappe.clear_cache(doctype=doctype)

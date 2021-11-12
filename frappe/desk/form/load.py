@@ -159,6 +159,7 @@ def get_milestones(doctype, name):
 	return frappe.db.get_all('Milestone', fields = ['creation', 'owner', 'track_field', 'value'],
 		filters=dict(reference_type=doctype, reference_name=name))
 
+@frappe.whitelist()
 def get_attachments(dt, dn):
 	return frappe.get_all("File", fields=["name", "file_name", "file_url", "is_private"],
 		filters = {"attached_to_name": dn, "attached_to_doctype": dt})

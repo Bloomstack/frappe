@@ -33,10 +33,6 @@ function generate_route(item) {
 			return encodeURIComponent(key) + "=" + encodeURIComponent(value); }).join('&');
 	}
 
-	// if(item.type==="page" || item.type==="help" || item.type==="report" ||
-	// (item.doctype && frappe.model.can_read(item.doctype))) {
-	//     item.shown = true;
-	// }
 	return route;
 }
 

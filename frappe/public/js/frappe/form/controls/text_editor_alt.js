@@ -1,115 +1,157 @@
-import Base64UploadAdapter from "./ckeditor-plugins/Base64UploadAdapter";
-
 frappe.ui.form.ControlTextEditorAlt = frappe.ui.form.ControlCode.extend({
 	make_wrapper() {
 		this._super();
-		this.$wrapper.find(".like-disabled-input").addClass('ck-editor');
+		this.$wrapper.find(".like-disabled-input").addClass("editor");
 	},
 
 	make_input() {
 		this.has_input = true;
-		this.make_ckeditor();
+		this.make_editor();
 	},
 
-	make_ckeditor() {
-		if (this.ckeditor) return;
-		this.ckeditor_container = $('<div class="ckeditor">').appendTo(this.input_area);
-		this.ckeditor_toolbar = $('<div class="ckeditor-toolbar">').appendTo(this.ckeditor_container);
-		this.ckeditor_content = $('<div class="ckeditor-content">').appendTo(this.ckeditor_container);
-
-		this.ckeditor = null;
-		this.set_ckeditor_options();
-		DecoupledEditor
-			.create( this.ckeditor_content[0] )
-			.then( editor => {
-				this.ckeditor = editor;
-				this.ckeditor_toolbar.append(editor.ui.view.toolbar.element);
-				this.bind_events();
-			} )
-			.catch( error => { console.error(error) } );
-	},
-
-	bind_events() {
+	make_editor() {
 		let me = this;
-		me.ckeditor.model.document.on('change:data', frappe.utils.debounce(() => {
-			if (!me.is_ckeditor_dirty()) return;
+		if (me.editor) return;
 
-			frappe.call({
-				method: "frappe.utils.html_formatter.format_html",
-				args: {
-					html: me.get_input_value()
-				},
-				callback: function(r) {
-					const input_value = r.message;
-					me.parse_validate_and_set_in_model(input_value);
+		me.editor = $("<div>").appendTo(me.input_area);
+		me.editor.summernote(me.get_config());
+	},
+
+	get_config() {
+		let me = this;
+		return {
+			minHeight: 400,
+			airMode: false,
+			fontNames: ['Arial', 'Arial Black', 'Comic Sans MS', 'Courier New', 'Merriweather'],
+			fontNamesIgnoreCheck: ['Merriweather'],
+			dialogsInBody: true,
+			dialogsFade: true,
+			toolbar: [
+				["magic", ["style"]],
+				["style", ["bold", "italic", "underline", "clear"]],
+				["font", ["strikethrough", "superscript", "subscript"]],
+				["fontsize", ["fontsize"]],
+				["table", ["table"]],
+				["color", ["color"]],
+				["para", ["ul", "ol", "paragraph"]],
+				["height", ["height"]],
+				["misc", ["codeview"]],
+				["insert", ["link", "picture", "video"]],
+			],
+			popover: {
+				link: [
+					['link', ['linkDialogShow', 'unlink']]
+				],
+				table: [
+					['add', ['addRowDown', 'addRowUp', 'addColLeft', 'addColRight']],
+					['delete', ['deleteRow', 'deleteCol', 'deleteTable']],
+				],
+				image: [
+					['custom', ['imageShapes']],
+					['imagesize', ['imageSize100', 'imageSize50', 'imageSize25']],
+					['float', ['floatLeft', 'floatRight', 'floatNone']],
+					['remove', ['removeMedia']]
+				],
+			},
+			lang: 'en-US', // Change to your chosen language
+			imageAttributes: {
+				icon: '<i class="note-icon-pencil"/>',
+				removeEmpty: false,
+				disableUpload: true
+			},
+			icons: me.get_icons(),
+			callbacks: {
+				onChange: function(value) {
+					if (!me.is_summernote_dirty()) return;
+
+					me.parse_validate_and_set_in_model(value);
 				}
-			});
-		}, 300));
-
-		me.ckeditor.plugins.get("FileRepository").createUploadAdapter = loader => new Base64UploadAdapter(loader);
-	},
-
-	is_ckeditor_dirty() {
-		let input_value = this.get_input_value();
-		return this.value !== input_value;
-	},
-
-	set_ckeditor_options() {
-		// Set default toolbar options as per Decoupled Editor
-		DecoupledEditor.defaultConfig = {
-			toolbar: {
-				items: [
-					"heading", "|",
-					"fontfamily", "fontsize", "fontColor", "fontBackgroundColor", "|",
-					"bold", "italic", "underline", "strikethrough", "|",
-					"alignment", "|", "numberedList", "bulletedList", "|",
-					"insertTable", "|",
-					"outdent", "indent", "|",
-					"uploadImage", "link", "blockquote", "|",
-					"undo", "redo"
-				]
-			},
-			image: {
-				styles: ["full", "alignLeft", "alignRight"],
-				toolbar: ["imageStyle:alignLeft", "imageStyle:full", "imageStyle:alignRight", "|", "imageTextAlternative"]
-			},
-			table: {
-				contentToolbar: ["tableColumn", "tableRow", "mergeTableCells"]
-			},
-			language: "en"
+			}
 		};
 	},
 
+	is_summernote_dirty() {
+		let input_value = this.get_input_value();
+
+		return this.value !== input_value;
+	},
+
 	parse(value) {
-		if (value == null) {
-			value = "";
-		}
+		if (!value || value == null) value = "";
+
 		return frappe.dom.remove_script_and_style(value);
 	},
 
 	set_formatted_input(value) {
-		if (!this.ckeditor) {
-			return setTimeout(() => {
-				this.ckeditor && this.ckeditor.setData(value);
-			});
-		};
-		if (value === this.get_input_value()) return;
-		if (!value) {
-			// clear contents for falsy values like '', undefined or null
-			this.ckeditor.setData('');
-			return;
-		}
-		this.ckeditor.setData(value);
+		this.editor.summernote("code", value);
+	},
+
+	set_input: function(value) {
+		if (value !== this.get_value())
+			this.editor.summernote('code', value);
+
+		this.last_value = this.value;
+		this.value = value;
+		this.set_mandatory && this.set_mandatory(value);
 	},
 
 	get_input_value() {
-		let value = this.ckeditor ? this.ckeditor.getData() : '';
-		// hack to retain space sequence.
-		value = value.replace(/(\s)(\s)/g, ' &nbsp;');
-		return value;
+		return this.editor.summernote("code");
 	},
 
 	set_focus() {
-		this.ckeditor.focus()
+		return this.editor.summernote('focus');
+	},
+
+	get_icons() {
+		return {
+			"align": "fa fa-align fa-lg",
+			"alignCenter": "fa fa-align-center fa-lg",
+			"alignJustify": "fa fa-align-justify fa-lg",
+			"alignLeft": "fa fa-align-left fa-lg",
+			"alignRight": "fa fa-align-right fa-lg",
+			"indent": "fa fa-indent fa-lg",
+			"outdent": "fa fa-outdent fa-lg",
+			"arrowsAlt": "fa fa-arrows-alt fa-lg",
+			"bold": "fa fa-bold fa-lg",
+			"caret": "caret fa-lg",
+			"circle": "fa fa-circle fa-lg",
+			"close": "fa fa-close fa-lg",
+			"code": "fa fa-code fa-lg",
+			"eraser": "fa fa-eraser fa-lg",
+			"font": "fa fa-font fa-lg",
+			"frame": "fa fa-frame fa-lg",
+			"italic": "fa fa-italic fa-lg",
+			"link": "fa fa-link fa-lg",
+			"unlink": "fa fa-chain-broken fa-lg",
+			"magic": "fa fa-magic fa-lg",
+			"menuCheck": "fa fa-check fa-lg",
+			"minus": "fa fa-minus fa-lg",
+			"orderedlist": "fa fa-list-ol fa-lg",
+			"pencil": "fa fa-pencil fa-lg",
+			"picture": "fa fa-picture-o fa-lg",
+			"question": "fa fa-question fa-lg",
+			"redo": "fa fa-redo fa-lg",
+			"square": "fa fa-square fa-lg",
+			"strikethrough": "fa fa-strikethrough fa-lg",
+			"subscript": "fa fa-subscript fa-lg",
+			"superscript": "fa fa-superscript fa-lg",
+			"table": "fa fa-table fa-lg",
+			"textHeight": "fa fa-text-height fa-lg",
+			"trash": "fa fa-trash fa-lg",
+			"underline": "fa fa-underline fa-lg",
+			"undo": "fa fa-undo fa-lg",
+			"unorderedlist": "fa fa-list-ul fa-lg",
+			"video": "fa fa-video-camera fa-lg",
+			"floatLeft": "fa fa-align-left fa-lg",
+			"floatRight": "fa fa-align-right fa-lg",
+			"rollback": "fa fa-times fa-lg",
+			"rowAbove": "fa fa-arrow-up fa-lg",
+			"rowBelow": "fa fa-arrow-down fa-lg",
+			"colBefore": "fa fa-arrow-left fa-lg",
+			"colAfter": "fa fa-arrow-right fa-lg",
+			"rowRemove": "fa fa-times fa-lg",
+			"colRemove": "fa fa-times fa-lg"
+		};
 	}
 });

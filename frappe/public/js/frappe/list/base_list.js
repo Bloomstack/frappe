@@ -338,11 +338,16 @@ frappe.views.BaseList = class BaseList {
 			: [];
 	}
 
+	get_or_filters_for_args() {
+		return [];
+	}
+
 	get_args() {
 		return {
 			doctype: this.doctype,
 			fields: this.get_fields(),
 			filters: this.get_filters_for_args(),
+			or_filters: this.get_or_filters_for_args(),
 			order_by: this.sort_selector.get_sql_string(),
 			start: this.start,
 			page_length: this.page_length,
@@ -629,7 +634,7 @@ frappe.ui.FilterArea = class FilterArea {
 			let options = df.options;
 			let condition = '=';
 			let fieldtype = df.fieldtype;
-			if (['Text', 'Small Text', 'Text Editor', 'HTML Editor', 'Data', 'Code', 'Read Only'].includes(fieldtype)) {
+			if (['Text', 'Small Text', 'Text Editor', 'Text Editor Alt', 'HTML Editor', 'Data', 'Code', 'Read Only'].includes(fieldtype)) {
 				fieldtype = 'Data';
 				condition = 'like';
 			}
@@ -732,5 +737,5 @@ frappe.ui.FilterArea = class FilterArea {
 }
 
 // utility function to validate view modes
-frappe.views.view_modes = ['List', 'Gantt', 'Kanban', 'Calendar', 'Image', 'Inbox', 'Report'];
+frappe.views.view_modes = ['List', 'Gantt', 'Kanban', 'Calendar', 'Image', 'Inbox', 'Report', 'Dashboard'];
 frappe.views.is_valid = view_mode => frappe.views.view_modes.includes(view_mode);

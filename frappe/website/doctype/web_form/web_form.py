@@ -20,6 +20,7 @@ from frappe.utils import cstr
 from frappe.website.utils import get_comment_list
 from frappe.website.website_generator import WebsiteGenerator
 from frappe.boot import get_default_country
+from frappe.desk.form.save import save_attachments
 
 
 class WebForm(WebsiteGenerator):
@@ -347,6 +348,8 @@ def get_context(context):
 def accept(web_form, data, docname=None, for_payment=False):
 	'''Save the web form'''
 	data = frappe._dict(json.loads(data))
+	__unsaved_attachments = data.pop("__unsaved_attachments", [])
+
 	for_payment = frappe.parse_json(for_payment)
 
 	files = []
@@ -429,6 +432,8 @@ def accept(web_form, data, docname=None, for_payment=False):
 			doc.set(fieldname, _file.file_url)
 
 		doc.save(ignore_permissions = True)
+
+	save_attachments(doc, __unsaved_attachments)
 
 	if files_to_delete:
 		for f in files_to_delete:

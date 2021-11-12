@@ -1391,7 +1391,7 @@ frappe.ui.form.Form = class FrappeForm {
 		}
 	}
 
-	make_new(doctype) {
+	make_new(doctype, opts) {
 		// make new doctype from the current form
 		// will handover to `make_methods` if defined
 		// or will create and match link fields
@@ -1402,7 +1402,7 @@ frappe.ui.form.Form = class FrappeForm {
 			this.custom_buttons[__(this.custom_make_buttons[doctype])].trigger('click');
 		} else {
 			frappe.model.with_doctype(doctype, function() {
-				var new_doc = frappe.model.get_new_doc(doctype);
+				var new_doc = frappe.model.get_new_doc(doctype, null, null, null, opts);
 
 				// set link fields (if found)
 				frappe.get_meta(doctype).fields.forEach(function(df) {

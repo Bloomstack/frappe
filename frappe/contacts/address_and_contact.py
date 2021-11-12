@@ -178,3 +178,84 @@ def set_link_title(doc):
 		if not link.link_title:
 			linked_doc = frappe.get_doc(link.link_doctype, link.link_name)
 			link.link_title = linked_doc.get("title_field") or linked_doc.get("name")
+
+@frappe.whitelist()
+def get_addresses(doc, search_keyword):
+	doc = frappe.parse_json(doc)
+	filters = [
+		["Dynamic Link", "link_doctype", "=", doc.get("doctype")],
+		["Dynamic Link", "link_name", "=", doc.get("name")],
+		["Dynamic Link", "parenttype", "=", "Address"],
+		["Address", "name", "like", "%" + search_keyword + "%"]
+	]
+	
+	address_list = frappe.get_all("Address", filters=filters, fields=["*"])
+
+	from frappe.contacts.doctype.address.address import get_address_display
+	address_list = [a.update({"display": get_address_display(a)})
+		for a in address_list]
+	return address_list
+
+@frappe.whitelist()
+def get_contacts(doc, search_keyword):
+	from frappe.contacts.doctype.address.address import get_condensed_address
+	doc = frappe.parse_json(doc)
+	contact_list = []
+	filters = [
+		["Dynamic Link", "link_doctype", "=", doc.get("doctype")],
+		["Dynamic Link", "link_name", "=", doc.get("name")],
+		["Dynamic Link", "parenttype", "=", "Contact"],
+		["Contact", "name", "like", "%" + search_keyword + "%"]
+	]
+	contact_list = frappe.get_all("Contact", filters=filters, fields=["*"])
+
+	for contact in contact_list:
+		contact["email_ids"] = frappe.get_list("Contact Email", filters={
+				"parenttype": "Contact",
+				"parent": contact.name,
+				"is_primary": 0
+			}, fields=["email_id"])
+
+		contact["phone_nos"] = frappe.get_list("Contact Phone", filters={
+				"parenttype": "Contact",
+				"parent": contact.name,
+				"is_primary_phone": 0,
+				"is_primary_mobile_no": 0
+			}, fields=["phone"])
+
+		if contact.address:
+			address = frappe.get_doc("Address", contact.address)
+			contact["address"] = get_condensed_address(address)
+
+	contact_list = sorted(contact_list,
+		key = functools.cmp_to_key(lambda a, b:
+			(int(a.is_primary_contact - b.is_primary_contact)) or
+			(1 if a.modified - b.modified else 0)), reverse=True)
+
+	return contact_list
+
+@frappe.whitelist()
+def link_address_or_contact(ref_doctype, ref_name, link_doctype, link_name):
+	doc = frappe.get_doc(ref_doctype, ref_name)
+	doc.append("links", {"link_doctype": link_doctype, "link_name": link_name})
+	doc.save()
+
+
+@frappe.whitelist()
+def unlink_address_or_contact(ref_doctype, ref_name, doctype, name):
+	doc = frappe.get_doc(ref_doctype, ref_name)
+	links = doc.get("links")
+	for data in links:
+		if data.link_doctype == doctype and data.link_name == name:
+			links.remove(data)
+	doc.save()
+
+
+@frappe.whitelist()
+def delete_address_or_contact(ref_doctype, ref_name, doctype, name):
+	doc = frappe.get_doc(ref_doctype, ref_name)
+	links = doc.get("links")
+	if len(links) > 1:
+		unlink_address_or_contact(ref_doctype, ref_name, doctype, name)
+	else:
+		frappe.delete_doc(ref_doctype, ref_name)

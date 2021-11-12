@@ -1,15 +1,30 @@
-{%- if background_image -%}
 {% block style %}
-<link type="text/css" rel="stylesheet" href="assets/frappe/css/blogheader.css">
+<link type="text/css" rel="stylesheet" href="assets/frappe/css/blog.css">
 {% endblock %}
-<header class="header" style="background-image: url({{background_image}});">
-  <div class="container">
+<header class="header">
     {% if featured_blog %}
     <div class="header-info">
-      <p>Featured Article</p>
-      <h2><a href="{{featured_blog.route}}">{{featured_blog.name}}</a></h2>
+      <div class="row">
+        <div class="col-md-4">
+          {% if featured_image %}
+          <img src="{{ featured_image }}" alt="{{featured_blog.title}} - Cover Image">
+          {% else %} 
+          <img src="/assets/frappe/images/placeholder_blog.png" alt="{{featured_blog.title}} - Cover Image">
+          {% endif %}
+        </div>
+        <div class="col-md-8">  
+          <div class="row">
+            <div class="col-md-6 feature_category_text">
+              <p>Featured {{featured_blog.blog_category}}</p>
+            </div>
+            <div class="col-md-6 text-right blog_date">
+              {{ frappe.format_date(featured_blog.published_on) }}
+            </div>
+          </div>
+          <h2 class="blog_title"><a href="{{featured_blog.route}}">{{featured_blog.title}}</a></h2>
+          <p class="blog_content">{{featured_blog.content | truncate(500) | striptags}}</p>
+        </div>
+      </div>
     </div>
     {% endif %}
-  </div>
-  </header>
-{% endif %}
+</header>

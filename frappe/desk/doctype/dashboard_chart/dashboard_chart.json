@@ -22,6 +22,7 @@
   "group_by_based_on",
   "aggregate_function_based_on",
   "number_of_groups",
+  "show_others",
   "column_break_6",
   "is_public",
   "heatmap_year",
@@ -30,11 +31,14 @@
   "to_date",
   "time_interval",
   "timeseries",
+  "show_previous_data",
   "type",
   "section_break_34",
   "script",
   "filters_section",
   "filters_json",
+  "or_filters_section",
+  "or_filters_json",
   "dynamic_filters_section",
   "dynamic_filters_json",
   "chart_options_section",
@@ -115,7 +119,7 @@
   {
    "fieldname": "filters_section",
    "fieldtype": "Section Break",
-   "label": "Filters"
+   "label": "AND Filters Section"
   },
   {
    "fieldname": "filters_json",
@@ -238,7 +242,8 @@
    "default": "0",
    "fieldname": "is_standard",
    "fieldtype": "Check",
-   "label": "Is Standard"
+   "label": "Is Standard",
+   "no_copy": 1
   },
   {
    "depends_on": "eval: doc.is_standard",
@@ -275,9 +280,34 @@
    "fieldname": "script",
    "fieldtype": "Code",
    "label": "Script"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: !['Group By', 'Report'].includes(doc.chart_type)",
+   "fieldname": "show_previous_data",
+   "fieldtype": "Check",
+   "label": "Show Corresponding Previous Years Data"
+  },
+  {
+   "fieldname": "or_filters_json",
+   "fieldtype": "Code",
+   "label": "OR Filters JSON",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "or_filters_section",
+   "fieldtype": "Section Break",
+   "label": "OR Filters Section"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.number_of_groups >0",
+   "fieldname": "show_others",
+   "fieldtype": "Check",
+   "label": "Show Others"
   }
  ],
- "modified": "2021-03-11 22:15:17.850682",
+ "modified": "2021-08-18 00:56:32.023290",
  "modified_by": "Administrator",
  "module": "Desk",
  "name": "Dashboard Chart",
@@ -291,19 +321,21 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "All",
    "share": 1,
    "write": 1
   },
   {
    "create": 1,
+   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "All",
-   "share": 1
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
   }
  ],
  "sort_field": "modified",

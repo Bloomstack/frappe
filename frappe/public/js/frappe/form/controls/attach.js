@@ -34,6 +34,7 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 			me.refresh();
 			me.frm.attachments.remove_attachment_by_filename(me.value, function() {
 				me.parse_validate_and_set_in_model(null);
+				me.clear_temp_attachment(me.value);
 				me.refresh();
 				me.frm.doc.docstatus == 1 ? me.frm.save('Update') : me.frm.save();
 			});
@@ -57,13 +58,15 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 	set_upload_options() {
 		let options = {
 			allow_multiple: false,
+			__islocal: this && this.frm ? this.frm.is_new() : frappe.web_form.is_new,
 			on_success: file => {
 				this.on_upload_complete(file);
 				this.toggle_reload_button();
+				((this.frm && this.frm.is_new()) || frappe.web_form.is_new) && this.save_temp_attachment(file);
 			}
 		};
 
-		if (this.frm) {
+		if (this.frm && !this.frm.is_new()) {
 			options.doctype = this.frm.doctype;
 			options.docname = this.frm.docname;
 		}
@@ -97,16 +100,46 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 	},
 
 	on_upload_complete: function(attachment) {
-		if(this.frm) {
-			this.parse_validate_and_set_in_model(attachment.file_url);
-			this.frm.attachments.update_attachment(attachment);
+		if (this.frm) {
+			this.parse_validate_and_set_in_model(attachment.file_url || attachment.name, attachment.dataurl);
+			!this.frm.is_new() && this.frm.attachments.update_attachment(attachment);
 			this.frm.doc.docstatus == 1 ? this.frm.save('Update') : this.frm.save();
 		}
-		this.set_value(attachment.file_url);
+		this.set_value(attachment.file_url || attachment.name);
 	},
 
 	toggle_reload_button() {
 		this.$value.find('[data-action="reload_attachment"]')
 			.toggle(this.file_uploader && this.file_uploader.uploader.files.length > 0);
+	},
+
+	save_temp_attachment(attachment) {
+		let __unsaved_attachments = (this.frm ? this.frm.doc.__unsaved_attachments : frappe.web_form.doc.__unsaved_attachments) || [];
+
+		__unsaved_attachments.push({
+			"fieldname": this.df.fieldname,
+			"filename": attachment.name,
+			"attachment": attachment
+		});
+
+		if (this.frm) {
+			this.frm.doc.__unsaved_attachments = __unsaved_attachments;
+		} else {
+			frappe.web_form.doc.__unsaved_attachments = __unsaved_attachments;
+		}
+	},
+
+	clear_temp_attachment(attachment) {
+		let __unsaved_attachments = (this.frm ? this.frm.doc.__unsaved_attachments : frappe.web_form.doc.__unsaved_attachments) || [];
+
+		__unsaved_attachments = __unsaved_attachments.filter(
+			__unsaved_attachments => __unsaved_attachments.filename !== attachment
+		);
+
+		if (this.frm) {
+			this.frm.doc.__unsaved_attachments = __unsaved_attachments;
+		} else {
+			frappe.web_form.doc.__unsaved_attachments = __unsaved_attachments;
+		}
 	}
 });
