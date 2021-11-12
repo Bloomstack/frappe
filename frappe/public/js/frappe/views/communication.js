@@ -11,10 +11,10 @@ frappe.views.CommunicationComposer = Class.extend({
 		frappe.call({
 			method: 'frappe.core.doctype.system_settings.system_settings.get_system_settings',
 			callback: function(res) {
-			if(res && res.message) {
-				me.system_settings = res.message;
-			}
-			me.make();
+				if(res && res.message) {
+					me.system_settings = res.message;
+				}
+				me.make();
 			}
 		});
 	},
