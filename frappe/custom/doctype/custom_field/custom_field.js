@@ -64,18 +64,17 @@ frappe.ui.form.on('Custom Field', {
 		}
 	},
 	fieldtype: function(frm) {
+		let msg = "";
+
 		if(frm.doc.fieldtype == 'Link') {
-			frm.fields_dict['options_help'].disp_area.innerHTML =
-				__('Name of the Document Type (DocType) you want this field to be linked to. e.g. Customer');
+			msg = __('Name of the Document Type (DocType) you want this field to be linked to. e.g. Customer');
 		} else if(frm.doc.fieldtype == 'Select') {
-			frm.fields_dict['options_help'].disp_area.innerHTML =
-				__('Options for select. Each option on a new line.')+' '+__('e.g.:')+'<br>'+__('Option 1')+'<br>'+__('Option 2')+'<br>'+__('Option 3')+'<br>';
+			msg = __('Options for select. Each option on a new line.')+' '+__('e.g.:')+'<br>'+__('Option 1')+'<br>'+__('Option 2')+'<br>'+__('Option 3')+'<br>';
 		} else if(frm.doc.fieldtype == 'Dynamic Link') {
-			frm.fields_dict['options_help'].disp_area.innerHTML =
-				__('Fieldname which will be the DocType for this link field.');
-		} else {
-			frm.fields_dict['options_help'].disp_area.innerHTML = '';
+			msg = __('Fieldname which will be the DocType for this link field.');
 		}
+
+		frm.fields_dict['options_help'].disp_area.innerHTML = msg;
 	}
 });
 
