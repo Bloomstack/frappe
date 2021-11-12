@@ -23,9 +23,12 @@ frappe.form.formatters = {
 	},
 	Float: function(value, docfield, options, doc) {
 		// don't allow 0 precision for Floats, hence or'ing with null
-		var precision = docfield.precision
+		let precision = cint(docfield.display_precision)
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_float_precision)
+			|| cint(docfield.precision)
 			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision)
 			|| null;
+
 		if (docfield.options && docfield.options.trim()) {
 			// options points to a currency field, but expects precision of float!
 			docfield.precision = precision;
@@ -34,7 +37,7 @@ frappe.form.formatters = {
 		} else {
 			// show 1.000000 as 1
 			if (!(options || {}).always_show_decimals && !is_null(value)) {
-				var temp = cstr(value).split(".");
+				let temp = cstr(value).split(".");
 				if (temp[1]==undefined || cint(temp[1])===0) {
 					precision = 0;
 				}
@@ -50,7 +53,14 @@ frappe.form.formatters = {
 		return frappe.form.formatters._right(value==null ? "" : cint(value), options)
 	},
 	Percent: function(value, docfield, options) {
-		return frappe.form.formatters._right(flt(value, 2) + "%", options)
+		// Check precision for docfield, to display the percentage else set it to 2
+		let precision = cint(docfield.display_precision)
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_float_precision)
+			|| cint(docfield.precision)
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision)
+			|| 2;
+
+		return frappe.form.formatters._right(flt(value, precision) + "%", options)
 	},
 	Rating: function(value) {
 		return `<span class="rating">
@@ -60,8 +70,12 @@ frappe.form.formatters = {
 		</span>`;
 	},
 	Currency: function (value, docfield, options, doc) {
-		var currency  = frappe.meta.get_field_currency(docfield, doc);
-		var precision = docfield.precision || cint(frappe.boot.sysdefaults.currency_precision) || 2;
+		let currency  = frappe.meta.get_field_currency(docfield, doc);
+		let precision = cint(docfield.display_precision)
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.display_currency_precision)
+			|| cint(docfield.precision)
+			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.currency_precision)
+			|| 2;
 
 		// If you change anything below, it's going to hurt a company in UAE, a bit.
 		if (precision > 2) {
@@ -158,15 +172,7 @@ frappe.form.formatters = {
 		}
 	},
 	Datetime: function(value) {
-		if(value) {
-			var m = moment(frappe.datetime.convert_to_user_tz(value));
-			if(frappe.boot.sysdefaults.time_zone) {
-				m = m.tz(frappe.boot.sysdefaults.time_zone);
-			}
-			return m.format(frappe.boot.sysdefaults.date_format.toUpperCase() + ', h:mm a z');
-		} else {
-			return "";
-		}
+		return value ? frappe.datetime.str_to_user(frappe.datetime.convert_to_user_tz(value)) : "";
 	},
 	Text: function(value) {
 		if(value) {

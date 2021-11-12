@@ -49,6 +49,7 @@ class User(Document):
 
 	def after_insert(self):
 		create_notification_settings(self.name)
+		frappe.cache().delete_key('enabled_users')
 
 	def validate(self):
 		self.check_demo()
@@ -75,6 +76,7 @@ class User(Document):
 		ask_pass_update()
 		self.validate_roles()
 		self.validate_user_image()
+		self.set_time_zone()
 
 		if self.language == "Loading...":
 			self.language = None
@@ -92,6 +94,12 @@ class User(Document):
 		if self.user_image and len(self.user_image) > 2000:
 			frappe.throw(_("Not a valid User Image."))
 
+	def set_time_zone(self):
+		from frappe.utils import get_time_zone
+
+		if not self.time_zone:
+			self.time_zone = get_time_zone()
+
 	def on_update(self):
 		# clear new password
 		self.share_with_self()
@@ -102,6 +110,11 @@ class User(Document):
 		create_contact(self, ignore_mandatory=True)
 		if self.name not in ('Administrator', 'Guest') and not self.user_image:
 			frappe.enqueue('frappe.core.doctype.user.user.update_gravatar', name=self.name)
+		if self.has_value_changed('enabled'):
+			frappe.cache().delete_key('enabled_users')
+
+		if self.time_zone:
+			frappe.defaults.set_default("time_zone", self.time_zone, self.name)
 
 	def has_website_permission(self, ptype, user, verbose=False):
 		"""Returns true if current user is the session user"""
@@ -348,6 +361,8 @@ class User(Document):
 		frappe.db.sql("""update `tabContact`
 			set `user`=null
 			where `user`=%s""", (self.name))
+
+		frappe.cache().delete_key('enabled_users')
 
 
 	def before_rename(self, old_name, new_name, merge=False):
@@ -1146,3 +1161,10 @@ def job_rename_owner_modified_by(table, old_name, new_name):
 		sql = """UPDATE `{}` SET {} WHERE {}""".format(
 			table, ",".join(field_sql), " OR ".join(field_where))
 		frappe.db.sql(sql, dict(new_name=new_name, old_name=old_name))
+
+def get_enabled_users():
+	def _get_enabled_users():
+		enabled_users = [d.name for d in frappe.get_all("User", filters={"enabled": "1"})]
+		return enabled_users
+
+	return frappe.cache().get_value("enabled_users", _get_enabled_users)

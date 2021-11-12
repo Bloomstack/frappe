@@ -1,4 +1,4 @@
-frappe.provide('ui')
+frappe.provide('ui');
 frappe.provide('frappe.dashboards');
 frappe.provide('frappe.dashboards.chart_sources');
 
@@ -192,7 +192,7 @@ frappe.ui.DashboardChart = class DashboardChart {
 				handler: () => {
 					frappe.set_route('query-report', this.chart_doc.report_name);
 				}
-			})
+			});
 		}
 		this.set_chart_actions(actions);
 	}
@@ -410,4 +410,4 @@ frappe.ui.DashboardChart = class DashboardChart {
 			return Promise.resolve();
 		}
 	}
-}
+};

@@ -814,6 +814,45 @@ Object.assign(frappe.utils, {
 
 		return $el;
 	},
+
+	generate_route(item) {
+		if (item.type==="doctype") {
+			item.doctype = item.name;
+		}
+		let route = '';
+		if (!item.route) {
+			if (item.link) {
+				route=strip(item.link, "#");
+			} else if (item.type==="doctype") {
+				if (frappe.model.is_single(item.doctype)) {
+					route = 'Form/' + item.doctype;
+				} else {
+					if (item.filters) {
+						frappe.route_options=item.filters;
+					}
+					route="List/" + item.doctype;
+				}
+			} else if (item.type==="report" && item.is_query_report) {
+				route="query-report/" + item.name;
+			} else if (item.type==="report") {
+				route="List/" + item.doctype + "/Report/" + item.name;
+			} else if (item.type==="page") {
+				route=item.name;
+			}
+	
+			route = '#' + route;
+		} else {
+			route = item.route;
+		}
+	
+		if (item.route_options) {
+			route += "?" + $.map(item.route_options, function(value, key) {
+				return encodeURIComponent(key) + "=" + encodeURIComponent(value); 
+			}).join('&');
+		}
+		return route;
+	},
+
 	shorten_number: function (number, country, min_length=4, max_no_of_decimals=2) {
 		/* returns the number as an abbreviated string
 		 * PARAMS
