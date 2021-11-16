@@ -515,7 +515,7 @@ def get_field_precision(df, doc=None, currency=None):
 		precision = cint(df.precision)
 
 	elif df.fieldtype == "Currency":
-		precision = cint(frappe.db.get_default("currency_precision"))
+		precision = cint(frappe.db.get_default("currency_precision")) or 3
 		if not precision:
 			number_format = frappe.db.get_default("number_format") or "#,###.##"
 			decimal_str, comma_str, precision = get_number_format_info(number_format)
