@@ -17,11 +17,6 @@ def get_notification_config():
 		}
 	}
 
-	if frappe.db.exists("Notification Badges Settings"):
-		settings = frappe.get_single("Notification Badges Settings")
-		for config in settings.configuration:
-			notifications["for_doctype"][config.filter_doctype] = json.loads(config.filter)
-
 	return notifications
 
 def get_things_todo(as_list=False):
