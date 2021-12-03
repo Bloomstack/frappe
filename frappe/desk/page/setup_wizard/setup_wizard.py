@@ -144,7 +144,8 @@ def update_system_settings(args):
 		"language": get_language_code(args.get("language")),
 		"time_zone": "Etc/UTC", # System Timezone will always be UTC
 		"user_default_time_zone": args.get("timezone"),
-		"float_precision": 3,
+		"float_precision": 9, # Float Precision will always be maximum for the database
+		"currency_precision": 9, # Currency Precision will always be maximum for the database
 		'date_format': frappe.db.get_value("Country", args.get("country"), "date_format"),
 		'number_format': number_format,
 		'enable_scheduler': 1 if not frappe.flags.in_test else 0,
