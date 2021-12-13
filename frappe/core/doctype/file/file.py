@@ -950,16 +950,21 @@ def download_zip_files(filters):
 
 	doctype = filters.get('doctype')
 	docnames = filters.get('docnames')
-
+	label = filters.get('label')
 	output_filename = "{0}.zip".format(doctype)
 	output_path = frappe.get_site_path('private', 'files', output_filename)
 	if not frappe.db.exists("File", output_filename):
 		input_files = []
-		for docname in docnames:
-			attachments = get_attachments(doctype,docname['name'])
-			for d in attachments:
-				doc = frappe.get_doc("File", d.name)
+		if label == "Download":
+			for docname in docnames:
+				doc = frappe.get_doc("File", docname['name'])
 				input_files.append(doc.get_full_path())
+		else:
+			for docname in docnames:
+				attachments = get_attachments(doctype,docname['name'])
+				for d in attachments:
+					doc = frappe.get_doc("File", d.name)
+					input_files.append(doc.get_full_path())
 
 		#Creates a zip file containing all attachments
 		with zipfile.ZipFile(output_path, 'w') as output_zip:

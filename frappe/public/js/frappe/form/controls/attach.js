@@ -58,11 +58,11 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 	set_upload_options() {
 		let options = {
 			allow_multiple: false,
-			__islocal: this.frm.is_new(),
+			__islocal: this && this.frm ? this.frm.is_new() : frappe.web_form.is_new,
 			on_success: file => {
 				this.on_upload_complete(file);
 				this.toggle_reload_button();
-				this.frm.is_new() && this.save_temp_attachment(file);
+				((this.frm && this.frm.is_new()) || frappe.web_form.is_new) && this.save_temp_attachment(file);
 			}
 		};
 
@@ -114,24 +114,32 @@ frappe.ui.form.ControlAttach = frappe.ui.form.ControlData.extend({
 	},
 
 	save_temp_attachment(attachment) {
-		if (!this.frm.doc.__unsaved_attachments) {
-			this.frm.doc.__unsaved_attachments = [];
-		}
+		let __unsaved_attachments = (this.frm ? this.frm.doc.__unsaved_attachments : frappe.web_form.doc.__unsaved_attachments) || [];
 
-		this.frm.doc.__unsaved_attachments.push({
+		__unsaved_attachments.push({
 			"fieldname": this.df.fieldname,
 			"filename": attachment.name,
 			"attachment": attachment
 		});
+
+		if (this.frm) {
+			this.frm.doc.__unsaved_attachments = __unsaved_attachments;
+		} else {
+			frappe.web_form.doc.__unsaved_attachments = __unsaved_attachments;
+		}
 	},
 
 	clear_temp_attachment(attachment) {
-		if (!this.frm.doc.__unsaved_attachments) {
-			this.frm.doc.__unsaved_attachments = [];
-		}
+		let __unsaved_attachments = (this.frm ? this.frm.doc.__unsaved_attachments : frappe.web_form.doc.__unsaved_attachments) || [];
 
-		this.frm.doc.__unsaved_attachments = this.frm.doc.__unsaved_attachments.filter(
-			__unsaved_attachment => __unsaved_attachment.filename !== attachment
+		__unsaved_attachments = __unsaved_attachments.filter(
+			__unsaved_attachments => __unsaved_attachments.filename !== attachment
 		);
+
+		if (this.frm) {
+			this.frm.doc.__unsaved_attachments = __unsaved_attachments;
+		} else {
+			frappe.web_form.doc.__unsaved_attachments = __unsaved_attachments;
+		}
 	}
 });

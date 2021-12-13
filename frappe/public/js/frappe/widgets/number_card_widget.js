@@ -66,30 +66,38 @@ export default class NumberCardWidget extends Widget {
 
 	set_events() {
 		$(this.body).click(() => {
-			if (this.in_customize_mode || this.card_doc.type == 'Custom') return;
+			if (this.in_customize_mode || this.card_doc.type == 'Custom' || this.card_doc.type == 'Script') return;
 			this.set_route();
 		});
 	}
 
 	set_route() {
 		const is_document_type = this.card_doc.type !== 'Report';
-		const name = is_document_type ? this.card_doc.document_type : this.card_doc.report_name;
-		const route = frappe.utils.generate_route({
-			name: name,
-			type: is_document_type ? 'doctype' : 'report',
-			is_query_report: !is_document_type,
+		frappe.model.with_doctype(this.card_doc.document_type, () => {
+			let is_child = frappe.get_meta(this.card_doc.document_type).istable;
+			let name;
+			if (is_child) {
+				let doc = frappe.get_doc("DocField", {"fieldtype": "Table", "options": this.card_doc.document_type});
+				name = doc.parent ? doc.parent : "";
+			} else {
+				name = is_document_type ? this.card_doc.document_type : this.card_doc.report_name;
+			}
+			const route = frappe.utils.generate_route({
+				name: name,
+				type: is_document_type ? 'doctype' : 'report',
+				is_query_report: !is_document_type,
+			});
+			if (is_document_type) {
+				const filters = JSON.parse(this.card_doc.filters_json);
+				frappe.route_options = filters.reduce((acc, filter) => {
+					return Object.assign(acc, {
+						[`${filter[0]}.${filter[1]}`]: [filter[2], filter[3]]
+					});
+				}, {});
+			}
+
+			frappe.set_route(route);
 		});
-
-		if (is_document_type) {
-			const filters = JSON.parse(this.card_doc.filters_json);
-			frappe.route_options = filters.reduce((acc, filter) => {
-				return Object.assign(acc, {
-					[`${filter[0]}.${filter[1]}`]: [filter[2], filter[3]]
-				});
-			}, {});
-		}
-
-		frappe.set_route(route);
 	}
 
 	set_doc_args() {
@@ -214,7 +222,7 @@ export default class NumberCardWidget extends Widget {
 		}, []);
 		const col = res.columns.find(col => col.fieldname == field);
 		this.number = frappe.report_utils.get_result_of_fn(this.card_doc.report_function, vals);
-		this.get_formatted_number(col);
+		this.formatted_number = this.number;
 	}
 
 	get_formatted_number(df) {
