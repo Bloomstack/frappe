@@ -12,7 +12,7 @@ cryptography==2.8
 dropbox==9.1.0
 email-reply-parser==0.5.9
 Faker==2.0.4
-future==0.18.2
+future==0.18.3
 GitPython==2.1.15
 gitdb2==2.0.6;python_version<'3.4'
 google-api-python-client==1.7.11
