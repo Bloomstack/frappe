@@ -333,7 +333,7 @@ def render_403(e, pathname):
 	frappe.local.message_title = _("Not Permitted")
 	frappe.local.response['context'] = dict(
 		indicator_color = 'red',
-		primary_action = '/login',
+		primary_action = '/login' + ("?redirect-to="+frappe.local.response["redirect-after-login"] if "redirect-after-login" in frappe.local.response else ""),
 		primary_label = _('Login'),
 		fullpage=True
 	)

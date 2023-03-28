@@ -34,6 +34,9 @@ def get_context(context):
 
 	print_format = get_print_format_doc(None, meta = meta)
 
+	if not frappe.has_website_permission(doc, ptype="print"):
+		frappe.throw(_("Please login with an associated account to access this document."), frappe.PermissionError)
+
 	make_access_log(doctype=frappe.form_dict.doctype, document=frappe.form_dict.name, file_type='PDF', method='Print')
 
 	return {
