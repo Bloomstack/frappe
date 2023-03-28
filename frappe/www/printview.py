@@ -34,8 +34,6 @@ def get_context(context):
 
 	print_format = get_print_format_doc(None, meta = meta)
 
-	# if frappe.session.user == "Guest":
-	# 	frappe.throw(_("Not allowed to print this documents"), frappe.PermissionError)
 	if not frappe.has_website_permission(doc, ptype="print"):
 		frappe.throw(_("Please login with an associated account to access this document."), frappe.PermissionError)
 
